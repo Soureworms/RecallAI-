@@ -6,8 +6,8 @@ import { useSession } from "next-auth/react"
 import { Plus, ArrowLeft, Pencil, Archive, Lock } from "lucide-react"
 import { Modal } from "@/components/ui/modal"
 
-type CardFormat = "BASIC" | "CLOZE" | "MCQ"
-type CardStatus = "ACTIVE" | "ARCHIVED"
+type CardFormat = "QA" | "TRUE_FALSE" | "FILL_BLANK"
+type CardStatus = "DRAFT" | "ACTIVE" | "ARCHIVED"
 
 type Card = {
   id: string
@@ -27,12 +27,12 @@ type DeckDetail = {
 }
 
 const FORMAT_LABELS: Record<CardFormat, string> = {
-  BASIC: "Basic",
-  CLOZE: "Cloze",
-  MCQ: "MCQ",
+  QA: "Q&A",
+  TRUE_FALSE: "True / False",
+  FILL_BLANK: "Fill in Blank",
 }
 
-const emptyForm = { question: "", answer: "", format: "BASIC" as CardFormat }
+const emptyForm = { question: "", answer: "", format: "QA" as CardFormat }
 
 export default function DeckDetailPage() {
   const { deckId } = useParams<{ deckId: string }>()
@@ -275,9 +275,9 @@ export default function DeckDetailPage() {
               onChange={(e) => setForm((f) => ({ ...f, format: e.target.value as CardFormat }))}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
-              <option value="BASIC">Basic</option>
-              <option value="CLOZE">Cloze</option>
-              <option value="MCQ">MCQ</option>
+              <option value="QA">Q&amp;A</option>
+              <option value="TRUE_FALSE">True / False</option>
+              <option value="FILL_BLANK">Fill in Blank</option>
             </select>
           </div>
           <div>

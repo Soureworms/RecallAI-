@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react"
 import { CheckCircle, Brain, Flame } from "lucide-react"
 
-type CardFormat = "BASIC" | "CLOZE" | "MCQ"
+type CardFormat = "QA" | "TRUE_FALSE" | "FILL_BLANK"
 type Rating = "AGAIN" | "HARD" | "GOOD" | "EASY"
 
 type RatingPreview = {

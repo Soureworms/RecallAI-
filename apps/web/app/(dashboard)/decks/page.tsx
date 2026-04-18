@@ -62,7 +62,7 @@ export default function DecksPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Decks</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Manage your organisation's flashcard decks
+            Manage your organisation&apos;s flashcard decks
           </p>
         </div>
         {isManager && (

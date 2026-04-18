@@ -7,6 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Auth / Org ──────────────────────────────────────────────────────────────
+
 enum Role {
   ADMIN
   MANAGER
@@ -19,6 +21,7 @@ model Organization {
   createdAt DateTime @default(now())
   teams     Team[]
   users     User[]
+  decks     Deck[]
 }
 
 model Team {
@@ -40,6 +43,9 @@ model User {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   teams          TeamMember[]
+  decks          Deck[]
+  userCards      UserCard[]
+  reviewLogs     ReviewLog[]
 }
 
 model TeamMember {
@@ -49,4 +55,101 @@ model TeamMember {
   team   Team   @relation(fields: [teamId], references: [id])
 
   @@id([userId, teamId])
+}
+
+// ─── Cards & Decks ───────────────────────────────────────────────────────────
+
+enum CardFormat {
+  QA
+  TRUE_FALSE
+  FILL_BLANK
+}
+
+enum CardStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model Deck {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id])
+  isArchived  Boolean      @default(false)
+  isMandatory Boolean      @default(false)
+  createdById String
+  createdBy   User         @relation(fields: [createdById], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  cards       Card[]
+}
+
+model Card {
+  id         String      @id @default(uuid())
+  deckId     String
+  deck       Deck        @relation(fields: [deckId], references: [id])
+  question   String
+  answer     String
+  format     CardFormat  @default(QA)
+  tags       String[]
+  version    Int         @default(1)
+  status     CardStatus  @default(DRAFT)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  userCards  UserCard[]
+  reviewLogs ReviewLog[]
+}
+
+// ─── FSRS Scheduling ─────────────────────────────────────────────────────────
+
+enum CardState {
+  NEW
+  LEARNING
+  REVIEW
+  RELEARNING
+}
+
+enum Rating {
+  AGAIN
+  HARD
+  GOOD
+  EASY
+}
+
+model UserCard {
+  id             String    @id @default(uuid())
+  userId         String
+  cardId         String
+  user           User      @relation(fields: [userId], references: [id])
+  card           Card      @relation(fields: [cardId], references: [id])
+  stability      Float     @default(0)
+  difficulty     Float     @default(0)
+  elapsedDays    Int       @default(0)
+  scheduledDays  Int       @default(0)
+  reps           Int       @default(0)
+  lapses         Int       @default(0)
+  state          CardState @default(NEW)
+  dueDate        DateTime
+  lastReviewDate DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId, cardId])
+}
+
+model ReviewLog {
+  id                String    @id @default(uuid())
+  userId            String
+  cardId            String
+  user              User      @relation(fields: [userId], references: [id])
+  card              Card      @relation(fields: [cardId], references: [id])
+  rating            Rating
+  reviewedAt        DateTime  @default(now())
+  scheduledInterval Float
+  elapsedDays       Float
+  stability         Float
+  difficulty        Float
+  state             CardState
 }

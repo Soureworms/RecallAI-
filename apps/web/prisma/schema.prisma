@@ -128,6 +128,7 @@ model UserCard {
   difficulty     Float     @default(0)
   elapsedDays    Int       @default(0)
   scheduledDays  Int       @default(0)
+  learningSteps  Int       @default(0)
   reps           Int       @default(0)
   lapses         Int       @default(0)
   state          CardState @default(NEW)

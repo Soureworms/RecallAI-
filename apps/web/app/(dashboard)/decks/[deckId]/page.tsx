@@ -3,8 +3,12 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { Plus, ArrowLeft, Pencil, Archive, Lock, Users } from "lucide-react"
+import {
+  Plus, ArrowLeft, Pencil, Archive, Lock, Users,
+  FileText, RefreshCw, AlertTriangle, ClipboardCheck,
+} from "lucide-react"
 import { Modal } from "@/components/ui/modal"
+import { ContentPipeline } from "@/components/decks/content-pipeline"
 
 type CardFormat = "QA" | "TRUE_FALSE" | "FILL_BLANK"
 type CardStatus = "DRAFT" | "ACTIVE" | "ARCHIVED"
@@ -29,6 +33,18 @@ type DeckDetail = {
 type TeamMemberUser = { id: string; name: string | null; email: string }
 type Team = { id: string; name: string; members: { userId: string; user: TeamMemberUser }[] }
 
+type SourceDoc = {
+  id: string
+  filename: string
+  mimeType: string
+  sizeBytes: number
+  contentHash: string
+  status: "PROCESSING" | "READY" | "ERROR"
+  createdAt: string
+  _count: { cards: number }
+  uploadedBy: { name: string | null; email: string }
+}
+
 const FORMAT_LABELS: Record<CardFormat, string> = {
   QA: "Q&A",
   TRUE_FALSE: "True / False",
@@ -37,6 +53,12 @@ const FORMAT_LABELS: Record<CardFormat, string> = {
 
 const emptyForm = { question: "", answer: "", format: "QA" as CardFormat }
 
+function fmtBytes(n: number): string {
+  if (n < 1024) return `${n} B`
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`
+}
+
 export default function DeckDetailPage() {
   const { deckId } = useParams<{ deckId: string }>()
   const router = useRouter()
@@ -44,6 +66,7 @@ export default function DeckDetailPage() {
 
   const [deck, setDeck] = useState<DeckDetail | null>(null)
   const [cards, setCards] = useState<Card[]>([])
+  const [docs, setDocs] = useState<SourceDoc[]>([])
   const [loading, setLoading] = useState(true)
 
   // Card add/edit modal
@@ -61,22 +84,42 @@ export default function DeckDetailPage() {
   const [assigning, setAssigning] = useState(false)
   const [assignError, setAssignError] = useState<string | null>(null)
 
+  // Regenerate state
+  const [regenerating, setRegenerating] = useState<string | null>(null)
+  const [regenMsg, setRegenMsg] = useState<string | null>(null)
+
   const isManager =
     session?.user?.role === "MANAGER" || session?.user?.role === "ADMIN"
 
-  const fetchDeck = useCallback(async () => {
-    const [deckRes, cardsRes] = await Promise.all([
+  const fetchAll = useCallback(async () => {
+    const [deckRes, cardsRes, docsRes] = await Promise.all([
       fetch(`/api/decks/${deckId}`),
       fetch(`/api/decks/${deckId}/cards`),
+      fetch(`/api/documents?deckId=${deckId}`),
     ])
     if (deckRes.ok) setDeck(await deckRes.json() as DeckDetail)
     if (cardsRes.ok) setCards(await cardsRes.json() as Card[])
+    if (docsRes.ok) setDocs(await docsRes.json() as SourceDoc[])
     setLoading(false)
   }, [deckId])
 
-  useEffect(() => { void fetchDeck() }, [fetchDeck])
+  useEffect(() => { void fetchAll() }, [fetchAll])
 
-  // ── Card modal helpers ────────────────────────────────────────────────────────
+  // Detect if any filename appears with different hashes (doc was updated)
+  const outdatedFilenames = new Set<string>(
+    docs
+      .filter((d) => {
+        const same = docs.filter((o) => o.filename === d.filename)
+        return same.length > 1 && same.some((o) => o.contentHash !== d.contentHash)
+      })
+      .map((d) => d.filename)
+  )
+  const hasOutdated = outdatedFilenames.size > 0
+
+  // ── Draft card count ────────────────────────────────────────────────────────
+  const draftCount = cards.filter((c) => c.status === "DRAFT").length
+
+  // ── Card modal helpers ──────────────────────────────────────────────────────
 
   function openAdd() {
     setForm(emptyForm)
@@ -115,31 +158,28 @@ export default function DeckDetailPage() {
 
     setShowAdd(false)
     setEditCard(null)
-    void fetchDeck()
+    void fetchAll()
   }
 
   async function handleArchive(cardId: string) {
     await fetch(`/api/decks/${deckId}/cards/${cardId}`, { method: "DELETE" })
-    void fetchDeck()
+    void fetchAll()
   }
 
-  // ── Assign modal helpers ──────────────────────────────────────────────────────
+  // ── Assign modal helpers ────────────────────────────────────────────────────
 
   async function openAssign() {
     setAssignError(null)
     setSelectedUserIds(new Set())
-
     const [teamsRes, assignedRes] = await Promise.all([
       fetch("/api/teams"),
       fetch(`/api/decks/${deckId}/assign`),
     ])
-
     if (teamsRes.ok) setTeams(await teamsRes.json() as Team[])
     if (assignedRes.ok) {
       const d = (await assignedRes.json()) as { assignedUserIds: string[] }
       setAssignedUserIds(new Set(d.assignedUserIds))
     }
-
     setShowAssign(true)
   }
 
@@ -163,42 +203,58 @@ export default function DeckDetailPage() {
     })
   }
 
-  function selectAll() {
-    const allUnassigned = allMembers
-      .filter((u) => !assignedUserIds.has(u.id))
-      .map((u) => u.id)
-    setSelectedUserIds(new Set(allUnassigned))
-  }
-
   const allMembers: TeamMemberUser[] = Array.from(
     new Map(
       teams.flatMap((t) => t.members.map((m) => [m.userId, m.user]))
     ).values()
   )
 
+  function selectAll() {
+    const ids = allMembers.filter((u) => !assignedUserIds.has(u.id)).map((u) => u.id)
+    setSelectedUserIds(new Set(ids))
+  }
+
   async function handleAssign() {
     if (selectedUserIds.size === 0) return
     setAssigning(true)
     setAssignError(null)
-
     const res = await fetch(`/api/decks/${deckId}/assign`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userIds: Array.from(selectedUserIds) }),
     })
     setAssigning(false)
-
     if (!res.ok) {
       const d = (await res.json()) as { error?: string }
       setAssignError(d.error ?? "Assignment failed")
       return
     }
-
     setShowAssign(false)
-    void fetchDeck()
+    void fetchAll()
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  // ── Regenerate ──────────────────────────────────────────────────────────────
+
+  async function handleRegenerate(docId: string) {
+    setRegenerating(docId)
+    setRegenMsg(null)
+    const res = await fetch(`/api/decks/${deckId}/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sourceDocumentId: docId }),
+    })
+    setRegenerating(null)
+    if (res.ok) {
+      const d = await res.json() as { count: number }
+      setRegenMsg(`${d.count} new draft card${d.count !== 1 ? "s" : ""} created. Review them above.`)
+      void fetchAll()
+    } else {
+      const d = (await res.json()) as { error?: string }
+      setRegenMsg(d.error ?? "Regeneration failed")
+    }
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   if (loading) {
     return <div className="mt-10 text-center text-sm text-gray-400">Loading…</div>
@@ -237,13 +293,14 @@ export default function DeckDetailPage() {
           )}
         </div>
         {isManager && (
-          <div className="flex shrink-0 gap-2">
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <ContentPipeline deckId={deckId} />
             <button
               onClick={() => { void openAssign() }}
               className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               <Users className="h-4 w-4" />
-              Assign to Team
+              Assign
             </button>
             <button
               onClick={openAdd}
@@ -256,11 +313,40 @@ export default function DeckDetailPage() {
         )}
       </div>
 
+      {/* Outdated source doc banner */}
+      {hasOutdated && (
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-500" />
+          <span>
+            A source document was re-uploaded with different content.
+            Some cards may be outdated — regenerate from the updated document to create fresh drafts.
+          </span>
+        </div>
+      )}
+
+      {/* Draft cards pending review banner */}
+      {draftCount > 0 && (
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+          <div className="flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4 text-indigo-500" />
+            <span>
+              <span className="font-semibold">{draftCount}</span> AI-generated card{draftCount !== 1 ? "s" : ""} pending review
+            </span>
+          </div>
+          <button
+            onClick={() => router.push(`/decks/${deckId}/review-cards`)}
+            className="rounded-lg bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500"
+          >
+            Review Now
+          </button>
+        </div>
+      )}
+
       {/* Active cards table */}
       <div className="mt-6">
         {activeCards.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-200 py-12 text-center text-sm text-gray-400">
-            No cards yet.{" "}
+            No active cards yet.{" "}
             {isManager && (
               <button onClick={openAdd} className="text-indigo-600 hover:underline">
                 Add the first card
@@ -317,7 +403,7 @@ export default function DeckDetailPage() {
         )}
       </div>
 
-      {/* Archived cards (collapsed) */}
+      {/* Archived cards */}
       {archivedCards.length > 0 && (
         <details className="mt-6">
           <summary className="cursor-pointer text-sm text-gray-400 hover:text-gray-600">
@@ -342,6 +428,77 @@ export default function DeckDetailPage() {
             </table>
           </div>
         </details>
+      )}
+
+      {/* Source documents section */}
+      {(docs.length > 0 || isManager) && (
+        <div className="mt-8">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700">Source Documents</h2>
+          {regenMsg && (
+            <p className="mb-3 rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-700">
+              {regenMsg}
+            </p>
+          )}
+          {docs.length === 0 ? (
+            <p className="text-sm text-gray-400">No documents uploaded yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {docs.map((doc) => {
+                const isOutdated = outdatedFilenames.has(doc.filename)
+                return (
+                  <div
+                    key={doc.id}
+                    className={`flex items-center justify-between rounded-xl border bg-white px-4 py-3 ${
+                      isOutdated ? "border-yellow-200" : "border-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className={`h-5 w-5 ${isOutdated ? "text-yellow-400" : "text-gray-300"}`} />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {doc.filename}
+                          {isOutdated && (
+                            <span className="ml-2 rounded-full bg-yellow-100 px-2 py-0.5 text-xs text-yellow-700">
+                              Updated
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {fmtBytes(doc.sizeBytes)} · {doc._count.cards} card{doc._count.cards !== 1 ? "s" : ""} generated
+                          {" "}· by {doc.uploadedBy.name ?? doc.uploadedBy.email}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          doc.status === "READY"
+                            ? "bg-green-50 text-green-600"
+                            : doc.status === "ERROR"
+                            ? "bg-red-50 text-red-600"
+                            : "bg-gray-100 text-gray-400"
+                        }`}
+                      >
+                        {doc.status}
+                      </span>
+                      {isManager && doc.status === "READY" && (
+                        <button
+                          onClick={() => { void handleRegenerate(doc.id) }}
+                          disabled={regenerating === doc.id}
+                          className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                          title="Regenerate cards from this document"
+                        >
+                          <RefreshCw className={`h-3.5 w-3.5 ${regenerating === doc.id ? "animate-spin" : ""}`} />
+                          Regenerate
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Add / Edit card modal */}
@@ -418,23 +575,16 @@ export default function DeckDetailPage() {
           {assignError && (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{assignError}</p>
           )}
-
           {allMembers.length === 0 ? (
             <p className="text-sm text-gray-500">No team members found.</p>
           ) : (
             <>
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">
-                  {selectedUserIds.size} selected
-                </p>
-                <button
-                  onClick={selectAll}
-                  className="text-sm text-indigo-600 hover:underline"
-                >
+                <p className="text-sm text-gray-500">{selectedUserIds.size} selected</p>
+                <button onClick={selectAll} className="text-sm text-indigo-600 hover:underline">
                   Select all unassigned
                 </button>
               </div>
-
               {teams.map((team) => (
                 <div key={team.id}>
                   <div className="mb-1 flex items-center justify-between">
@@ -485,7 +635,6 @@ export default function DeckDetailPage() {
               ))}
             </>
           )}
-
           <div className="flex justify-end gap-2 pt-2">
             <button
               onClick={() => setShowAssign(false)}

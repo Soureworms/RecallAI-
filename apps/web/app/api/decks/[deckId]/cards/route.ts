@@ -20,7 +20,7 @@ async function ownedDeck(deckId: string, orgId: string) {
 }
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { deckId: string } }
 ) {
   const session = await auth()
@@ -31,8 +31,18 @@ export async function GET(
   const deck = await ownedDeck(params.deckId, session.user.orgId)
   if (!deck) return notFound()
 
+  const statusParam = req.nextUrl.searchParams.get("status")
+  const whereStatus = statusParam === "DRAFT"
+    ? "DRAFT"
+    : statusParam === "ACTIVE"
+    ? "ACTIVE"
+    : undefined
+
   const cards = await prisma.card.findMany({
-    where: { deckId: params.deckId, status: { not: "ARCHIVED" } },
+    where: {
+      deckId: params.deckId,
+      status: whereStatus ?? { not: "ARCHIVED" },
+    },
     orderBy: { createdAt: "desc" },
   })
 

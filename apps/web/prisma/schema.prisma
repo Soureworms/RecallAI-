@@ -16,12 +16,13 @@ enum Role {
 }
 
 model Organization {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
-  teams     Team[]
-  users     User[]
-  decks     Deck[]
+  id              String           @id @default(uuid())
+  name            String
+  createdAt       DateTime         @default(now())
+  teams           Team[]
+  users           User[]
+  decks           Deck[]
+  sourceDocuments SourceDocument[]
 }
 
 model Team {
@@ -33,19 +34,20 @@ model Team {
 }
 
 model User {
-  id             String       @id @default(uuid())
-  email          String       @unique
-  name           String?
-  hashedPassword String
-  role           Role         @default(AGENT)
-  orgId          String
-  org            Organization @relation(fields: [orgId], references: [id])
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  teams          TeamMember[]
-  decks          Deck[]
-  userCards      UserCard[]
-  reviewLogs     ReviewLog[]
+  id              String           @id @default(uuid())
+  email           String           @unique
+  name            String?
+  hashedPassword  String
+  role            Role             @default(AGENT)
+  orgId           String
+  org             Organization     @relation(fields: [orgId], references: [id])
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  teams           TeamMember[]
+  decks           Deck[]
+  userCards       UserCard[]
+  reviewLogs      ReviewLog[]
+  sourceDocuments SourceDocument[]
 }
 
 model TeamMember {
@@ -72,34 +74,65 @@ enum CardStatus {
 }
 
 model Deck {
-  id          String       @id @default(uuid())
-  name        String
-  description String?
-  orgId       String
-  org         Organization @relation(fields: [orgId], references: [id])
-  isArchived  Boolean      @default(false)
-  isMandatory Boolean      @default(false)
-  createdById String
-  createdBy   User         @relation(fields: [createdById], references: [id])
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  cards       Card[]
+  id              String           @id @default(uuid())
+  name            String
+  description     String?
+  orgId           String
+  org             Organization     @relation(fields: [orgId], references: [id])
+  isArchived      Boolean          @default(false)
+  isMandatory     Boolean          @default(false)
+  createdById     String
+  createdBy       User             @relation(fields: [createdById], references: [id])
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  cards           Card[]
+  sourceDocuments SourceDocument[]
 }
 
 model Card {
-  id         String      @id @default(uuid())
-  deckId     String
-  deck       Deck        @relation(fields: [deckId], references: [id])
-  question   String
-  answer     String
-  format     CardFormat  @default(QA)
-  tags       String[]
-  version    Int         @default(1)
-  status     CardStatus  @default(DRAFT)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  userCards  UserCard[]
-  reviewLogs ReviewLog[]
+  id               String          @id @default(uuid())
+  deckId           String
+  deck             Deck            @relation(fields: [deckId], references: [id])
+  question         String
+  answer           String
+  format           CardFormat      @default(QA)
+  tags             String[]
+  difficulty       Int             @default(1)
+  version          Int             @default(1)
+  status           CardStatus      @default(DRAFT)
+  sourceDocumentId String?
+  sourceDocument   SourceDocument? @relation(fields: [sourceDocumentId], references: [id])
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  userCards        UserCard[]
+  reviewLogs       ReviewLog[]
+}
+
+// ─── Source Documents ─────────────────────────────────────────────────────────
+
+enum SourceDocumentStatus {
+  PROCESSING
+  READY
+  ERROR
+}
+
+model SourceDocument {
+  id           String               @id @default(uuid())
+  orgId        String
+  org          Organization         @relation(fields: [orgId], references: [id])
+  filename     String
+  mimeType     String
+  sizeBytes    Int
+  textContent  String
+  contentHash  String
+  status       SourceDocumentStatus @default(PROCESSING)
+  uploadedById String
+  uploadedBy   User                 @relation(fields: [uploadedById], references: [id])
+  deckId       String?
+  deck         Deck?                @relation(fields: [deckId], references: [id])
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  cards        Card[]
 }
 
 // ─── FSRS Scheduling ─────────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
+import { createEmptyCard } from "ts-fsrs"
 
 function forbidden() {
   return NextResponse.json({ error: "Forbidden" }, { status: 403 })
@@ -58,6 +59,8 @@ export async function PUT(
     isMandatory?: boolean
   }
 
+  const turningMandatory = body.isMandatory === true && !deck.isMandatory
+
   const updated = await prisma.deck.update({
     where: { id: params.deckId },
     data: {
@@ -69,6 +72,43 @@ export async function PUT(
       _count: { select: { cards: { where: { status: { not: "ARCHIVED" } } } } },
     },
   })
+
+  // Auto-assign to all current org members when a deck is first made mandatory
+  if (turningMandatory) {
+    const [orgUsers, activeCards] = await Promise.all([
+      prisma.user.findMany({
+        where: { orgId: session.user.orgId },
+        select: { id: true },
+      }),
+      prisma.card.findMany({
+        where: { deckId: params.deckId, status: "ACTIVE" },
+        select: { id: true },
+      }),
+    ])
+
+    if (orgUsers.length > 0 && activeCards.length > 0) {
+      const empty = createEmptyCard(new Date())
+      const now = new Date()
+      await prisma.userCard.createMany({
+        data: orgUsers.flatMap((u) =>
+          activeCards.map((c) => ({
+            userId: u.id,
+            cardId: c.id,
+            stability: empty.stability,
+            difficulty: empty.difficulty,
+            elapsedDays: empty.elapsed_days,
+            scheduledDays: empty.scheduled_days,
+            learningSteps: empty.learning_steps,
+            reps: empty.reps,
+            lapses: empty.lapses,
+            state: "NEW" as const,
+            dueDate: now,
+          }))
+        ),
+        skipDuplicates: true,
+      })
+    }
+  }
 
   return NextResponse.json(updated)
 }

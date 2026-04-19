@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { Plus, ArrowLeft, Pencil, Archive, Lock } from "lucide-react"
+import { Plus, ArrowLeft, Pencil, Archive, Lock, Users } from "lucide-react"
 import { Modal } from "@/components/ui/modal"
 
 type CardFormat = "QA" | "TRUE_FALSE" | "FILL_BLANK"
@@ -26,6 +26,9 @@ type DeckDetail = {
   _count: { cards: number }
 }
 
+type TeamMemberUser = { id: string; name: string | null; email: string }
+type Team = { id: string; name: string; members: { userId: string; user: TeamMemberUser }[] }
+
 const FORMAT_LABELS: Record<CardFormat, string> = {
   QA: "Q&A",
   TRUE_FALSE: "True / False",
@@ -43,11 +46,20 @@ export default function DeckDetailPage() {
   const [cards, setCards] = useState<Card[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Card add/edit modal
   const [showAdd, setShowAdd] = useState(false)
   const [editCard, setEditCard] = useState<Card | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Assign modal
+  const [showAssign, setShowAssign] = useState(false)
+  const [teams, setTeams] = useState<Team[]>([])
+  const [assignedUserIds, setAssignedUserIds] = useState<Set<string>>(new Set())
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
+  const [assigning, setAssigning] = useState(false)
+  const [assignError, setAssignError] = useState<string | null>(null)
 
   const isManager =
     session?.user?.role === "MANAGER" || session?.user?.role === "ADMIN"
@@ -63,6 +75,8 @@ export default function DeckDetailPage() {
   }, [deckId])
 
   useEffect(() => { void fetchDeck() }, [fetchDeck])
+
+  // ── Card modal helpers ────────────────────────────────────────────────────────
 
   function openAdd() {
     setForm(emptyForm)
@@ -105,22 +119,93 @@ export default function DeckDetailPage() {
   }
 
   async function handleArchive(cardId: string) {
-    await fetch(`/api/decks/${deckId}/cards/${cardId}`, {
-      method: "DELETE",
-    })
+    await fetch(`/api/decks/${deckId}/cards/${cardId}`, { method: "DELETE" })
     void fetchDeck()
   }
+
+  // ── Assign modal helpers ──────────────────────────────────────────────────────
+
+  async function openAssign() {
+    setAssignError(null)
+    setSelectedUserIds(new Set())
+
+    const [teamsRes, assignedRes] = await Promise.all([
+      fetch("/api/teams"),
+      fetch(`/api/decks/${deckId}/assign`),
+    ])
+
+    if (teamsRes.ok) setTeams(await teamsRes.json() as Team[])
+    if (assignedRes.ok) {
+      const d = (await assignedRes.json()) as { assignedUserIds: string[] }
+      setAssignedUserIds(new Set(d.assignedUserIds))
+    }
+
+    setShowAssign(true)
+  }
+
+  function toggleUser(userId: string) {
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(userId)) next.delete(userId)
+      else next.add(userId)
+      return next
+    })
+  }
+
+  function selectEntireTeam(team: Team) {
+    const unassigned = team.members
+      .map((m) => m.userId)
+      .filter((id) => !assignedUserIds.has(id))
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev)
+      unassigned.forEach((id) => next.add(id))
+      return next
+    })
+  }
+
+  function selectAll() {
+    const allUnassigned = allMembers
+      .filter((u) => !assignedUserIds.has(u.id))
+      .map((u) => u.id)
+    setSelectedUserIds(new Set(allUnassigned))
+  }
+
+  const allMembers: TeamMemberUser[] = Array.from(
+    new Map(
+      teams.flatMap((t) => t.members.map((m) => [m.userId, m.user]))
+    ).values()
+  )
+
+  async function handleAssign() {
+    if (selectedUserIds.size === 0) return
+    setAssigning(true)
+    setAssignError(null)
+
+    const res = await fetch(`/api/decks/${deckId}/assign`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userIds: Array.from(selectedUserIds) }),
+    })
+    setAssigning(false)
+
+    if (!res.ok) {
+      const d = (await res.json()) as { error?: string }
+      setAssignError(d.error ?? "Assignment failed")
+      return
+    }
+
+    setShowAssign(false)
+    void fetchDeck()
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   if (loading) {
     return <div className="mt-10 text-center text-sm text-gray-400">Loading…</div>
   }
 
   if (!deck) {
-    return (
-      <div className="mt-10 text-center text-sm text-gray-500">
-        Deck not found.
-      </div>
-    )
+    return <div className="mt-10 text-center text-sm text-gray-500">Deck not found.</div>
   }
 
   const activeCards = cards.filter((c) => c.status === "ACTIVE")
@@ -152,13 +237,22 @@ export default function DeckDetailPage() {
           )}
         </div>
         {isManager && (
-          <button
-            onClick={openAdd}
-            className="flex shrink-0 items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-          >
-            <Plus className="h-4 w-4" />
-            Add Card
-          </button>
+          <div className="flex shrink-0 gap-2">
+            <button
+              onClick={() => { void openAssign() }}
+              className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              <Users className="h-4 w-4" />
+              Assign to Team
+            </button>
+            <button
+              onClick={openAdd}
+              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+            >
+              <Plus className="h-4 w-4" />
+              Add Card
+            </button>
+          </div>
         )}
       </div>
 
@@ -187,12 +281,8 @@ export default function DeckDetailPage() {
                 {activeCards.map((card) => (
                   <tr key={card.id} className="hover:bg-gray-50">
                     <td className="max-w-xs px-4 py-3">
-                      <p className="truncate font-medium text-gray-900">
-                        {card.question}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs text-gray-400">
-                        {card.answer}
-                      </p>
+                      <p className="truncate font-medium text-gray-900">{card.question}</p>
+                      <p className="mt-0.5 truncate text-xs text-gray-400">{card.answer}</p>
                     </td>
                     <td className="px-4 py-3">
                       <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
@@ -239,9 +329,7 @@ export default function DeckDetailPage() {
                 {archivedCards.map((card) => (
                   <tr key={card.id}>
                     <td className="px-4 py-3">
-                      <p className="truncate text-gray-500 line-through">
-                        {card.question}
-                      </p>
+                      <p className="truncate text-gray-500 line-through">{card.question}</p>
                     </td>
                     <td className="px-4 py-3">
                       <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400">
@@ -256,7 +344,7 @@ export default function DeckDetailPage() {
         </details>
       )}
 
-      {/* Add / Edit modal */}
+      {/* Add / Edit card modal */}
       <Modal
         isOpen={showAdd || editCard !== null}
         onClose={() => { setShowAdd(false); setEditCard(null); setError(null) }}
@@ -264,9 +352,7 @@ export default function DeckDetailPage() {
       >
         <form onSubmit={(e) => { void handleSave(e) }} className="space-y-4">
           {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-              {error}
-            </p>
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
           )}
           <div>
             <label className="block text-sm font-medium text-gray-700">Format</label>
@@ -319,6 +405,103 @@ export default function DeckDetailPage() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Assign to Team modal */}
+      <Modal
+        isOpen={showAssign}
+        onClose={() => setShowAssign(false)}
+        title="Assign to Team"
+        size="lg"
+      >
+        <div className="space-y-4">
+          {assignError && (
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{assignError}</p>
+          )}
+
+          {allMembers.length === 0 ? (
+            <p className="text-sm text-gray-500">No team members found.</p>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">
+                  {selectedUserIds.size} selected
+                </p>
+                <button
+                  onClick={selectAll}
+                  className="text-sm text-indigo-600 hover:underline"
+                >
+                  Select all unassigned
+                </button>
+              </div>
+
+              {teams.map((team) => (
+                <div key={team.id}>
+                  <div className="mb-1 flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                      {team.name}
+                    </p>
+                    <button
+                      onClick={() => selectEntireTeam(team)}
+                      className="text-xs text-indigo-600 hover:underline"
+                    >
+                      Select entire team
+                    </button>
+                  </div>
+                  <div className="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 bg-white">
+                    {team.members.map(({ userId, user }) => {
+                      const alreadyAssigned = assignedUserIds.has(userId)
+                      const checked = selectedUserIds.has(userId)
+                      return (
+                        <label
+                          key={userId}
+                          className={`flex cursor-pointer items-center gap-3 px-4 py-3 ${
+                            alreadyAssigned ? "opacity-50" : "hover:bg-gray-50"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={alreadyAssigned || checked}
+                            disabled={alreadyAssigned}
+                            onChange={() => toggleUser(userId)}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {user.name ?? user.email}
+                            </p>
+                            {user.name && (
+                              <p className="text-xs text-gray-400">{user.email}</p>
+                            )}
+                          </div>
+                          {alreadyAssigned && (
+                            <span className="ml-auto text-xs text-gray-400">Assigned</span>
+                          )}
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              onClick={() => setShowAssign(false)}
+              className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => { void handleAssign() }}
+              disabled={assigning || selectedUserIds.size === 0}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-60"
+            >
+              {assigning ? "Assigning…" : `Assign (${selectedUserIds.size})`}
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   )

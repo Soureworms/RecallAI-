@@ -39,7 +39,7 @@ type UserScore = {
   email: string
   avgRetention: number
   completionRate: number
-  cardsReviewedThisWeek: number
+  reviewsThisWeek: number
   lastReviewAt: string | null
 }
 
@@ -413,7 +413,7 @@ export default function TeamPage() {
                       ["name", "Name"],
                       ["avgRetention", "Retention"],
                       ["completionRate", "Completion"],
-                      ["cardsReviewedThisWeek", "Reviews This Week"],
+                      ["reviewsThisWeek", "Reviews This Week"],
                       ["lastReviewAt", "Last Review"],
                     ] as [keyof UserScore, string][]
                   ).map(([col, label]) => (
@@ -442,7 +442,7 @@ export default function TeamPage() {
                       <RetentionBadge value={u.completionRate} />
                     </td>
                     <td className="px-4 py-3 text-gray-600">
-                      {u.cardsReviewedThisWeek}
+                      {u.reviewsThisWeek}
                     </td>
                     <td className="px-4 py-3 text-gray-400">
                       {u.lastReviewAt

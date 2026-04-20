@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   BarChart2,
+  UserCog,
 } from "lucide-react"
 
 const navItems = [
@@ -20,7 +21,8 @@ const navItems = [
   { href: "/review", label: "Review", icon: Play },
   { href: "/decks", label: "Decks", icon: Folder },
   { href: "/stats", label: "My Stats", icon: BarChart2 },
-  { href: "/team", label: "Team", icon: Users, managerOnly: true },
+  { href: "/team", label: "Team Analytics", icon: Users, managerOnly: true },
+  { href: "/team/settings", label: "Team Settings", icon: UserCog, managerOnly: true },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
 

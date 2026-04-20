@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/auth"
+import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { CardFormat } from "@prisma/client"
 import { createEmptyCard } from "ts-fsrs"
 
-function forbidden() {
-  return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-}
 function notFound() {
   return NextResponse.json({ error: "Not found" }, { status: 404 })
-}
-function isManagerPlus(role: string) {
-  return role === "MANAGER" || role === "ADMIN"
 }
 
 async function ownedCard(cardId: string, deckId: string, orgId: string) {
@@ -24,7 +18,6 @@ async function ownedCard(cardId: string, deckId: string, orgId: string) {
 }
 
 async function autoAssignCard(cardId: string, deckId: string) {
-  // Find all users already assigned to this deck (via other cards)
   const rows = await prisma.userCard.findMany({
     where: { card: { deckId }, NOT: { cardId } },
     select: { userId: true },
@@ -55,11 +48,9 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: { deckId: string; cardId: string } }
 ) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-  if (!isManagerPlus(session.user.role)) return forbidden()
+  const auth = await requireRole("MANAGER")
+  if (!auth.ok) return auth.response
+  const { session } = auth
 
   const card = await ownedCard(params.cardId, params.deckId, session.user.orgId)
   if (!card) return notFound()
@@ -94,11 +85,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { deckId: string; cardId: string } }
 ) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-  if (!isManagerPlus(session.user.role)) return forbidden()
+  const auth = await requireRole("MANAGER")
+  if (!auth.ok) return auth.response
+  const { session } = auth
 
   const card = await ownedCard(params.cardId, params.deckId, session.user.orgId)
   if (!card) return notFound()
@@ -139,11 +128,9 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: { deckId: string; cardId: string } }
 ) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-  if (!isManagerPlus(session.user.role)) return forbidden()
+  const auth = await requireRole("MANAGER")
+  if (!auth.ok) return auth.response
+  const { session } = auth
 
   const card = await ownedCard(params.cardId, params.deckId, session.user.orgId)
   if (!card) return notFound()

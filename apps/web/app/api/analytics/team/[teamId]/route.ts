@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/auth"
+import { requireRole, requireTeamAccess } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import {
   getTeamRetentionByDeck,
@@ -12,18 +12,13 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { teamId: string } }
 ) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-  if (session.user.role !== "MANAGER" && session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-  }
+  const authResult = await requireRole("MANAGER")
+  if (!authResult.ok) return authResult.response
+  const { session } = authResult
 
-  const team = await prisma.team.findUnique({ where: { id: params.teamId } })
-  if (!team || team.orgId !== session.user.orgId) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 })
-  }
+  // Managers can only access teams they belong to; admins can access all org teams
+  const teamAccess = await requireTeamAccess(session, params.teamId)
+  if (!teamAccess.ok) return teamAccess.response
 
   const members = await prisma.teamMember.findMany({
     where: { teamId: params.teamId },
@@ -37,12 +32,10 @@ export async function GET(
     getKnowledgeGaps(session.user.orgId),
   ])
 
-  // New hire progress for team members created in last 90 days
   const newHireProgress = (
     await Promise.all(userIds.map((id) => getNewHireRampProgress(id)))
   ).filter((p): p is NonNullable<typeof p> => p !== null)
 
-  // Aggregate stats
   const totalActiveCards = await prisma.card.count({
     where: { status: "ACTIVE", deck: { orgId: session.user.orgId, isArchived: false } },
   })

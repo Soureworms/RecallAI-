@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/auth"
+import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { submitReview } from "@/lib/services/scheduler"
 import { Rating } from "@prisma/client"
@@ -7,10 +7,9 @@ import { Rating } from "@prisma/client"
 const VALID_RATINGS = new Set<string>(Object.values(Rating))
 
 export async function POST(req: NextRequest) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  const authResult = await requireRole("AGENT")
+  if (!authResult.ok) return authResult.response
+  const { session } = authResult
 
   const body = (await req.json()) as {
     userCardId?: string

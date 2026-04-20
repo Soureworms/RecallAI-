@@ -1,20 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/auth"
+import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 
-function forbidden() {
-  return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-}
-
-function isManagerPlus(role: string) {
-  return role === "MANAGER" || role === "ADMIN"
-}
-
 export async function GET() {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  const auth = await requireRole("AGENT")
+  if (!auth.ok) return auth.response
+  const { session } = auth
 
   const decks = await prisma.deck.findMany({
     where: { orgId: session.user.orgId, isArchived: false },
@@ -28,11 +19,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-  if (!isManagerPlus(session.user.role)) return forbidden()
+  const auth = await requireRole("MANAGER")
+  if (!auth.ok) return auth.response
+  const { session } = auth
 
   const body = (await req.json()) as {
     name?: string

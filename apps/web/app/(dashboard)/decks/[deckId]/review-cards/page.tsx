@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
 import { Check, Pencil, X, ArrowLeft, CheckCheck } from "lucide-react"
+import { usePermissions } from "@/hooks/use-permissions"
 
 type CardFormat = "QA" | "TRUE_FALSE" | "FILL_BLANK"
 
@@ -28,7 +28,7 @@ const DIFF_LABELS = ["", "Easy", "Medium", "Hard"]
 export default function ReviewCardsPage() {
   const { deckId } = useParams<{ deckId: string }>()
   const router = useRouter()
-  const { data: session } = useSession()
+  const { canManageContent: isManagerBool } = usePermissions()
 
   const [cards, setCards] = useState<DraftCard[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,7 +49,7 @@ export default function ReviewCardsPage() {
 
   const [working, setWorking] = useState(false)
 
-  const isManager = session?.user?.role === "MANAGER" || session?.user?.role === "ADMIN"
+  const isManager = isManagerBool
 
   const fetchCards = useCallback(async () => {
     const res = await fetch(`/api/decks/${deckId}/cards?status=DRAFT`)
@@ -72,6 +72,11 @@ export default function ReviewCardsPage() {
   }, [deckId, totalInitial, sourceDocId])
 
   useEffect(() => { void fetchCards() }, [fetchCards])
+
+  // Agents cannot access this page
+  useEffect(() => {
+    if (!isManagerBool) router.replace(`/decks/${deckId}`)
+  }, [isManagerBool, router, deckId])
 
   function startEdit(card: DraftCard) {
     setEditingId(card.id)

@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/auth"
+import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { CardFormat } from "@prisma/client"
 
-function forbidden() {
-  return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-}
 function notFound() {
   return NextResponse.json({ error: "Not found" }, { status: 404 })
-}
-function isManagerPlus(role: string) {
-  return role === "MANAGER" || role === "ADMIN"
 }
 
 async function ownedDeck(deckId: string, orgId: string) {
@@ -23,10 +17,9 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { deckId: string } }
 ) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  const auth = await requireRole("AGENT")
+  if (!auth.ok) return auth.response
+  const { session } = auth
 
   const deck = await ownedDeck(params.deckId, session.user.orgId)
   if (!deck) return notFound()
@@ -53,11 +46,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { deckId: string } }
 ) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-  if (!isManagerPlus(session.user.role)) return forbidden()
+  const auth = await requireRole("MANAGER")
+  if (!auth.ok) return auth.response
+  const { session } = auth
 
   const deck = await ownedDeck(params.deckId, session.user.orgId)
   if (!deck) return notFound()

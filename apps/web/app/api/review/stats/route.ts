@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { auth } from "@/auth"
+import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 
 function calculateStreak(reviewDates: Date[]): number {
@@ -31,10 +31,9 @@ function calculateStreak(reviewDates: Date[]): number {
 }
 
 export async function GET() {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  const authResult = await requireRole("AGENT")
+  if (!authResult.ok) return authResult.response
+  const { session } = authResult
 
   const { id: userId, orgId } = session.user
   const now = new Date()

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createHash } from "crypto"
-import { auth } from "@/auth"
+import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
@@ -33,13 +33,9 @@ async function extractText(buffer: Buffer, ext: string): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-  if (session.user.role !== "MANAGER" && session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-  }
+  const authResult = await requireRole("MANAGER")
+  if (!authResult.ok) return authResult.response
+  const { session } = authResult
 
   let formData: FormData
   try {

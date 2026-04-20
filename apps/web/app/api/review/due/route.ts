@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server"
-import { auth } from "@/auth"
+import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { initializeCard, getNextReview } from "@/lib/services/scheduler"
 
 export async function GET() {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  const authResult = await requireRole("AGENT")
+  if (!authResult.ok) return authResult.response
+  const { session } = authResult
 
   const { id: userId, orgId } = session.user
 

@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/auth"
+import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: { documentId: string } }
 ) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  const auth = await requireRole("MANAGER")
+  if (!auth.ok) return auth.response
+  const { session } = auth
 
   const doc = await prisma.sourceDocument.findUnique({
     where: { id: params.documentId },

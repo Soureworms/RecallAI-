@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/auth"
+import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { generateCardsFromText } from "@/lib/services/card-generator"
 
@@ -7,13 +7,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { deckId: string } }
 ) {
-  const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-  if (session.user.role !== "MANAGER" && session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-  }
+  const auth = await requireRole("MANAGER")
+  if (!auth.ok) return auth.response
+  const { session } = auth
 
   const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
   if (!deck || deck.orgId !== session.user.orgId) {

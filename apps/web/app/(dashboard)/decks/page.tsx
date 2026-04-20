@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
 import { Plus, Layers, Lock } from "lucide-react"
 import { Modal } from "@/components/ui/modal"
+import { usePermissions } from "@/hooks/use-permissions"
 
 type DeckWithCount = {
   id: string
@@ -17,16 +17,13 @@ type DeckWithCount = {
 
 export default function DecksPage() {
   const router = useRouter()
-  const { data: session } = useSession()
+  const { canManageContent: isManager } = usePermissions()
   const [decks, setDecks] = useState<DeckWithCount[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [form, setForm] = useState({ name: "", description: "", isMandatory: false })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const isManager =
-    session?.user?.role === "MANAGER" || session?.user?.role === "ADMIN"
 
   const fetchDecks = useCallback(async () => {
     const res = await fetch("/api/decks")

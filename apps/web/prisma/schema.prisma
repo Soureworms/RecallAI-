@@ -26,11 +26,13 @@ model Organization {
 }
 
 model Team {
-  id      String       @id @default(uuid())
-  name    String
-  orgId   String
-  org     Organization @relation(fields: [orgId], references: [id])
-  members TeamMember[]
+  id        String       @id @default(uuid())
+  name      String
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id])
+  members   TeamMember[]
+  invites   Invite[]
+  createdAt DateTime     @default(now())
 }
 
 model User {
@@ -48,6 +50,7 @@ model User {
   userCards       UserCard[]
   reviewLogs      ReviewLog[]
   sourceDocuments SourceDocument[]
+  invitesCreated  Invite[]
 }
 
 model TeamMember {
@@ -186,4 +189,20 @@ model ReviewLog {
   stability         Float
   difficulty        Float
   state             CardState
+}
+
+// ─── Invites ──────────────────────────────────────────────────────────────────
+
+model Invite {
+  id           String    @id @default(cuid())
+  teamId       String
+  team         Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  email        String
+  role         Role
+  token        String    @unique
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  createdById  String
+  createdBy    User      @relation(fields: [createdById], references: [id])
+  createdAt    DateTime  @default(now())
 }

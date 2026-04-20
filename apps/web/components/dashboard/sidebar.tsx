@@ -12,12 +12,14 @@ import {
   Settings,
   Menu,
   X,
+  BarChart2,
 } from "lucide-react"
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/review", label: "Review", icon: Play },
   { href: "/decks", label: "Decks", icon: Folder },
+  { href: "/stats", label: "My Stats", icon: BarChart2 },
   { href: "/team", label: "Team", icon: Users, managerOnly: true },
   { href: "/settings", label: "Settings", icon: Settings },
 ]

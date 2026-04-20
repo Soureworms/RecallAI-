@@ -282,7 +282,7 @@ export default function ReviewPage() {
       </div>
 
       {/* Card */}
-      <div className="card-scene h-72">
+      <div className="card-scene h-60 sm:h-72">
         <div className={`card-inner${flipped ? " flipped" : ""}`}>
           {/* Front */}
           <div className="card-face flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
@@ -313,7 +313,7 @@ export default function ReviewPage() {
 
       {/* Rating buttons (shown after flip) */}
       {flipped && (
-        <div className="mt-6 grid grid-cols-4 gap-3">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {RATING_CONFIG.map(({ rating, label, key, color, hoverColor }) => {
             const preview = card.preview[rating.toLowerCase() as keyof typeof card.preview]
             return (
@@ -321,7 +321,7 @@ export default function ReviewPage() {
                 key={rating}
                 onClick={() => { void handleRate(rating) }}
                 disabled={submitting}
-                className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-3 text-sm font-medium transition-colors disabled:opacity-50 ${color} ${hoverColor}`}
+                className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-4 text-sm font-medium transition-colors disabled:opacity-50 min-h-[56px] ${color} ${hoverColor}`}
               >
                 <span>{label}</span>
                 <span className="text-xs font-normal opacity-70">

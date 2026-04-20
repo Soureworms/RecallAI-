@@ -12,9 +12,9 @@ type ModalProps = {
 }
 
 const sizeClasses = {
-  sm: "max-w-sm",
-  md: "max-w-md",
-  lg: "max-w-2xl",
+  sm: "sm:max-w-sm",
+  md: "sm:max-w-md",
+  lg: "sm:max-w-2xl",
 }
 
 export function Modal({
@@ -36,26 +36,27 @@ export function Modal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    /* On mobile: slide up from bottom full-width. On sm+: centered dialog. */
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
       <div
         className="absolute inset-0 bg-black/50"
         onClick={onClose}
         aria-hidden
       />
       <div
-        className={`relative z-10 w-full ${sizeClasses[size]} rounded-xl bg-white shadow-2xl`}
+        className={`relative z-10 w-full ${sizeClasses[size]} rounded-t-2xl bg-white shadow-2xl sm:rounded-xl`}
       >
         <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
           <h2 className="text-base font-semibold text-gray-900">{title}</h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 min-h-[44px] min-w-[44px] flex items-center justify-center"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="px-6 py-4">{children}</div>
+        <div className="max-h-[80vh] overflow-y-auto px-6 py-4">{children}</div>
       </div>
     </div>
   )

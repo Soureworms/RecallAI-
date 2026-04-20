@@ -27,19 +27,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid rating" }, { status: 400 })
   }
 
-  const userCard = await prisma.userCard.findUnique({
-    where: { id: body.userCardId },
-  })
+  try {
+    const userCard = await prisma.userCard.findUnique({
+      where: { id: body.userCardId },
+    })
 
-  if (!userCard || userCard.userId !== session.user.id) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 })
+    if (!userCard || userCard.userId !== session.user.id) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 })
+    }
+
+    const updated = await submitReview(
+      userCard.userId,
+      userCard.cardId,
+      body.rating as Rating
+    )
+
+    return NextResponse.json(updated)
+  } catch (err) {
+    console.error("[POST /api/review]", err)
+    return NextResponse.json({ error: "Failed to record review" }, { status: 500 })
   }
-
-  const updated = await submitReview(
-    userCard.userId,
-    userCard.cardId,
-    body.rating as Rating
-  )
-
-  return NextResponse.json(updated)
 }

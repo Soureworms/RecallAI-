@@ -10,6 +10,7 @@ import {
   Users,
   Settings,
   Building2,
+  ShieldCheck,
   LogOut,
   LayoutDashboard,
 } from "lucide-react"
@@ -21,8 +22,9 @@ const navItems = [
   { href: "/review",        label: "Study",         icon: Play },
   { href: "/decks",         label: "Decks",         icon: Folder },
   { href: "/stats",         label: "Stats",         icon: BarChart2 },
-  { href: "/team",          label: "Team",          icon: Users,     minRole: "MANAGER" },
-  { href: "/org",           label: "Organisation",  icon: Building2, minRole: "ADMIN" },
+  { href: "/team",          label: "Team",          icon: Users,       minRole: "MANAGER" },
+  { href: "/org",           label: "Organisation",  icon: Building2,   minRole: "ADMIN" },
+  { href: "/admin",         label: "Admin",         icon: ShieldCheck, minRole: "SUPER_ADMIN" },
   { href: "/settings",      label: "Settings",      icon: Settings },
 ]
 

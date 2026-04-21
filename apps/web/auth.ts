@@ -34,6 +34,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           image: user.image ?? undefined,
           role: user.role,
           orgId: user.orgId,
+          onboardedAt: user.onboardedAt ? user.onboardedAt.toISOString() : null,
         }
       },
     }),
@@ -44,14 +45,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id as string
         token.role = user.role
         token.orgId = user.orgId
+        token.onboardedAt = user.onboardedAt ?? null
       }
       return token
     },
     session({ session, token }) {
-      // token extends Record<string, unknown> in beta — explicit cast is required
       session.user.id = token.id as string
       session.user.role = token.role as Role
       session.user.orgId = token.orgId as string
+      session.user.onboardedAt = (token.onboardedAt as string | null) ?? null
       return session
     },
   },

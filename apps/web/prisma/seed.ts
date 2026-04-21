@@ -57,6 +57,30 @@ const SAMPLE_CARDS: Array<{ question: string; answer: string; tags: string[] }> 
 ];
 
 async function main() {
+  // ── System org + super admin (idempotent) ─────────────────────────────────
+  const systemOrg = await prisma.organization.upsert({
+    where: { id: "system-org-001" },
+    update: {},
+    create: { id: "system-org-001", name: "System" },
+  });
+
+  const superAdminHash = await bcrypt.hash("admin", 12);
+  await prisma.user.upsert({
+    where: { email: "admin@recallai.app" },
+    update: {},
+    create: {
+      id: "super-admin-001",
+      email: "admin@recallai.app",
+      name: "Super Admin",
+      hashedPassword: superAdminHash,
+      role: Role.SUPER_ADMIN,
+      orgId: systemOrg.id,
+      onboardedAt: new Date(),
+    },
+  });
+
+  console.log("Super admin created: admin@recallai.app / admin");
+
   // ── Org & team ────────────────────────────────────────────────────────────
   const org = await prisma.organization.upsert({
     where: { id: "seed-org-001" },

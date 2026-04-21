@@ -9,6 +9,18 @@ const ROLE_RANK: Record<string, number> = {
   AGENT: 0,
   MANAGER: 1,
   ADMIN: 2,
+  SUPER_ADMIN: 3,
+}
+
+export async function requireSuperAdmin(): Promise<PermResult> {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return { ok: false, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) }
+  }
+  if (session.user.role !== "SUPER_ADMIN") {
+    return { ok: false, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) }
+  }
+  return { ok: true, session: session as AuthSession }
 }
 
 export type MinRole = "AGENT" | "MANAGER" | "ADMIN"

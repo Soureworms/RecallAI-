@@ -7,20 +7,22 @@ declare module "next-auth" {
       id: string
       role: Role
       orgId: string
+      onboardedAt: string | null
     } & DefaultSession["user"]
   }
 
   interface User {
     role: Role
     orgId: string
+    onboardedAt?: string | null
   }
 }
 
-// next-auth/jwt re-exports @auth/core/jwt — augment the source module
 declare module "@auth/core/jwt" {
   interface JWT {
     id: string
     role: Role
     orgId: string
+    onboardedAt: string | null
   }
 }

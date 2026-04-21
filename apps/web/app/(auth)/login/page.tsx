@@ -72,11 +72,12 @@ export default function LoginPage() {
           <SubmitButton />
         </form>
 
-        <p className="mt-4 text-center text-sm text-gray-500">
-          No account?{" "}
-          <Link href="/register" className="text-indigo-600 hover:underline">
-            Register
-          </Link>
+        <p className="mt-4 text-center text-sm text-gray-400">
+          Access is by invitation only.{" "}
+          <a href="mailto:hello@recallai.app" className="text-indigo-600 hover:underline">
+            Contact us
+          </a>{" "}
+          to get started.
         </p>
       </div>
     </div>

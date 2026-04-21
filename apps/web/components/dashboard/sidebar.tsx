@@ -11,6 +11,7 @@ import {
   Settings,
   BarChart2,
   UserCog,
+  Building2,
 } from "lucide-react"
 
 const navItems = [
@@ -18,8 +19,9 @@ const navItems = [
   { href: "/review", label: "Review", icon: Play },
   { href: "/decks", label: "Decks", icon: Folder },
   { href: "/stats", label: "My Stats", icon: BarChart2 },
-  { href: "/team", label: "Team Analytics", icon: Users, managerOnly: true },
-  { href: "/team/settings", label: "Team Settings", icon: UserCog, managerOnly: true },
+  { href: "/team", label: "Team Analytics", icon: Users, minRole: "MANAGER" },
+  { href: "/team/settings", label: "Team Settings", icon: UserCog, minRole: "MANAGER" },
+  { href: "/org", label: "Organisation", icon: Building2, minRole: "ADMIN" },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
 
@@ -37,8 +39,11 @@ export function Sidebar() {
   const { data: session } = useSession()
   const role = session?.user?.role
 
+  const ROLE_RANK: Record<string, number> = { AGENT: 0, MANAGER: 1, ADMIN: 2, SUPER_ADMIN: 3 }
+  const userRank = ROLE_RANK[role ?? "AGENT"] ?? 0
+
   const visible = navItems.filter(
-    (item) => !item.managerOnly || role === "MANAGER" || role === "ADMIN"
+    (item) => !item.minRole || userRank >= (ROLE_RANK[item.minRole] ?? 0)
   )
 
   return (

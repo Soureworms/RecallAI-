@@ -1,5 +1,12 @@
 import type { NextAuthConfig } from "next-auth"
 
+const ROLE_RANK: Record<string, number> = {
+  AGENT: 0,
+  MANAGER: 1,
+  ADMIN: 2,
+  SUPER_ADMIN: 3,
+}
+
 export const authConfig = {
   pages: {
     signIn: "/login",
@@ -7,33 +14,57 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
-      const isSuperAdmin = auth?.user?.role === "SUPER_ADMIN"
+      const role = auth?.user?.role ?? "AGENT"
+      const rank = ROLE_RANK[role] ?? 0
       const isOnboarded = !!auth?.user?.onboardedAt
+      const isSuperAdmin = role === "SUPER_ADMIN"
 
-      const isDashboard = ["/dashboard", "/review", "/decks", "/team", "/settings", "/stats"].some(
-        (p) => nextUrl.pathname.startsWith(p)
+      const path = nextUrl.pathname
+
+      // Public routes — always allow
+      const isPublicAuth = path.startsWith("/login") || path.startsWith("/reset-password") || path.startsWith("/onboarding")
+      if (isPublicAuth) {
+        // Redirect already-onboarded users away from onboarding
+        if (path.startsWith("/onboarding") && isLoggedIn && (isOnboarded || isSuperAdmin)) {
+          return Response.redirect(new URL("/dashboard", nextUrl))
+        }
+        return true
+      }
+
+      // Dashboard routes — must be logged in
+      const isDashboard = ["/dashboard", "/review", "/decks", "/team", "/settings", "/stats", "/org"].some(
+        (p) => path === p || path.startsWith(p + "/")
       )
-      const isAdminArea = nextUrl.pathname.startsWith("/admin")
-      const isOnboardingPage = nextUrl.pathname.startsWith("/onboarding")
 
-      // Protect all dashboard routes
-      if (isDashboard || isAdminArea) {
+      if (isDashboard) {
         if (!isLoggedIn) return false
+
+        // Redirect unonboarded non-super-admins to onboarding
+        if (!isOnboarded && !isSuperAdmin) {
+          return Response.redirect(new URL("/onboarding", nextUrl))
+        }
+
+        // /org requires ADMIN+
+        if ((path === "/org" || path.startsWith("/org/")) && rank < ROLE_RANK.ADMIN) {
+          return Response.redirect(new URL("/dashboard", nextUrl))
+        }
+
+        // /team requires MANAGER+
+        if ((path === "/team" || path.startsWith("/team/")) && rank < ROLE_RANK.MANAGER) {
+          return Response.redirect(new URL("/dashboard", nextUrl))
+        }
+
+        return true
       }
 
-      // Admin area requires SUPER_ADMIN
-      if (isAdminArea && !isSuperAdmin) return false
-
-      // Redirect unonboarded non-super-admins into onboarding
-      if (isLoggedIn && !isSuperAdmin && !isOnboarded && isDashboard) {
-        return Response.redirect(new URL("/onboarding", nextUrl))
+      // /admin requires SUPER_ADMIN
+      if (path === "/admin" || path.startsWith("/admin/")) {
+        if (!isLoggedIn) return false
+        if (!isSuperAdmin) return false
+        return true
       }
 
-      // Once onboarded, skip the onboarding page
-      if (isOnboardingPage && isLoggedIn && (isOnboarded || isSuperAdmin)) {
-        return Response.redirect(new URL("/dashboard", nextUrl))
-      }
-
+      // Everything else (root, marketing page) is public
       return true
     },
   },

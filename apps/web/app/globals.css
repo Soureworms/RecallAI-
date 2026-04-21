@@ -2,41 +2,182 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── RecallAI Design System ───────────────────────────────────────────────────
+   Single source of truth for all tokens. Color = meaning, not decoration.
+   Paper surfaces, warm ink, no pure black, no decorative gradients.
+   ─────────────────────────────────────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Paper */
+  --paper:         #FAF9F6;
+  --paper-raised:  #FFFFFF;
+  --paper-sunken:  #F2F0EA;
+  --paper-tint:    #EDEAE1;
+
+  /* Ink — warm near-black ramp */
+  --ink-1: #1A1917;
+  --ink-2: #3A3833;
+  --ink-3: #6B6760;
+  --ink-4: #9A968D;
+  --ink-5: #C9C5BC;
+  --ink-6: #E3E0D6;
+
+  /* Blue — action */
+  --blue-50:  #EEF4FF;
+  --blue-100: #DCE8FF;
+  --blue-500: #2F6BFF;
+  --blue-600: #1E54E0;
+  --blue-700: #1740B8;
+  --blue-ink: #0F2A7A;
+
+  /* Green — mastered */
+  --green-50:  #EAF7EE;
+  --green-100: #D2EEDC;
+  --green-500: #2E9F5B;
+  --green-600: #22864B;
+  --green-700: #196837;
+  --green-ink: #103F23;
+
+  /* Red — forgotten */
+  --red-50:  #FCECEC;
+  --red-100: #F7D6D6;
+  --red-500: #D1453B;
+  --red-600: #B5362D;
+  --red-700: #8F2924;
+  --red-ink: #5A1714;
+
+  /* Amber — caution */
+  --amber-50:  #FDF3DF;
+  --amber-100: #FAE6B8;
+  --amber-500: #D69220;
+  --amber-600: #B57817;
+  --amber-700: #8A5A10;
+  --amber-ink: #533407;
+
+  /* Violet — "Good" rating */
+  --violet-50:  #F0ECF8;
+  --violet-100: #DDD5EE;
+  --violet-500: #6B54B8;
+  --violet-600: #55409A;
+  --violet-700: #402F74;
+  --violet-ink: #241A43;
+
+  /* FSRS rating aliases */
+  --rate-again: var(--red-500);
+  --rate-hard:  var(--amber-500);
+  --rate-good:  var(--violet-500);
+  --rate-easy:  var(--green-500);
+
+  /* Typography */
+  --font-sans: "Geist", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Monaco, monospace;
+
+  --fs-display: 32px;
+  --fs-h1:  24px;
+  --fs-h2:  20px;
+  --fs-h3:  17px;
+  --fs-body: 15px;
+  --fs-small: 13px;
+  --fs-micro: 11px;
+
+  --lh-tight:   1.15;
+  --lh-snug:    1.3;
+  --lh-normal:  1.5;
+  --lh-reading: 1.6;
+
+  --ls-tight: -0.02em;
+  --ls-normal: 0;
+  --ls-wide:  0.04em;
+  --ls-caps:  0.08em;
+
+  /* Radii */
+  --r-1:   4px;
+  --r-2:   8px;
+  --r-3:   12px;
+  --r-4:   16px;
+  --r-5:   20px;
+  --r-full: 999px;
+
+  /* Shadows — warm ink, never pure black */
+  --shadow-1: 0 1px 2px rgba(26,25,23,.04), 0 1px 1px rgba(26,25,23,.03);
+  --shadow-2: 0 2px 6px rgba(26,25,23,.05), 0 1px 2px rgba(26,25,23,.04);
+  --shadow-3: 0 8px 24px rgba(26,25,23,.07), 0 2px 4px rgba(26,25,23,.04);
+  --shadow-lift: 0 16px 40px rgba(26,25,23,.10), 0 4px 8px rgba(26,25,23,.05);
+
+  /* Motion */
+  --ease-out:   cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-inout: cubic-bezier(0.5, 0, 0.2, 1);
+  --dur-quick:  120ms;
+  --dur-base:   220ms;
+  --dur-flip:   300ms;
+  --dur-slide:  340ms;
+
+  /* Layout */
+  --content-max: 720px;
+  --card-max:    640px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Base ───────────────────────────────────────────────────────────────────── */
+
+html, body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  color: var(--ink-1);
+  background: var(--paper);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+::selection { background: var(--blue-100); color: var(--ink-1); }
+
+:focus-visible {
+  outline: 2px solid var(--blue-500);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+/* ── Type scale utilities ─────────────────────────────────────────────────── */
+
+.ds-display { font-size: var(--fs-display); line-height: var(--lh-tight); letter-spacing: var(--ls-tight); font-weight: 500; }
+.ds-h1      { font-size: var(--fs-h1);      line-height: var(--lh-snug);  letter-spacing: var(--ls-tight); font-weight: 600; }
+.ds-h2      { font-size: var(--fs-h2);      line-height: var(--lh-snug);  font-weight: 600; }
+.ds-h3      { font-size: var(--fs-h3);      line-height: var(--lh-snug);  font-weight: 600; }
+.ds-body    { font-size: var(--fs-body);    line-height: var(--lh-reading); color: var(--ink-2); }
+.ds-small   { font-size: var(--fs-small);   line-height: var(--lh-normal);  color: var(--ink-3); }
+.ds-micro   { font-family: var(--font-mono); font-size: var(--fs-micro); letter-spacing: var(--ls-caps); text-transform: uppercase; color: var(--ink-3); }
+
+/* ── Kbd ─────────────────────────────────────────────────────────────────── */
+
+.ds-kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 6px;
+  background: var(--paper-raised);
+  border: 1px solid var(--ink-6);
+  border-bottom-width: 2px;
+  border-radius: var(--r-1);
+  color: var(--ink-2);
+  display: inline-flex;
+  align-items: center;
+  min-width: 18px;
+  justify-content: center;
+  line-height: 1;
 }
 
-/* Card flip animation */
+/* ── Card flip ───────────────────────────────────────────────────────────── */
+
 .card-scene {
-  perspective: 1000px;
+  perspective: 1200px;
 }
 
 .card-inner {
   position: relative;
   width: 100%;
   height: 100%;
-  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
   transform-style: preserve-3d;
+  transition: transform var(--dur-flip) var(--ease-out);
 }
 
 .card-inner.flipped {
@@ -53,3 +194,21 @@ body {
 .card-face-back {
   transform: rotateY(180deg);
 }
+
+/* ── Card slide-away ─────────────────────────────────────────────────────── */
+
+@keyframes card-exit {
+  to { transform: translateX(-60px); opacity: 0; }
+}
+@keyframes card-enter {
+  from { transform: translateX(40px); opacity: 0; }
+}
+.card-exiting { animation: card-exit var(--dur-slide) var(--ease-out) forwards; }
+.card-entering { animation: card-enter var(--dur-slide) var(--ease-out) backwards; }
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--ink-6); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-5); }

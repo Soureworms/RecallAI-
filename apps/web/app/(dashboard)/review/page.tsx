@@ -1,28 +1,27 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef } from "react"
-import { CheckCircle, Brain, Flame } from "lucide-react"
+import { X, Play } from "lucide-react"
+import { useRouter } from "next/navigation"
 
-type CardFormat = "QA" | "TRUE_FALSE" | "FILL_BLANK"
 type Rating = "AGAIN" | "HARD" | "GOOD" | "EASY"
+type SessionState = "pre" | "reviewing" | "done"
 
-type RatingPreview = {
-  nextDue: string
-  scheduledDays: number
-}
+type RatingPreview = { nextDue: string; scheduledDays: number }
 
 type DueCard = {
   userCardId: string
   cardId: string
   question: string
   answer: string
-  format: CardFormat
+  format: string
   deckName: string
+  tags?: string[]
   preview: {
     again: RatingPreview
-    hard: RatingPreview
-    good: RatingPreview
-    easy: RatingPreview
+    hard:  RatingPreview
+    good:  RatingPreview
+    easy:  RatingPreview
   }
 }
 
@@ -33,14 +32,19 @@ type ReviewStats = {
   nextDueDate: string | null
 }
 
-type SessionState = "pre" | "reviewing" | "done"
+const RATINGS: { rating: Rating; label: string; key: string; bg: string; fg: string; bar: string }[] = [
+  { rating: "AGAIN", label: "Again", key: "1", bg: "var(--red-50)",    fg: "var(--red-ink)",    bar: "var(--red-500)" },
+  { rating: "HARD",  label: "Hard",  key: "2", bg: "var(--amber-50)",  fg: "var(--amber-ink)",  bar: "var(--amber-500)" },
+  { rating: "GOOD",  label: "Good",  key: "3", bg: "var(--violet-50)", fg: "var(--violet-ink)", bar: "var(--violet-500)" },
+  { rating: "EASY",  label: "Easy",  key: "4", bg: "var(--green-50)",  fg: "var(--green-ink)",  bar: "var(--green-500)" },
+]
 
-function formatDays(scheduledDays: number): string {
-  if (scheduledDays < 1) return "<1d"
-  if (scheduledDays === 1) return "1d"
-  if (scheduledDays < 30) return `${scheduledDays}d`
-  if (scheduledDays < 365) return `${Math.round(scheduledDays / 30)}mo`
-  return `${Math.round(scheduledDays / 365)}yr`
+function formatDays(days: number): string {
+  if (days < 1) return "<10m"
+  if (days === 1) return "1d"
+  if (days < 30) return `${days}d`
+  if (days < 365) return `${Math.round(days / 30)}mo`
+  return `${Math.round(days / 365)}yr`
 }
 
 function formatTimeUntil(isoDate: string): string {
@@ -53,28 +57,38 @@ function formatTimeUntil(isoDate: string): string {
   return `${Math.floor(hours / 24)}d`
 }
 
-const RATING_CONFIG: {
-  rating: Rating
-  label: string
-  key: string
-  color: string
-  hoverColor: string
-}[] = [
-  { rating: "AGAIN", label: "Again", key: "1", color: "border-red-200 text-red-600", hoverColor: "hover:bg-red-50" },
-  { rating: "HARD", label: "Hard", key: "2", color: "border-orange-200 text-orange-600", hoverColor: "hover:bg-orange-50" },
-  { rating: "GOOD", label: "Good", key: "3", color: "border-green-200 text-green-600", hoverColor: "hover:bg-green-50" },
-  { rating: "EASY", label: "Easy", key: "4", color: "border-blue-200 text-blue-600", hoverColor: "hover:bg-blue-50" },
-]
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      fontFamily: "var(--font-mono)", fontSize: 10,
+      letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)",
+    }}>{children}</div>
+  )
+}
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <span style={{
+      fontFamily: "var(--font-mono)", fontSize: 11, padding: "2px 6px",
+      background: "var(--paper-raised)", border: "1px solid var(--ink-6)",
+      borderBottomWidth: 2, borderRadius: 4, color: "var(--ink-2)",
+      minWidth: 18, textAlign: "center", display: "inline-flex",
+      alignItems: "center", justifyContent: "center", lineHeight: 1,
+    }}>{children}</span>
+  )
+}
 
 export default function ReviewPage() {
+  const router = useRouter()
   const [sessionState, setSessionState] = useState<SessionState>("pre")
   const [stats, setStats] = useState<ReviewStats | null>(null)
   const [queue, setQueue] = useState<DueCard[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [idx, setIdx] = useState(0)
   const [flipped, setFlipped] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [reviewed, setReviewed] = useState(0)
-  const startTime = useRef<number>(0)
+  const [exiting, setExiting] = useState<Rating | null>(null)
+  const [entering, setEntering] = useState(false)
+  const [results, setResults] = useState<Rating[]>([])
+  const startTime = useRef(0)
   const [elapsedSecs, setElapsedSecs] = useState(0)
 
   const fetchStats = useCallback(async () => {
@@ -84,271 +98,381 @@ export default function ReviewPage() {
 
   useEffect(() => { void fetchStats() }, [fetchStats])
 
-  const handleRate = useCallback(async (rating: Rating) => {
-    if (submitting) return
-    const card = queue[currentIndex]
+  // Timer
+  useEffect(() => {
+    if (sessionState !== "reviewing") return
+    const id = setInterval(() => setElapsedSecs(Math.floor((Date.now() - startTime.current) / 1000)), 1000)
+    return () => clearInterval(id)
+  }, [sessionState])
+
+  const rate = useCallback(async (rating: Rating) => {
+    if (exiting) return
+    const card = queue[idx]
     if (!card) return
 
-    setSubmitting(true)
+    setExiting(rating)
     await fetch("/api/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userCardId: card.userCardId, rating }),
     })
-    setSubmitting(false)
+    const newResults = [...results, rating]
+    setResults(newResults)
 
-    const next = currentIndex + 1
-    setReviewed((r) => r + 1)
+    setTimeout(() => {
+      if (idx + 1 >= queue.length) {
+        setElapsedSecs(Math.floor((Date.now() - startTime.current) / 1000))
+        void fetchStats()
+        setSessionState("done")
+      } else {
+        setIdx(idx + 1)
+        setFlipped(false)
+        setExiting(null)
+        setEntering(true)
+        requestAnimationFrame(() => setTimeout(() => setEntering(false), 20))
+      }
+    }, 340)
+  }, [exiting, queue, idx, results, fetchStats])
 
-    if (next >= queue.length) {
-      setElapsedSecs(Math.floor((Date.now() - startTime.current) / 1000))
-      await fetchStats()
-      setSessionState("done")
-    } else {
-      setCurrentIndex(next)
-      setFlipped(false)
-    }
-  }, [submitting, queue, currentIndex, fetchStats])
-
-  // Keyboard shortcuts
+  // Keyboard
   useEffect(() => {
     if (sessionState !== "reviewing") return
-
     function onKey(e: KeyboardEvent) {
-      if (e.repeat) return
-      if (e.key === " " || e.key === "Enter") {
-        e.preventDefault()
-        if (!flipped) setFlipped(true)
-      }
-      if (flipped && !submitting) {
-        if (e.key === "1") void handleRate("AGAIN")
-        if (e.key === "2") void handleRate("HARD")
-        if (e.key === "3") void handleRate("GOOD")
-        if (e.key === "4") void handleRate("EASY")
-      }
+      if (e.repeat || exiting) return
+      if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); setFlipped((f) => !f); return }
+      if (!flipped) return
+      if (e.key === "1") void rate("AGAIN")
+      if (e.key === "2") void rate("HARD")
+      if (e.key === "3") void rate("GOOD")
+      if (e.key === "4") void rate("EASY")
     }
-
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [sessionState, flipped, submitting, handleRate])
-
-  // Elapsed timer
-  useEffect(() => {
-    if (sessionState !== "reviewing") return
-    const id = setInterval(() => {
-      setElapsedSecs(Math.floor((Date.now() - startTime.current) / 1000))
-    }, 1000)
-    return () => clearInterval(id)
-  }, [sessionState])
+  }, [sessionState, flipped, exiting, rate])
 
   async function startSession() {
     const res = await fetch("/api/review/due")
     if (!res.ok) return
-    const data = (await res.json()) as { dueCards: DueCard[]; nextDueDate: string | null }
-    if (data.dueCards.length === 0) return
+    const data = await res.json() as { dueCards: DueCard[] }
+    if (!data.dueCards.length) return
     setQueue(data.dueCards)
-    setCurrentIndex(0)
+    setIdx(0)
     setFlipped(false)
-    setReviewed(0)
+    setExiting(null)
+    setResults([])
     startTime.current = Date.now()
     setElapsedSecs(0)
     setSessionState("reviewing")
   }
 
-  // ── Pre-session screen ───────────────────────────────────────────────────────
+  // ── Pre-session ─────────────────────────────────────────────────────────────
   if (sessionState === "pre") {
-    const dueCount = stats?.dueCount ?? 0
+    const due = stats?.dueCount ?? 0
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-100">
-          <Brain className="h-8 w-8 text-indigo-600" />
+      <div>
+        <div style={{ padding: "18px 28px", borderBottom: "1px solid var(--ink-6)" }}>
+          <div style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--ink-1)" }}>Study</div>
         </div>
-
-        {dueCount > 0 ? (
-          <>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {dueCount} card{dueCount !== 1 ? "s" : ""} due
-              </h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Est. {Math.ceil(dueCount * 0.5)} min · Streak:{" "}
-                <span className="font-medium text-orange-500">
-                  {stats?.streak ?? 0} 🔥
-                </span>
-              </p>
-            </div>
-            <button
-              onClick={() => { void startSession() }}
-              className="rounded-xl bg-indigo-600 px-8 py-3 text-base font-semibold text-white shadow hover:bg-indigo-500"
-            >
-              Start Review
-            </button>
-          </>
-        ) : (
-          <>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">All caught up!</h1>
-              <p className="mt-1 text-sm text-gray-500">
-                {stats?.nextDueDate
-                  ? `Next card due in ${formatTimeUntil(stats.nextDueDate)}`
-                  : "No cards scheduled yet."}
-              </p>
-            </div>
-            {stats && stats.streak > 0 && (
-              <div className="flex items-center gap-2 rounded-xl bg-orange-50 px-6 py-3 text-orange-600">
-                <Flame className="h-5 w-5" />
-                <span className="font-semibold">{stats.streak}-day streak</span>
+        <div style={{
+          flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
+          justifyContent: "center", padding: "80px 28px", gap: 24, textAlign: "center",
+        }}>
+          {due > 0 ? (
+            <>
+              <div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8 }}>
+                  Ready to review
+                </div>
+                <div style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)" }}>
+                  {due} card{due !== 1 ? "s" : ""} due
+                </div>
+                <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 6 }}>
+                  Est. {Math.ceil(due * 0.5)} min · Streak: {stats?.streak ?? 0} days
+                </div>
               </div>
-            )}
-          </>
-        )}
-
-        {stats && (
-          <p className="text-xs text-gray-400">
-            {stats.todayCount} reviewed today
-          </p>
-        )}
+              <button
+                onClick={() => void startSession()}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 8,
+                  padding: "12px 18px", borderRadius: 12,
+                  background: "var(--ink-1)", color: "var(--paper)",
+                  border: "1px solid transparent",
+                  fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 500,
+                  cursor: "pointer",
+                }}
+              >
+                <Play size={13} strokeWidth={0} style={{ fill: "currentColor" }} />
+                Start review
+              </button>
+            </>
+          ) : (
+            <>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 600, color: "var(--ink-1)" }}>You&apos;re caught up.</div>
+                <div style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 6 }}>
+                  {stats?.nextDueDate
+                    ? `Next card is due in ${formatTimeUntil(stats.nextDueDate)}.`
+                    : "No cards scheduled yet."}
+                </div>
+              </div>
+              {(stats?.streak ?? 0) > 0 && (
+                <div style={{
+                  fontSize: 13, color: "var(--ink-3)",
+                  fontFamily: "var(--font-mono)", letterSpacing: "0.04em",
+                }}>
+                  {stats!.streak} days · {stats!.todayCount} reviewed today
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     )
   }
 
-  // ── Done screen ──────────────────────────────────────────────────────────────
+  // ── Done / Review summary ────────────────────────────────────────────────────
   if (sessionState === "done") {
+    const total = results.length
+    const counts: Record<string, number> = { AGAIN: 0, HARD: 0, GOOD: 0, EASY: 0 }
+    results.forEach((r) => { counts[r] = (counts[r] ?? 0) + 1 })
+    const retained = (counts.GOOD ?? 0) + (counts.EASY ?? 0)
+    const retention = total > 0 ? Math.round((retained / total) * 100) : 0
     const mins = Math.floor(elapsedSecs / 60)
     const secs = elapsedSecs % 60
     const duration = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`
+
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-green-100">
-          <CheckCircle className="h-8 w-8 text-green-600" />
+      <div>
+        <div style={{
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: "18px 28px", borderBottom: "1px solid var(--ink-6)",
+        }}>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--ink-1)" }}>Session complete</div>
+            <div style={{ fontSize: 12.5, color: "var(--ink-3)", marginTop: 2 }}>{total} card{total !== 1 ? "s" : ""} reviewed</div>
+          </div>
+          <button
+            onClick={() => setSessionState("pre")}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "8px 14px", borderRadius: 10,
+              background: "var(--ink-1)", color: "var(--paper)",
+              border: "1px solid transparent",
+              fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 500, cursor: "pointer",
+            }}
+          >
+            Back to decks
+          </button>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Session complete!</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {reviewed} card{reviewed !== 1 ? "s" : ""} reviewed in {duration}
-          </p>
-        </div>
-        <div className="flex gap-6 text-center">
-          {stats && stats.streak > 0 && (
-            <div className="rounded-xl bg-orange-50 px-5 py-3">
-              <p className="text-2xl font-bold text-orange-500">{stats.streak}</p>
-              <p className="text-xs text-gray-500">day streak</p>
+
+        <div style={{
+          padding: "40px 28px", display: "flex", flexDirection: "column",
+          alignItems: "center", gap: 16, background: "var(--paper-sunken)", minHeight: "calc(100vh - 57px)",
+        }}>
+          <div style={{ width: "100%", maxWidth: 560, display: "flex", flexDirection: "column", gap: 14 }}>
+            {/* Retention score */}
+            <div style={{
+              background: "var(--paper-raised)", borderRadius: 18, padding: 26,
+              border: "1px solid var(--ink-6)", display: "flex", flexDirection: "column", gap: 10,
+            }}>
+              <Eyebrow>This session</Eyebrow>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                <div style={{ fontSize: 44, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", lineHeight: 1 }}>
+                  {retention}<span style={{ fontSize: 22, color: "var(--ink-3)" }}>%</span>
+                </div>
+                <div style={{ fontSize: 14, color: "var(--ink-2)" }}>recalled without struggle</div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginTop: 6 }}>
+                {RATINGS.map(({ rating, label, fg, bar }) => {
+                  const count = counts[rating] ?? 0
+                  const pct = total > 0 ? (count / total) * 100 : 0
+                  return (
+                    <div key={rating}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, color: fg, fontWeight: 500 }}>{label}</span>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-2)" }}>{count}</span>
+                      </div>
+                      <div style={{ height: 3, background: "var(--paper-sunken)", borderRadius: 999, overflow: "hidden" }}>
+                        <div style={{ width: `${pct}%`, height: "100%", background: bar }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-          )}
-          <div className="rounded-xl bg-indigo-50 px-5 py-3">
-            <p className="text-2xl font-bold text-indigo-600">{stats?.todayCount ?? reviewed}</p>
-            <p className="text-xs text-gray-500">reviewed today</p>
+
+            {/* Meta cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {[
+                { label: "Time",     value: duration,    hint: elapsedSecs < 300 ? "Within 5-min ceiling" : "Over 5 minutes" },
+                { label: "Next due", value: stats?.nextDueDate ? `in ${formatTimeUntil(stats.nextDueDate)}` : "—", hint: "FSRS has rescheduled" },
+              ].map(({ label, value, hint }) => (
+                <div key={label} style={{
+                  background: "var(--paper-raised)", borderRadius: 14, padding: 14,
+                  border: "1px solid var(--ink-6)",
+                }}>
+                  <Eyebrow>{label}</Eyebrow>
+                  <div style={{ fontSize: 20, fontWeight: 500, color: "var(--ink-1)", marginTop: 4 }}>{value}</div>
+                  <div style={{ fontSize: 11.5, color: "var(--ink-3)", marginTop: 2 }}>{hint}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        {(stats?.dueCount ?? 0) > 0 ? (
-          <button
-            onClick={() => { setSessionState("pre") }}
-            className="rounded-xl bg-indigo-600 px-8 py-3 text-base font-semibold text-white shadow hover:bg-indigo-500"
-          >
-            Review More ({stats?.dueCount})
-          </button>
-        ) : (
-          <button
-            onClick={() => { setSessionState("pre") }}
-            className="rounded-xl border border-gray-200 px-8 py-3 text-base font-medium text-gray-600 hover:bg-gray-50"
-          >
-            Back
-          </button>
-        )}
       </div>
     )
   }
 
-  // ── Review screen ────────────────────────────────────────────────────────────
-  const card = queue[currentIndex]
+  // ── Reviewing ────────────────────────────────────────────────────────────────
+  const card = queue[idx]
   if (!card) return null
+  const remaining = queue.length - idx
 
-  const progress = (currentIndex / queue.length) * 100
+  const cardTransform = exiting
+    ? "translateX(-60px)"
+    : entering ? "translateX(40px)" : "translateX(0)"
+  const cardOpacity = exiting || entering ? 0 : 1
 
   return (
-    <div className="mx-auto max-w-2xl">
-      {/* Progress bar */}
-      <div className="mb-6">
-        <div className="mb-1 flex justify-between text-xs text-gray-400">
-          <span>{currentIndex} / {queue.length}</span>
-          <span>{card.deckName}</span>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Top bar */}
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "18px 28px", borderBottom: "1px solid var(--ink-6)", flexShrink: 0,
+      }}>
+        <div>
+          <div style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--ink-1)" }}>{card.deckName}</div>
+          <div style={{ fontSize: 12.5, color: "var(--ink-3)", marginTop: 2 }}>
+            {idx + 1} of {queue.length} · {remaining} remaining
+          </div>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-          <div
-            className="h-full rounded-full bg-indigo-500 transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
+        <button
+          onClick={() => setSessionState("pre")}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "8px 12px", borderRadius: 10, border: "none",
+            background: "transparent", color: "var(--ink-2)",
+            fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 400, cursor: "pointer",
+          }}
+        >
+          <X size={14} strokeWidth={1.75} />
+          End session
+        </button>
       </div>
 
-      {/* Card */}
-      <div className="card-scene h-60 sm:h-72">
-        <div className={`card-inner${flipped ? " flipped" : ""}`}>
-          {/* Front */}
-          <div className="card-face flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <p className="text-center text-lg font-medium text-gray-900">
-              {card.question}
-            </p>
-            <button
-              onClick={() => setFlipped(true)}
-              className="mt-6 rounded-lg border border-gray-200 px-6 py-2 text-sm text-gray-500 hover:bg-gray-50"
-            >
-              Show answer{" "}
-              <kbd className="ml-1 rounded bg-gray-100 px-1 text-xs">Space</kbd>
-            </button>
-          </div>
+      {/* Progress hairline */}
+      <div style={{ height: 2, background: "var(--paper-sunken)", flexShrink: 0 }}>
+        <div style={{
+          width: `${(idx / queue.length) * 100}%`, height: "100%",
+          background: "var(--ink-1)", transition: "width var(--dur-slide) var(--ease-out)",
+        }} />
+      </div>
 
-          {/* Back */}
-          <div className="card-face card-face-back flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8">
-              <p className="text-center text-sm text-gray-400">{card.question}</p>
-              <div className="my-1 h-px w-full max-w-xs bg-gray-100" />
-              <p className="text-center text-lg font-semibold text-gray-900">
-                {card.answer}
-              </p>
+      {/* Card area */}
+      <div style={{
+        flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
+        justifyContent: "center", padding: 28, background: "var(--paper-sunken)", overflow: "hidden",
+      }}>
+        <div style={{ width: "100%", maxWidth: 640, perspective: 1200 }}>
+          {/* Flippable card */}
+          <div style={{
+            position: "relative", width: "100%", minHeight: 280,
+            transformStyle: "preserve-3d",
+            transform: `${cardTransform} rotateY(${flipped ? 180 : 0}deg)`,
+            opacity: cardOpacity,
+            transition: exiting
+              ? `transform var(--dur-slide) var(--ease-out), opacity var(--dur-slide) var(--ease-out)`
+              : `transform var(--dur-flip) var(--ease-out), opacity var(--dur-base) var(--ease-out)`,
+          }}>
+            {/* Front face */}
+            <div style={{
+              position: "relative",
+              backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
+              background: "var(--paper-raised)", borderRadius: 20,
+              boxShadow: "var(--shadow-3)", border: "1px solid rgba(26,25,23,.04)",
+              padding: "26px 28px", minHeight: 280,
+              display: "flex", flexDirection: "column", gap: 14,
+              opacity: flipped ? 0.01 : 1,
+              transition: "opacity 180ms var(--ease-out)",
+            }}>
+              <Eyebrow>Question</Eyebrow>
+              <div style={{ fontSize: 22, lineHeight: 1.3, letterSpacing: "-0.01em", fontWeight: 500, color: "var(--ink-1)", flex: 1 }}>
+                {card.question}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 8 }}>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {(card.tags ?? []).map((t) => (
+                    <span key={t} style={{
+                      fontSize: 12, fontWeight: 500, padding: "3px 9px", borderRadius: 999,
+                      background: "var(--paper-raised)", color: "var(--ink-2)",
+                      border: "1px solid var(--ink-6)",
+                    }}>{t}</span>
+                  ))}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ink-3)" }}>
+                  <Kbd>Space</Kbd> reveal
+                </div>
+              </div>
+            </div>
+
+            {/* Back face */}
+            <div style={{
+              position: "absolute", inset: 0,
+              backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
+              transform: "rotateY(180deg)",
+              background: "var(--paper-raised)", borderRadius: 20,
+              boxShadow: "var(--shadow-3)", border: "1px solid rgba(26,25,23,.04)",
+              padding: "26px 28px", minHeight: 280,
+              display: "flex", flexDirection: "column", gap: 14,
+              opacity: flipped ? 1 : 0.01,
+              transition: "opacity 180ms var(--ease-out)",
+            }}>
+              <Eyebrow>Answer</Eyebrow>
+              <div style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.5 }}>{card.question}</div>
+              <div style={{ borderTop: "1px solid var(--ink-6)", paddingTop: 12 }}>
+                <div style={{ fontSize: 20, lineHeight: 1.45, color: "var(--ink-1)", fontWeight: 500 }}>{card.answer}</div>
+              </div>
             </div>
           </div>
+
+          {/* Rating bar — always reserved */}
+          <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+            {RATINGS.map(({ rating, label, key, bg, fg, bar }) => {
+              const preview = card.preview[rating.toLowerCase() as keyof typeof card.preview]
+              const chosen = exiting === rating
+              return (
+                <button
+                  key={rating}
+                  disabled={!flipped || !!exiting}
+                  onClick={() => void rate(rating)}
+                  style={{
+                    padding: "14px 12px", borderRadius: 12,
+                    border: "1px solid var(--ink-6)",
+                    background: chosen ? bg : "var(--paper-raised)",
+                    display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8,
+                    cursor: flipped && !exiting ? "pointer" : "default",
+                    opacity: flipped ? 1 : 0.5,
+                    transition: "background var(--dur-quick) var(--ease-out)",
+                    fontFamily: "inherit", textAlign: "left",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                    <span style={{ fontWeight: 600, fontSize: 14, color: flipped ? fg : "var(--ink-3)" }}>{label}</span>
+                    <Kbd>{key}</Kbd>
+                  </div>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-3)" }}>
+                    {formatDays(preview?.scheduledDays ?? 0)}
+                  </span>
+                  <div style={{ width: "100%", height: 3, background: "var(--paper-sunken)", borderRadius: 999, overflow: "hidden" }}>
+                    <div style={{ width: flipped ? "100%" : "0%", height: "100%", background: bar, transition: "width 220ms var(--ease-out)" }} />
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         </div>
       </div>
-
-      {/* Rating buttons (shown after flip) */}
-      {flipped && (
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {RATING_CONFIG.map(({ rating, label, key, color, hoverColor }) => {
-            const preview = card.preview[rating.toLowerCase() as keyof typeof card.preview]
-            return (
-              <button
-                key={rating}
-                onClick={() => { void handleRate(rating) }}
-                disabled={submitting}
-                className={`flex flex-col items-center gap-1 rounded-xl border px-3 py-4 text-sm font-medium transition-colors disabled:opacity-50 min-h-[56px] ${color} ${hoverColor}`}
-              >
-                <span>{label}</span>
-                <span className="text-xs font-normal opacity-70">
-                  {formatDays(preview.scheduledDays)}
-                </span>
-                <kbd className="mt-0.5 rounded bg-white/60 px-1.5 text-xs opacity-50">
-                  {key}
-                </kbd>
-              </button>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Keyboard hint */}
-      {!flipped && (
-        <p className="mt-4 text-center text-xs text-gray-400">
-          Press <kbd className="rounded bg-gray-100 px-1">Space</kbd> or{" "}
-          <kbd className="rounded bg-gray-100 px-1">Enter</kbd> to reveal
-        </p>
-      )}
-      {flipped && (
-        <p className="mt-3 text-center text-xs text-gray-400">
-          Press <kbd className="rounded bg-gray-100 px-1">1</kbd>–
-          <kbd className="rounded bg-gray-100 px-1">4</kbd> to rate
-        </p>
-      )}
     </div>
   )
 }

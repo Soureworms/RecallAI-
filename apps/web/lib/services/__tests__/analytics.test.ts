@@ -142,7 +142,7 @@ describe("getNewHireRampProgress", () => {
     mockPrisma.userCard.count.mockResolvedValue(1)
     const result = await getNewHireRampProgress("u-1")
     expect(result).not.toBeNull()
-    expect(result!.completionPct ?? result!.percentage).toBeGreaterThanOrEqual(0)
+    expect(result!.percentage).toBeGreaterThanOrEqual(0)
   })
 })
 

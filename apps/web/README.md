@@ -1,36 +1,127 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RecallAI
 
-## Getting Started
+AI-powered spaced repetition for CX teams. Upload your knowledge base, let Claude generate flashcards, and keep your entire team sharp with science-backed review scheduling.
 
-First, run the development server:
+## Features
+
+- **FSRS scheduling** — ts-fsrs algorithm adapts to each agent's memory
+- **AI card generation** — upload PDFs or DOCX files; Claude writes the flashcards
+- **Team analytics** — retention heatmaps, knowledge gaps, new-hire ramp tracking
+- **Role-based access** — ADMIN / MANAGER / AGENT with enforced permissions
+- **Invite system** — share a link to onboard new team members
+
+---
+
+## Local Development
+
+### Prerequisites
+
+- Node.js 20+
+- pnpm 10+
+- PostgreSQL 15+ (or Docker)
+
+### Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# 1. Install dependencies
+pnpm install
+
+# 2. Copy environment variables
+cp .env.example .env
+# Fill in DATABASE_URL, NEXTAUTH_SECRET, ANTHROPIC_API_KEY
+
+# 3. Run database migrations
+pnpm db:migrate
+
+# 4. (Optional) Seed sample data
+pnpm db:seed
+
+# 5. Start the dev server
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Docker (full stack)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# From apps/web/
+ANTHROPIC_API_KEY=sk-ant-... docker compose up
+```
 
-## Learn More
+The app and a fresh PostgreSQL database start together. Migrations run automatically.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Available Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Script | Description |
+|---|---|
+| `pnpm dev` | Start Next.js in development mode |
+| `pnpm build` | Production build |
+| `pnpm start` | Start production server |
+| `pnpm test` | Run the Vitest test suite |
+| `pnpm test:watch` | Run tests in watch mode |
+| `pnpm db:migrate` | Apply Prisma migrations (dev) |
+| `pnpm db:studio` | Open Prisma Studio |
+| `pnpm db:seed` | Seed the database with sample data |
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Architecture
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+apps/web/
+├── app/
+│   ├── (auth)/          # Sign-in, register, invite accept pages
+│   ├── (dashboard)/     # Protected app pages
+│   │   ├── dashboard/   # Overview + streak stats
+│   │   ├── review/      # FSRS review session
+│   │   ├── decks/       # Deck + card management
+│   │   ├── stats/       # Personal analytics
+│   │   └── team/        # Team management + analytics
+│   └── api/             # Route handlers
+│       ├── auth/        # NextAuth + register + invite
+│       ├── cards/       # Card CRUD
+│       ├── decks/       # Deck CRUD + AI generation
+│       ├── documents/   # File upload + text extraction
+│       ├── review/      # FSRS scheduling endpoints
+│       ├── analytics/   # User + team analytics
+│       ├── teams/       # Team CRUD + members
+│       └── health/      # Health check
+├── components/
+│   ├── dashboard/       # Sidebar, bottom tab bar
+│   └── ui/              # Shared UI (Modal, etc.)
+├── hooks/               # usePermissions()
+├── lib/
+│   ├── auth/            # requireRole(), permission helpers
+│   ├── services/        # analytics.ts, card-generator.ts, scheduler.ts
+│   ├── rate-limit.ts    # In-memory rate limiter
+│   └── db.ts            # Prisma client singleton
+└── prisma/
+    ├── schema.prisma
+    └── migrations/
+```
+
+### Key Technology Choices
+
+| Concern | Choice | Reason |
+|---|---|---|
+| Framework | Next.js 14 App Router | Server components + route handlers in one repo |
+| Database | PostgreSQL + Prisma | Type-safe queries, easy migrations |
+| Auth | NextAuth v5 (beta) | JWT sessions, Credentials provider |
+| Scheduling | ts-fsrs | Production-grade FSRS implementation |
+| AI | Anthropic Claude | Best-in-class instruction following for card generation |
+| Charts | Recharts | Lightweight, composable |
+| Styling | Tailwind CSS | Utility-first, mobile-first |
+
+---
+
+## Deployment
+
+See [deploy-checklist.md](./deploy-checklist.md) for:
+- Required environment variables
+- Production database migration steps
+- First-time admin user creation
+- Recommended hosting providers (Vercel, Railway, Fly.io)
+- Monitoring recommendations

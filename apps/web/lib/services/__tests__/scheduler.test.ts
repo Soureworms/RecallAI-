@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { fsrs, createEmptyCard, Rating as FSRSRating, State } from "ts-fsrs"
+import { fsrs, createEmptyCard, Rating as FSRSRating, type Grade, State } from "ts-fsrs"
 import { CardState, Rating as DbRating } from "@prisma/client"
 import type { UserCard } from "@prisma/client"
 import { userCardToFSRS, fsrsStateToDb } from "../fsrs-mapper"
@@ -37,7 +37,7 @@ function makeUserCard(overrides: Partial<UserCard> = {}): UserCard {
   }
 }
 
-function nextCard(userCard: UserCard, rating: FSRSRating, now = new Date()) {
+function nextCard(userCard: UserCard, rating: Grade, now = new Date()) {
   const card = userCardToFSRS(userCard)
   return scheduler.next(card, now, rating)
 }

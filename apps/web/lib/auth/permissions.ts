@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 // ─── Role hierarchy ───────────────────────────────────────────────────────────
 
@@ -36,6 +37,14 @@ export async function requireRole(minRole: MinRole): Promise<PermResult> {
       response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
     }
   }
+  const { allowed } = checkRateLimit(`api:${session.user.id}`, 100, 60_000)
+  if (!allowed) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Rate limit exceeded. Slow down." }, { status: 429 }),
+    }
+  }
+
   const userRank = ROLE_RANK[session.user.role] ?? 0
   const minRank = ROLE_RANK[minRole]
   if (userRank < minRank) {

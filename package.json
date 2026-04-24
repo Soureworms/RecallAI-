@@ -52,6 +52,13 @@
       "is-core-module": "npm:@nolyfill/is-core-module@^1",
       "minimatch": ">=10.2.3"
     },
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "bcrypt",
+      "sharp"
+    ],
     "ignoredBuiltDependencies": [
       "esbuild",
       "unrs-resolver"

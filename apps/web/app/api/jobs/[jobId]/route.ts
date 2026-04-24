@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
-import { getAiQueue } from "@/lib/queue/ai-queue"
-import type { GenerateJobResult } from "@/lib/queue/ai-queue"
+import { getRedis } from "@/lib/redis"
+import type { JobState } from "@/lib/queue/qstash"
 
 export async function GET(
   _req: NextRequest,
@@ -10,27 +10,15 @@ export async function GET(
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
 
-  if (!process.env.REDIS_URL) {
+  const redis = getRedis()
+  if (!redis) {
     return NextResponse.json({ error: "Queue not configured" }, { status: 503 })
   }
 
-  const queue = getAiQueue()
-  const job = await queue.getJob(params.jobId)
-
-  if (!job) {
+  const status = await redis.get<JobState>(`job:${params.jobId}`)
+  if (!status) {
     return NextResponse.json({ error: "Job not found" }, { status: 404 })
   }
 
-  const state = await job.getState()
-  const progress = typeof job.progress === "number" ? job.progress : 0
-  const result = job.returnvalue as GenerateJobResult | undefined
-  const failReason = job.failedReason ?? undefined
-
-  return NextResponse.json({
-    jobId: job.id,
-    state,
-    progress,
-    count: result?.count,
-    error: failReason,
-  })
+  return NextResponse.json({ jobId: params.jobId, ...status })
 }

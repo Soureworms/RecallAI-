@@ -1,19 +1,14 @@
-import IORedis from "ioredis"
+import { Redis } from "@upstash/redis"
 
-const g = globalThis as unknown as { _redis?: IORedis }
+let _redis: Redis | null = null
 
-export function getRedis(): IORedis | null {
-  if (!process.env.REDIS_URL) return null
-  if (!g._redis) {
-    g._redis = new IORedis(process.env.REDIS_URL, {
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-    })
-    g._redis.on("error", (err: Error) => {
-      if (process.env.NODE_ENV !== "test") {
-        console.error("[redis] connection error:", err.message)
-      }
+export function getRedis(): Redis | null {
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return null
+  if (!_redis) {
+    _redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
     })
   }
-  return g._redis
+  return _redis
 }

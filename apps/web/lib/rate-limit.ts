@@ -1,6 +1,6 @@
 import { getRedis } from "@/lib/redis"
 
-// ── In-memory fallback (used when REDIS_URL is not set) ───────────────────────
+// ── In-memory fallback (used in dev without UPSTASH_REDIS_REST_URL) ───────────
 type Entry = { count: number; resetAt: number }
 const store = new Map<string, Entry>()
 
@@ -27,15 +27,15 @@ function checkInMemory(
   return { allowed: true, remaining: limit - entry.count }
 }
 
-// ── Redis-backed implementation ───────────────────────────────────────────────
-async function checkRedis(
+// ── Upstash Redis REST implementation ─────────────────────────────────────────
+async function checkUpstash(
   key: string,
   limit: number,
   windowMs: number
 ): Promise<{ allowed: boolean; remaining: number }> {
   const redis = getRedis()!
   const k = `rl:${key}`
-  const count = await redis.incr(k)
+  const count = (await redis.incr(k)) as number
   if (count === 1) await redis.pexpire(k, windowMs)
   return { allowed: count <= limit, remaining: Math.max(0, limit - count) }
 }
@@ -49,9 +49,9 @@ export async function checkRateLimit(
   const redis = getRedis()
   if (redis) {
     try {
-      return await checkRedis(key, limit, windowMs)
+      return await checkUpstash(key, limit, windowMs)
     } catch {
-      // Redis error — fall through to in-memory so the app stays up
+      // Redis error — fall back to in-memory so the app stays up
     }
   }
   return checkInMemory(key, limit, windowMs)

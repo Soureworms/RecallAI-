@@ -25,7 +25,10 @@ export async function publishGenerateJob(
   const baseUrl = process.env.NEXTAUTH_URL
   if (!baseUrl) throw new Error("NEXTAUTH_URL is not configured")
 
-  const client = new Client({ token })
+  const client = new Client({
+    token,
+    ...(process.env.QSTASH_URL ? { baseUrl: process.env.QSTASH_URL } : {}),
+  })
   await client.publishJSON({
     url: `${baseUrl}/api/queue/generate`,
     body: data,

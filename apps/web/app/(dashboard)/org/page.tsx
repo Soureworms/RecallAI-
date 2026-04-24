@@ -22,10 +22,10 @@ type OrgSettings = {
 }
 
 const ROLE_LABELS: Record<string, { label: string; color: string }> = {
-  AGENT: { label: "Agent", color: "bg-gray-100 text-gray-700" },
-  MANAGER: { label: "Manager", color: "bg-blue-100 text-blue-700" },
-  ADMIN: { label: "Admin", color: "bg-purple-100 text-purple-700" },
-  SUPER_ADMIN: { label: "Super Admin", color: "bg-indigo-100 text-indigo-700" },
+  AGENT: { label: "Agent", color: "bg-ink-6 text-ink-2" },
+  MANAGER: { label: "Manager", color: "bg-ds-blue-100 text-ds-blue-ink" },
+  ADMIN: { label: "Admin", color: "bg-ds-violet-100 text-ds-violet-700" },
+  SUPER_ADMIN: { label: "Super Admin", color: "bg-ds-blue-100 text-ds-blue-ink" },
 }
 
 function initials(name: string | null, email: string) {
@@ -63,44 +63,44 @@ function InviteModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Invite team member</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(26,25,23,0.45)]">
+      <div className="w-full max-w-md rounded-2xl bg-paper-raised p-6 shadow-s3">
+        <h2 className="text-lg font-bold text-ink-1 mb-4">Invite team member</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full name</label>
+            <label className="block text-sm font-medium text-ink-2 mb-1">Full name</label>
             <input
               type="text" required value={name} onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email address</label>
+            <label className="block text-sm font-medium text-ink-2 mb-1">Email address</label>
             <input
               type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <label className="block text-sm font-medium text-ink-2 mb-1">Role</label>
             <select
               value={role} onChange={(e) => setRole(e.target.value as "AGENT" | "MANAGER")}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500"
             >
               <option value="AGENT">Agent — reviews cards, no content management</option>
               <option value="MANAGER">Manager — creates decks, views team analytics</option>
             </select>
           </div>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-ink-4">
             They&apos;ll receive an email with a link to set their password (expires in 7 days).
           </p>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose}
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              className="flex-1 rounded-lg border border-ink-6 px-4 py-2 text-sm font-medium text-ink-2 hover:bg-paper-sunken">
               Cancel
             </button>
             <button type="submit" disabled={loading}
-              className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60">
+              className="flex-1 rounded-lg bg-ink-1 px-4 py-2 text-sm font-medium text-white hover:bg-ink-2 disabled:opacity-60">
               {loading ? "Sending invite…" : "Send invite"}
             </button>
           </div>
@@ -149,30 +149,30 @@ function EditUserModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Edit {user.name ?? user.email}</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(26,25,23,0.45)]">
+      <div className="w-full max-w-md rounded-2xl bg-paper-raised p-6 shadow-s3">
+        <h2 className="text-lg font-bold text-ink-1 mb-4">Edit {user.name ?? user.email}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full name</label>
+            <label className="block text-sm font-medium text-ink-2 mb-1">Full name</label>
             <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+              className="w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <label className="block text-sm font-medium text-ink-2 mb-1">Role</label>
             <select value={role} onChange={(e) => setRole(e.target.value as "AGENT" | "MANAGER")}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+              className="w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500">
               <option value="AGENT">Agent</option>
               <option value="MANAGER">Manager</option>
             </select>
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose}
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              className="flex-1 rounded-lg border border-ink-6 px-4 py-2 text-sm font-medium text-ink-2 hover:bg-paper-sunken">
               Cancel
             </button>
             <button type="submit" disabled={loading}
-              className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60">
+              className="flex-1 rounded-lg bg-ink-1 px-4 py-2 text-sm font-medium text-white hover:bg-ink-2 disabled:opacity-60">
               {loading ? "Saving…" : "Save changes"}
             </button>
           </div>
@@ -267,7 +267,7 @@ export default function OrgPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-ds-blue-600 border-t-transparent" />
       </div>
     )
   }
@@ -280,14 +280,14 @@ export default function OrgPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{org?.name}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-2xl font-bold text-ink-1">{org?.name}</h1>
+          <p className="text-sm text-ink-3 mt-0.5">
             {org?._count.users} member{org?._count.users !== 1 ? "s" : ""} · {org?._count.decks} deck{org?._count.decks !== 1 ? "s" : ""}
           </p>
         </div>
         <button
           onClick={() => setShowInvite(true)}
-          className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors"
+          className="flex items-center gap-2 rounded-lg bg-ink-1 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-2 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -297,13 +297,13 @@ export default function OrgPage() {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 flex gap-6">
+      <div className="border-b border-ink-6 flex gap-6">
         {(["members", "settings"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`pb-3 text-sm font-medium border-b-2 transition-colors capitalize ${
-              tab === t ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"
+              tab === t ? "border-ds-blue-600 text-ds-blue-600" : "border-transparent text-ink-3 hover:text-ink-2"
             }`}
           >
             {t === "members" ? `Members (${users.length})` : "Settings"}
@@ -315,31 +315,31 @@ export default function OrgPage() {
       {tab === "members" && (
         <div className="space-y-4">
           {/* Editable members */}
-          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+          <div className="rounded-xl border border-ink-6 bg-paper-raised overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Member</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Role</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Joined</th>
+                <tr className="border-b border-ink-6 bg-paper-sunken">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-ink-3 uppercase tracking-wide">Member</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-ink-3 uppercase tracking-wide">Role</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-ink-3 uppercase tracking-wide hidden sm:table-cell">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-ink-3 uppercase tracking-wide hidden sm:table-cell">Joined</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-ink-6">
                 {/* Admin/Super admin rows (read-only) */}
                 {adminUsers.map((u) => {
                   const badge = ROLE_LABELS[u.role]
                   return (
-                    <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={u.id} className="hover:bg-paper-sunken transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700 shrink-0">
+                          <div className="h-8 w-8 rounded-full bg-ds-blue-100 flex items-center justify-center text-xs font-bold text-ds-blue-ink shrink-0">
                             {initials(u.name, u.email)}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-gray-900 truncate">{u.name ?? "(no name)"}</p>
-                            <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                            <p className="font-medium text-ink-1 truncate">{u.name ?? "(no name)"}</p>
+                            <p className="text-xs text-ink-4 truncate">{u.email}</p>
                           </div>
                         </div>
                       </td>
@@ -349,9 +349,9 @@ export default function OrgPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 hidden sm:table-cell">
-                        <span className="text-xs text-gray-400">—</span>
+                        <span className="text-xs text-ink-4">—</span>
                       </td>
-                      <td className="px-4 py-3 hidden sm:table-cell text-xs text-gray-400">
+                      <td className="px-4 py-3 hidden sm:table-cell text-xs text-ink-4">
                         {new Date(u.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3 w-20" />
@@ -361,7 +361,7 @@ export default function OrgPage() {
                 {/* Editable members */}
                 {editableUsers.length === 0 && adminUsers.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">
+                    <td colSpan={5} className="px-4 py-8 text-center text-sm text-ink-4">
                       No members yet. Invite your first team member above.
                     </td>
                   </tr>
@@ -369,15 +369,15 @@ export default function OrgPage() {
                 {editableUsers.map((u) => {
                   const badge = ROLE_LABELS[u.role]
                   return (
-                    <tr key={u.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={u.id} className="hover:bg-paper-sunken transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 shrink-0">
+                          <div className="h-8 w-8 rounded-full bg-ink-6 flex items-center justify-center text-xs font-bold text-ink-3 shrink-0">
                             {initials(u.name, u.email)}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-gray-900 truncate">{u.name ?? "(no name)"}</p>
-                            <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                            <p className="font-medium text-ink-1 truncate">{u.name ?? "(no name)"}</p>
+                            <p className="text-xs text-ink-4 truncate">{u.email}</p>
                           </div>
                         </div>
                       </td>
@@ -388,25 +388,25 @@ export default function OrgPage() {
                       </td>
                       <td className="px-4 py-3 hidden sm:table-cell">
                         {u.onboardedAt ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-green-600">
-                            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                          <span className="inline-flex items-center gap-1 text-xs text-ds-green-ink">
+                            <span className="h-1.5 w-1.5 rounded-full bg-ds-green-500" />
                             Active
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs text-amber-600">
-                            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                          <span className="inline-flex items-center gap-1 text-xs text-ds-amber-ink">
+                            <span className="h-1.5 w-1.5 rounded-full bg-ds-amber-500" />
                             Pending setup
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 hidden sm:table-cell text-xs text-gray-400">
+                      <td className="px-4 py-3 hidden sm:table-cell text-xs text-ink-4">
                         {new Date(u.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3 w-20">
                         <div className="flex items-center gap-1 justify-end">
                           <button
                             onClick={() => setEditingUser(u)}
-                            className="rounded p-1 text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                            className="rounded p-1 text-ink-4 hover:text-ink-2 hover:bg-ink-6 transition-colors"
                             title="Edit"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -415,7 +415,7 @@ export default function OrgPage() {
                           </button>
                           <button
                             onClick={() => setDeleteTarget(u)}
-                            className="rounded p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            className="rounded p-1 text-ink-4 hover:text-ds-red-ink hover:bg-ds-red-50 transition-colors"
                             title="Remove"
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -435,37 +435,37 @@ export default function OrgPage() {
 
       {/* Settings tab */}
       {tab === "settings" && (
-        <div className="rounded-xl border border-gray-200 bg-white p-6 space-y-6">
+        <div className="rounded-xl border border-ink-6 bg-paper-raised p-6 space-y-6">
           <div>
-            <h2 className="text-base font-semibold text-gray-900 mb-4">Organisation settings</h2>
+            <h2 className="text-base font-semibold text-ink-1 mb-4">Organisation settings</h2>
             <form onSubmit={handleSaveOrgName} className="max-w-sm space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Organisation name</label>
+                <label className="block text-sm font-medium text-ink-2 mb-1">Organisation name</label>
                 <input
                   ref={orgNameRef}
                   type="text"
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500"
                 />
               </div>
               <button
                 type="submit"
                 disabled={savingName || !orgName.trim() || orgName === org?.name}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                className="rounded-lg bg-ink-1 px-4 py-2 text-sm font-medium text-white hover:bg-ink-2 disabled:opacity-50 transition-colors"
               >
                 {savingName ? "Saving…" : "Save name"}
               </button>
             </form>
           </div>
 
-          <hr className="border-gray-100" />
+          <hr className="border-ink-6" />
 
           <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-1">Contract & billing</h3>
-            <p className="text-sm text-gray-400">
+            <h3 className="text-sm font-semibold text-ink-2 mb-1">Contract & billing</h3>
+            <p className="text-sm text-ink-4">
               Billing and contract management is handled by your RecallAI account manager.{" "}
-              <a href="mailto:hello@recallai.app" className="text-indigo-600 hover:underline">
+              <a href="mailto:hello@recallai.app" className="text-ds-blue-600 hover:underline">
                 Contact support
               </a>{" "}
               for changes.
@@ -494,21 +494,21 @@ export default function OrgPage() {
       )}
 
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-bold text-gray-900 mb-2">Remove member?</h2>
-            <p className="text-sm text-gray-500 mb-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[rgba(26,25,23,0.45)]">
+          <div className="w-full max-w-sm rounded-2xl bg-paper-raised p-6 shadow-s3">
+            <h2 className="text-lg font-bold text-ink-1 mb-2">Remove member?</h2>
+            <p className="text-sm text-ink-3 mb-6">
               <strong>{deleteTarget.name ?? deleteTarget.email}</strong> will lose access to your workspace immediately. This cannot be undone.
             </p>
             <div className="flex gap-3">
               <button onClick={() => setDeleteTarget(null)}
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                className="flex-1 rounded-lg border border-ink-6 px-4 py-2 text-sm font-medium text-ink-2 hover:bg-paper-sunken">
                 Cancel
               </button>
               <button
                 onClick={handleDeleteUser}
                 disabled={!!deletingId}
-                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+                className="flex-1 rounded-lg bg-ds-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-ds-red-600 disabled:opacity-60"
               >
                 {deletingId ? "Removing…" : "Remove"}
               </button>

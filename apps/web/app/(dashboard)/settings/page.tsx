@@ -39,7 +39,7 @@ function Avatar({
 
   return (
     <div
-      className="flex items-center justify-center rounded-full bg-indigo-100 text-indigo-700 font-semibold select-none"
+      className="flex items-center justify-center rounded-full bg-ds-blue-100 text-ds-blue-ink font-semibold select-none"
       style={{ width: size, height: size, fontSize: size * 0.35 }}
     >
       {initials}
@@ -143,13 +143,13 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-8 py-2">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="mt-1 text-sm text-gray-500">Manage your account information</p>
+        <h1 className="text-2xl font-bold text-ink-1">Settings</h1>
+        <p className="mt-1 text-sm text-ink-3">Manage your account information</p>
       </div>
 
       {/* ── Profile ──────────────────────────────────────────────────────── */}
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-5 text-base font-semibold text-gray-900">Profile</h2>
+      <section className="rounded-2xl border border-ink-6 bg-paper-raised p-6 shadow-s1">
+        <h2 className="mb-5 text-base font-semibold text-ink-1">Profile</h2>
 
         {/* Avatar */}
         <div className="mb-6 flex items-center gap-5">
@@ -157,28 +157,28 @@ export default function SettingsPage() {
             <Avatar src={previewImage} name={name || session.user.name} size={80} />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-indigo-600 text-white shadow hover:bg-indigo-500"
+              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-ink-1 text-white shadow hover:bg-ink-2"
               title="Change photo"
             >
               <Camera className="h-3.5 w-3.5" />
             </button>
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-gray-700">Profile photo</p>
-            <p className="mt-0.5 text-xs text-gray-400">
+            <p className="text-sm font-medium text-ink-2">Profile photo</p>
+            <p className="mt-0.5 text-xs text-ink-4">
               JPEG, PNG or WebP · Resized to 128 × 128
             </p>
             <div className="mt-1.5 flex items-center gap-3">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="text-xs font-medium text-indigo-600 hover:underline"
+                className="text-xs font-medium text-ds-blue-600 hover:underline"
               >
                 Upload photo
               </button>
               {previewImage && (
                 <button
                   onClick={() => setPreviewImage(null)}
-                  className="text-xs text-gray-400 hover:text-red-500"
+                  className="text-xs text-ink-4 hover:text-ds-red-500"
                 >
                   Remove
                 </button>
@@ -196,8 +196,8 @@ export default function SettingsPage() {
 
         {/* Display name */}
         <div className="mb-6">
-          <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-gray-700">
-            <User className="h-4 w-4 text-gray-400" />
+          <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-ink-2">
+            <User className="h-4 w-4 text-ink-4" />
             Display name
           </label>
           <input
@@ -205,23 +205,23 @@ export default function SettingsPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Your name"
-            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+            className="w-full rounded-xl border border-ink-6 px-4 py-2.5 text-sm text-ink-1 placeholder:text-ink-4 focus:border-ds-blue-500 focus:outline-none focus:ring-2 focus:ring-ds-blue-100"
           />
         </div>
 
         {/* Email (read-only) */}
         <div className="mb-6">
-          <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-gray-700">
-            <Mail className="h-4 w-4 text-gray-400" />
+          <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-ink-2">
+            <Mail className="h-4 w-4 text-ink-4" />
             Email address
           </label>
           <input
             type="email"
             value={session.user.email ?? ""}
             readOnly
-            className="w-full rounded-xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-sm text-gray-500 cursor-default select-none"
+            className="w-full rounded-xl border border-ink-6 bg-paper-sunken px-4 py-2.5 text-sm text-ink-3 cursor-default select-none"
           />
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs text-ink-4">
             Email cannot be changed — contact your admin
           </p>
         </div>
@@ -229,7 +229,7 @@ export default function SettingsPage() {
         <button
           onClick={saveProfile}
           disabled={!isDirty || profileStatus === "saving"}
-          className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center gap-2 rounded-xl bg-ink-1 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {profileStatus === "saving" && (
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
@@ -245,16 +245,16 @@ export default function SettingsPage() {
       </section>
 
       {/* ── Password ─────────────────────────────────────────────────────── */}
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-1 text-base font-semibold text-gray-900">Password</h2>
-        <p className="mb-5 text-sm text-gray-500">
+      <section className="rounded-2xl border border-ink-6 bg-paper-raised p-6 shadow-s1">
+        <h2 className="mb-1 text-base font-semibold text-ink-1">Password</h2>
+        <p className="mb-5 text-sm text-ink-3">
           We&apos;ll email a reset link to{" "}
-          <span className="font-medium text-gray-700">{session.user.email}</span>
+          <span className="font-medium text-ink-2">{session.user.email}</span>
         </p>
 
         {resetStatus === "success" ? (
-          <div className="flex items-start gap-3 rounded-xl bg-green-50 p-4 text-green-800">
-            <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-green-500" />
+          <div className="flex items-start gap-3 rounded-xl bg-ds-green-50 p-4 text-ds-green-ink">
+            <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-ds-green-500" />
             <div>
               <p className="font-medium">Reset link sent</p>
               <p className="mt-0.5 text-sm">
@@ -268,12 +268,12 @@ export default function SettingsPage() {
           <button
             onClick={requestPasswordReset}
             disabled={resetStatus === "saving"}
-            className="flex items-center gap-2 rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-xl border border-ink-6 px-5 py-2.5 text-sm font-medium text-ink-2 hover:bg-paper-sunken disabled:opacity-50"
           >
             {resetStatus === "saving" ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-ink-5 border-t-transparent" />
             ) : (
-              <Lock className="h-4 w-4 text-gray-400" />
+              <Lock className="h-4 w-4 text-ink-4" />
             )}
             {resetStatus === "saving" ? "Sending…" : "Send reset link"}
           </button>

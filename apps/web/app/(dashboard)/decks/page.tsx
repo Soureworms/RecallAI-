@@ -53,19 +53,30 @@ export default function DecksPage() {
     void fetchDecks()
   }
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%", padding: "8px 12px", borderRadius: 8, marginTop: 4,
+    border: "1px solid var(--ink-6)", background: "var(--paper-sunken)",
+    fontFamily: "var(--font-sans)", fontSize: 14, color: "var(--ink-1)",
+    outline: "none", boxSizing: "border-box",
+  }
+
   return (
-    <div>
+    <div className="p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Decks</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink-1)" }}>Decks</h1>
+          <p className="mt-1" style={{ fontSize: 13, color: "var(--ink-3)" }}>
             Manage your organisation&apos;s flashcard decks
           </p>
         </div>
         {isManager && (
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+            className="flex items-center gap-2 rounded-r2 px-4 py-2"
+            style={{
+              background: "var(--ink-1)", color: "var(--paper)",
+              fontSize: 13, fontWeight: 500, border: "1px solid transparent", cursor: "pointer",
+            }}
           >
             <Plus className="h-4 w-4" />
             Create Deck
@@ -74,15 +85,18 @@ export default function DecksPage() {
       </div>
 
       {loading ? (
-        <div className="mt-10 text-center text-sm text-gray-400">Loading…</div>
+        <div className="mt-10 text-center" style={{ fontSize: 13, color: "var(--ink-4)" }}>Loading…</div>
       ) : decks.length === 0 ? (
         <div className="mt-16 flex flex-col items-center gap-3 text-center">
-          <Layers className="h-10 w-10 text-gray-300" />
-          <p className="text-gray-500">No decks yet.</p>
+          <Layers className="h-10 w-10" style={{ color: "var(--ink-5)" }} />
+          <p style={{ fontSize: 14, color: "var(--ink-3)" }}>No decks yet.</p>
           {isManager && (
             <button
               onClick={() => setShowCreate(true)}
-              className="text-sm text-indigo-600 hover:underline"
+              style={{
+                fontSize: 13, color: "var(--blue-600)", textDecoration: "none",
+                background: "transparent", border: "none", cursor: "pointer",
+              }}
             >
               Create the first deck
             </button>
@@ -94,23 +108,33 @@ export default function DecksPage() {
             <button
               key={deck.id}
               onClick={() => router.push(`/decks/${deck.id}`)}
-              className="rounded-xl border border-gray-200 bg-white p-6 text-left shadow-sm transition-shadow hover:shadow-md"
+              className="rounded-r3 p-5 text-left transition-shadow"
+              style={{
+                background: "var(--paper-raised)",
+                border: "1px solid var(--ink-6)",
+                boxShadow: "var(--shadow-1)",
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-2)" }}
+              onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-1)" }}
             >
               <div className="flex items-start justify-between gap-2">
-                <h3 className="font-semibold text-gray-900">{deck.name}</h3>
+                <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--ink-1)" }}>{deck.name}</h3>
                 {deck.isMandatory && (
-                  <span className="flex shrink-0 items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700">
+                  <span className="flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5"
+                    style={{ background: "var(--violet-50)", color: "var(--violet-600)", fontSize: 11, fontWeight: 500 }}
+                  >
                     <Lock className="h-3 w-3" />
                     Mandatory
                   </span>
                 )}
               </div>
               {deck.description && (
-                <p className="mt-1 line-clamp-2 text-sm text-gray-500">
+                <p className="mt-1 line-clamp-2" style={{ fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
                   {deck.description}
                 </p>
               )}
-              <p className="mt-3 text-sm font-medium text-indigo-600">
+              <p className="mt-3" style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-4)", fontFamily: "var(--font-mono)", letterSpacing: "0.04em" }}>
                 {deck._count.cards} card{deck._count.cards !== 1 ? "s" : ""}
               </p>
             </button>
@@ -125,59 +149,70 @@ export default function DecksPage() {
       >
         <form onSubmit={(e) => { void handleCreate(e) }} className="space-y-4">
           {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+            <p className="rounded-r2 px-3 py-2"
+              style={{ background: "var(--red-50)", border: "1px solid var(--red-100)", fontSize: 13, color: "var(--red-ink)" }}
+            >
               {error}
             </p>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block" style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-2)" }}>
               Name
             </label>
             <input
               required
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              style={inputStyle}
               placeholder="e.g. Product Knowledge"
+              onFocus={(e) => { e.currentTarget.style.borderColor = "var(--blue-500)"; e.currentTarget.style.background = "var(--paper-raised)" }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ink-6)"; e.currentTarget.style.background = "var(--paper-sunken)" }}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block" style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-2)" }}>
               Description
             </label>
             <textarea
               rows={2}
               value={form.description}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, description: e.target.value }))
-              }
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              style={{ ...inputStyle, resize: "vertical" }}
               placeholder="Optional description"
+              onFocus={(e) => { e.currentTarget.style.borderColor = "var(--blue-500)"; e.currentTarget.style.background = "var(--paper-raised)" }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "var(--ink-6)"; e.currentTarget.style.background = "var(--paper-sunken)" }}
             />
           </div>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex items-center gap-2" style={{ fontSize: 13, color: "var(--ink-2)", cursor: "pointer" }}>
             <input
               type="checkbox"
               checked={form.isMandatory}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, isMandatory: e.target.checked }))
-              }
-              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              onChange={(e) => setForm((f) => ({ ...f, isMandatory: e.target.checked }))}
+              style={{ accentColor: "var(--ink-1)" }}
             />
-            <span className="text-gray-700">Mandatory for all agents</span>
+            <span>Mandatory for all agents</span>
           </label>
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={() => setShowCreate(false)}
-              className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+              className="rounded-r2 px-4 py-2"
+              style={{
+                background: "transparent", color: "var(--ink-3)",
+                border: "1px solid var(--ink-6)", fontSize: 13, cursor: "pointer",
+              }}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-60"
+              className="rounded-r2 px-4 py-2"
+              style={{
+                background: "var(--ink-1)", color: "var(--paper)",
+                border: "1px solid transparent", fontSize: 13, fontWeight: 500,
+                cursor: saving ? "default" : "pointer", opacity: saving ? 0.6 : 1,
+              }}
             >
               {saving ? "Creating…" : "Create"}
             </button>

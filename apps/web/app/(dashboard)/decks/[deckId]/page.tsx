@@ -257,11 +257,11 @@ export default function DeckDetailPage() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   if (loading) {
-    return <div className="mt-10 text-center text-sm text-gray-400">Loading…</div>
+    return <div className="mt-10 text-center text-sm text-ink-4">Loading…</div>
   }
 
   if (!deck) {
-    return <div className="mt-10 text-center text-sm text-gray-500">Deck not found.</div>
+    return <div className="mt-10 text-center text-sm text-ink-3">Deck not found.</div>
   }
 
   const activeCards = cards.filter((c) => c.status === "ACTIVE")
@@ -274,22 +274,22 @@ export default function DeckDetailPage() {
         <div>
           <button
             onClick={() => router.push("/decks")}
-            className="mb-2 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+            className="mb-2 flex items-center gap-1 text-sm text-ink-3 hover:text-ink-2"
           >
             <ArrowLeft className="h-4 w-4" />
             All Decks
           </button>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-gray-900">{deck.name}</h1>
+            <h1 className="text-2xl font-bold text-ink-1">{deck.name}</h1>
             {deck.isMandatory && (
-              <span className="flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-700">
+              <span className="flex items-center gap-1 rounded-full bg-ds-blue-100 px-2 py-0.5 text-xs text-ds-blue-ink">
                 <Lock className="h-3 w-3" />
                 Mandatory
               </span>
             )}
           </div>
           {deck.description && (
-            <p className="mt-1 text-sm text-gray-500">{deck.description}</p>
+            <p className="mt-1 text-sm text-ink-3">{deck.description}</p>
           )}
         </div>
         {isManager && (
@@ -297,14 +297,14 @@ export default function DeckDetailPage() {
             <ContentPipeline deckId={deckId} />
             <button
               onClick={() => { void openAssign() }}
-              className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="flex items-center gap-2 rounded-lg border border-ink-6 bg-paper-raised px-4 py-2 text-sm font-medium text-ink-2 hover:bg-paper-sunken"
             >
               <Users className="h-4 w-4" />
               Assign
             </button>
             <button
               onClick={openAdd}
-              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+              className="flex items-center gap-2 rounded-lg bg-ink-1 px-4 py-2 text-sm font-medium text-white hover:bg-ink-2"
             >
               <Plus className="h-4 w-4" />
               Add Card
@@ -315,8 +315,8 @@ export default function DeckDetailPage() {
 
       {/* Outdated source doc banner */}
       {hasOutdated && (
-        <div className="mt-4 flex items-start gap-2 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-500" />
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-ds-amber-100 bg-ds-amber-50 px-4 py-3 text-sm text-ds-amber-ink">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-ds-amber-500" />
           <span>
             A source document was re-uploaded with different content.
             Some cards may be outdated — regenerate from the updated document to create fresh drafts.
@@ -326,16 +326,16 @@ export default function DeckDetailPage() {
 
       {/* Draft cards pending review banner */}
       {draftCount > 0 && (
-        <div className="mt-4 flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+        <div className="mt-4 flex items-center justify-between rounded-xl border border-ds-blue-100 bg-ds-blue-50 px-4 py-3 text-sm text-ds-blue-ink">
           <div className="flex items-center gap-2">
-            <ClipboardCheck className="h-4 w-4 text-indigo-500" />
+            <ClipboardCheck className="h-4 w-4 text-ds-blue-500" />
             <span>
               <span className="font-semibold">{draftCount}</span> AI-generated card{draftCount !== 1 ? "s" : ""} pending review
             </span>
           </div>
           <button
             onClick={() => router.push(`/decks/${deckId}/review-cards`)}
-            className="rounded-lg bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-500"
+            className="rounded-lg bg-ink-1 px-3 py-1 text-xs font-medium text-white hover:bg-ink-2"
           >
             Review Now
           </button>
@@ -345,33 +345,33 @@ export default function DeckDetailPage() {
       {/* Active cards table */}
       <div className="mt-6">
         {activeCards.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-200 py-12 text-center text-sm text-gray-400">
+          <div className="rounded-xl border border-dashed border-ink-6 py-12 text-center text-sm text-ink-4">
             No active cards yet.{" "}
             {isManager && (
-              <button onClick={openAdd} className="text-indigo-600 hover:underline">
+              <button onClick={openAdd} className="text-ds-blue-600 hover:underline">
                 Add the first card
               </button>
             )}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <div className="overflow-hidden rounded-xl border border-ink-6 bg-paper-raised">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                <tr className="border-b border-ink-6 bg-paper-sunken text-left text-xs font-medium uppercase tracking-wide text-ink-3">
                   <th className="px-4 py-3">Question</th>
                   <th className="px-4 py-3">Format</th>
                   {isManager && <th className="px-4 py-3 text-right">Actions</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-ink-6">
                 {activeCards.map((card) => (
-                  <tr key={card.id} className="hover:bg-gray-50">
+                  <tr key={card.id} className="hover:bg-paper-sunken">
                     <td className="max-w-xs px-4 py-3">
-                      <p className="truncate font-medium text-gray-900">{card.question}</p>
-                      <p className="mt-0.5 truncate text-xs text-gray-400">{card.answer}</p>
+                      <p className="truncate font-medium text-ink-1">{card.question}</p>
+                      <p className="mt-0.5 truncate text-xs text-ink-4">{card.answer}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                      <span className="rounded-full bg-ink-6 px-2 py-0.5 text-xs text-ink-3">
                         {FORMAT_LABELS[card.format]}
                       </span>
                     </td>
@@ -380,14 +380,14 @@ export default function DeckDetailPage() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => openEdit(card)}
-                            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                            className="rounded p-1 text-ink-4 hover:bg-ink-6 hover:text-ink-3"
                             title="Edit"
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => { void handleArchive(card.id) }}
-                            className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                            className="rounded p-1 text-ink-4 hover:bg-ds-red-50 hover:text-ds-red-500"
                             title="Archive"
                           >
                             <Archive className="h-4 w-4" />
@@ -406,19 +406,19 @@ export default function DeckDetailPage() {
       {/* Archived cards */}
       {archivedCards.length > 0 && (
         <details className="mt-6">
-          <summary className="cursor-pointer text-sm text-gray-400 hover:text-gray-600">
+          <summary className="cursor-pointer text-sm text-ink-4 hover:text-ink-3">
             {archivedCards.length} archived card{archivedCards.length !== 1 ? "s" : ""}
           </summary>
-          <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-white opacity-60">
+          <div className="mt-3 overflow-hidden rounded-xl border border-ink-6 bg-paper-raised opacity-60">
             <table className="w-full text-sm">
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-ink-6">
                 {archivedCards.map((card) => (
                   <tr key={card.id}>
                     <td className="px-4 py-3">
-                      <p className="truncate text-gray-500 line-through">{card.question}</p>
+                      <p className="truncate text-ink-3 line-through">{card.question}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400">
+                      <span className="rounded-full bg-ink-6 px-2 py-0.5 text-xs text-ink-4">
                         {FORMAT_LABELS[card.format]}
                       </span>
                     </td>
@@ -433,14 +433,14 @@ export default function DeckDetailPage() {
       {/* Source documents section */}
       {(docs.length > 0 || isManager) && (
         <div className="mt-8">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">Source Documents</h2>
+          <h2 className="mb-3 text-sm font-semibold text-ink-2">Source Documents</h2>
           {regenMsg && (
-            <p className="mb-3 rounded-lg bg-indigo-50 px-3 py-2 text-sm text-indigo-700">
+            <p className="mb-3 rounded-lg bg-ds-blue-50 px-3 py-2 text-sm text-ds-blue-ink">
               {regenMsg}
             </p>
           )}
           {docs.length === 0 ? (
-            <p className="text-sm text-gray-400">No documents uploaded yet.</p>
+            <p className="text-sm text-ink-4">No documents uploaded yet.</p>
           ) : (
             <div className="space-y-2">
               {docs.map((doc) => {
@@ -448,22 +448,22 @@ export default function DeckDetailPage() {
                 return (
                   <div
                     key={doc.id}
-                    className={`flex items-center justify-between rounded-xl border bg-white px-4 py-3 ${
-                      isOutdated ? "border-yellow-200" : "border-gray-200"
+                    className={`flex items-center justify-between rounded-xl border bg-paper-raised px-4 py-3 ${
+                      isOutdated ? "border-ds-amber-100" : "border-ink-6"
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <FileText className={`h-5 w-5 ${isOutdated ? "text-yellow-400" : "text-gray-300"}`} />
+                      <FileText className={`h-5 w-5 ${isOutdated ? "text-ds-amber-500" : "text-ink-5"}`} />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-ink-1">
                           {doc.filename}
                           {isOutdated && (
-                            <span className="ml-2 rounded-full bg-yellow-100 px-2 py-0.5 text-xs text-yellow-700">
+                            <span className="ml-2 rounded-full bg-ds-amber-100 px-2 py-0.5 text-xs text-ds-amber-ink">
                               Updated
                             </span>
                           )}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-ink-4">
                           {fmtBytes(doc.sizeBytes)} · {doc._count.cards} card{doc._count.cards !== 1 ? "s" : ""} generated
                           {" "}· by {doc.uploadedBy.name ?? doc.uploadedBy.email}
                         </p>
@@ -473,10 +473,10 @@ export default function DeckDetailPage() {
                       <span
                         className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                           doc.status === "READY"
-                            ? "bg-green-50 text-green-600"
+                            ? "bg-ds-green-50 text-ds-green-ink"
                             : doc.status === "ERROR"
-                            ? "bg-red-50 text-red-600"
-                            : "bg-gray-100 text-gray-400"
+                            ? "bg-ds-red-50 text-ds-red-ink"
+                            : "bg-ink-6 text-ink-4"
                         }`}
                       >
                         {doc.status}
@@ -485,7 +485,7 @@ export default function DeckDetailPage() {
                         <button
                           onClick={() => { void handleRegenerate(doc.id) }}
                           disabled={regenerating === doc.id}
-                          className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                          className="flex items-center gap-1 rounded-lg border border-ink-6 px-2.5 py-1.5 text-xs text-ink-3 hover:bg-paper-sunken disabled:opacity-50"
                           title="Regenerate cards from this document"
                         >
                           <RefreshCw className={`h-3.5 w-3.5 ${regenerating === doc.id ? "animate-spin" : ""}`} />
@@ -509,14 +509,14 @@ export default function DeckDetailPage() {
       >
         <form onSubmit={(e) => { void handleSave(e) }} className="space-y-4">
           {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
+            <p className="rounded-lg bg-ds-red-50 px-3 py-2 text-sm text-ds-red-ink">{error}</p>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Format</label>
+            <label className="block text-sm font-medium text-ink-2">Format</label>
             <select
               value={form.format}
               onChange={(e) => setForm((f) => ({ ...f, format: e.target.value as CardFormat }))}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500"
             >
               <option value="QA">Q&amp;A</option>
               <option value="TRUE_FALSE">True / False</option>
@@ -524,24 +524,24 @@ export default function DeckDetailPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Question</label>
+            <label className="block text-sm font-medium text-ink-2">Question</label>
             <textarea
               required
               rows={3}
               value={form.question}
               onChange={(e) => setForm((f) => ({ ...f, question: e.target.value }))}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500"
               placeholder="Enter the question or prompt"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Answer</label>
+            <label className="block text-sm font-medium text-ink-2">Answer</label>
             <textarea
               required
               rows={3}
               value={form.answer}
               onChange={(e) => setForm((f) => ({ ...f, answer: e.target.value }))}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500"
               placeholder="Enter the answer"
             />
           </div>
@@ -549,14 +549,14 @@ export default function DeckDetailPage() {
             <button
               type="button"
               onClick={() => { setShowAdd(false); setEditCard(null) }}
-              className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+              className="rounded-lg px-4 py-2 text-sm text-ink-3 hover:bg-ink-6"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-60"
+              className="rounded-lg bg-ink-1 px-4 py-2 text-sm font-medium text-white hover:bg-ink-2 disabled:opacity-60"
             >
               {saving ? "Saving…" : editCard ? "Save Changes" : "Add Card"}
             </button>
@@ -573,32 +573,32 @@ export default function DeckDetailPage() {
       >
         <div className="space-y-4">
           {assignError && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{assignError}</p>
+            <p className="rounded-lg bg-ds-red-50 px-3 py-2 text-sm text-ds-red-ink">{assignError}</p>
           )}
           {allMembers.length === 0 ? (
-            <p className="text-sm text-gray-500">No team members found.</p>
+            <p className="text-sm text-ink-3">No team members found.</p>
           ) : (
             <>
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{selectedUserIds.size} selected</p>
-                <button onClick={selectAll} className="text-sm text-indigo-600 hover:underline">
+                <p className="text-sm text-ink-3">{selectedUserIds.size} selected</p>
+                <button onClick={selectAll} className="text-sm text-ds-blue-600 hover:underline">
                   Select all unassigned
                 </button>
               </div>
               {teams.map((team) => (
                 <div key={team.id}>
                   <div className="mb-1 flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-ink-4">
                       {team.name}
                     </p>
                     <button
                       onClick={() => selectEntireTeam(team)}
-                      className="text-xs text-indigo-600 hover:underline"
+                      className="text-xs text-ds-blue-600 hover:underline"
                     >
                       Select entire team
                     </button>
                   </div>
-                  <div className="divide-y divide-gray-100 overflow-hidden rounded-xl border border-gray-200 bg-white">
+                  <div className="divide-y divide-ink-6 overflow-hidden rounded-xl border border-ink-6 bg-paper-raised">
                     {team.members.map(({ userId, user }) => {
                       const alreadyAssigned = assignedUserIds.has(userId)
                       const checked = selectedUserIds.has(userId)
@@ -606,7 +606,7 @@ export default function DeckDetailPage() {
                         <label
                           key={userId}
                           className={`flex cursor-pointer items-center gap-3 px-4 py-3 ${
-                            alreadyAssigned ? "opacity-50" : "hover:bg-gray-50"
+                            alreadyAssigned ? "opacity-50" : "hover:bg-paper-sunken"
                           }`}
                         >
                           <input
@@ -614,18 +614,18 @@ export default function DeckDetailPage() {
                             checked={alreadyAssigned || checked}
                             disabled={alreadyAssigned}
                             onChange={() => toggleUser(userId)}
-                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            className="h-4 w-4 rounded border-ink-6 text-ds-blue-600 focus:ring-ds-blue-500"
                           />
                           <div>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-ink-1">
                               {user.name ?? user.email}
                             </p>
                             {user.name && (
-                              <p className="text-xs text-gray-400">{user.email}</p>
+                              <p className="text-xs text-ink-4">{user.email}</p>
                             )}
                           </div>
                           {alreadyAssigned && (
-                            <span className="ml-auto text-xs text-gray-400">Assigned</span>
+                            <span className="ml-auto text-xs text-ink-4">Assigned</span>
                           )}
                         </label>
                       )
@@ -638,14 +638,14 @@ export default function DeckDetailPage() {
           <div className="flex justify-end gap-2 pt-2">
             <button
               onClick={() => setShowAssign(false)}
-              className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+              className="rounded-lg px-4 py-2 text-sm text-ink-3 hover:bg-ink-6"
             >
               Cancel
             </button>
             <button
               onClick={() => { void handleAssign() }}
               disabled={assigning || selectedUserIds.size === 0}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-60"
+              className="rounded-lg bg-ink-1 px-4 py-2 text-sm font-medium text-white hover:bg-ink-2 disabled:opacity-60"
             >
               {assigning ? "Assigning…" : `Assign (${selectedUserIds.size})`}
             </button>

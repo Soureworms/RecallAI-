@@ -155,11 +155,11 @@ export default function ReviewCardsPage() {
   }
 
   if (!isManager) {
-    return <div className="mt-10 text-center text-sm text-gray-500">Access denied.</div>
+    return <div className="mt-10 text-center text-sm text-ink-3">Access denied.</div>
   }
 
   if (loading) {
-    return <div className="mt-10 text-center text-sm text-gray-400">Loading…</div>
+    return <div className="mt-10 text-center text-sm text-ink-4">Loading…</div>
   }
 
   const reviewed = approved + rejected
@@ -173,22 +173,22 @@ export default function ReviewCardsPage() {
         <div className="mb-4 flex-none">
           <button
             onClick={() => router.push(`/decks/${deckId}`)}
-            className="mb-3 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+            className="mb-3 flex items-center gap-1 text-sm text-ink-3 hover:text-ink-2"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Deck
           </button>
-          <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm">
-            <span className="text-gray-500">
-              <span className="font-semibold text-gray-900">{reviewed}</span> of{" "}
-              <span className="font-semibold text-gray-900">{totalInitial || remaining + reviewed}</span> reviewed
+          <div className="flex items-center justify-between rounded-xl border border-ink-6 bg-paper-raised px-4 py-3 text-sm">
+            <span className="text-ink-3">
+              <span className="font-semibold text-ink-1">{reviewed}</span> of{" "}
+              <span className="font-semibold text-ink-1">{totalInitial || remaining + reviewed}</span> reviewed
               {" "}·{" "}
-              <span className="text-green-600 font-semibold">{approved}</span> approved
+              <span className="text-ds-green-ink font-semibold">{approved}</span> approved
               {" "}·{" "}
-              <span className="text-red-500 font-semibold">{rejected}</span> rejected
+              <span className="text-ds-red-500 font-semibold">{rejected}</span> rejected
             </span>
             {remaining === 0 && (
-              <span className="font-medium text-green-600">All done!</span>
+              <span className="font-medium text-ds-green-ink">All done!</span>
             )}
           </div>
         </div>
@@ -199,7 +199,7 @@ export default function ReviewCardsPage() {
             <button
               onClick={() => void handleBulkApprove(true)}
               disabled={working}
-              className="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-60"
+              className="flex items-center gap-1.5 rounded-lg bg-ds-green-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-ds-green-600 disabled:opacity-60"
             >
               <CheckCheck className="h-4 w-4" />
               Approve All ({remaining})
@@ -208,7 +208,7 @@ export default function ReviewCardsPage() {
               <button
                 onClick={() => void handleBulkApprove(false)}
                 disabled={working}
-                className="flex items-center gap-1.5 rounded-lg border border-green-200 px-3 py-1.5 text-sm font-medium text-green-700 hover:bg-green-50 disabled:opacity-60"
+                className="flex items-center gap-1.5 rounded-lg border border-ds-green-100 px-3 py-1.5 text-sm font-medium text-ds-green-ink hover:bg-ds-green-50 disabled:opacity-60"
               >
                 <Check className="h-4 w-4" />
                 Approve Selected ({selected.size})
@@ -220,14 +220,14 @@ export default function ReviewCardsPage() {
         {/* Cards list */}
         <div className="flex-1 space-y-3 overflow-y-auto pr-1">
           {remaining === 0 ? (
-            <div className="mt-10 text-center text-sm text-gray-400">
+            <div className="mt-10 text-center text-sm text-ink-4">
               No more draft cards.
             </div>
           ) : (
             cards.map((card) => (
               <div
                 key={card.id}
-                className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                className="rounded-xl border border-ink-6 bg-paper-raised p-4 shadow-s1"
               >
                 {editingId === card.id ? (
                   /* Edit mode */
@@ -236,21 +236,21 @@ export default function ReviewCardsPage() {
                       rows={2}
                       value={editForm.question}
                       onChange={(e) => setEditForm((f) => ({ ...f, question: e.target.value }))}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500"
                       placeholder="Question"
                     />
                     <textarea
                       rows={2}
                       value={editForm.answer}
                       onChange={(e) => setEditForm((f) => ({ ...f, answer: e.target.value }))}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      className="w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500"
                       placeholder="Answer"
                     />
                     <div className="flex gap-2">
                       <select
                         value={editForm.format}
                         onChange={(e) => setEditForm((f) => ({ ...f, format: e.target.value as CardFormat }))}
-                        className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:outline-none"
+                        className="rounded-lg border border-ink-6 px-2 py-1.5 text-xs focus:border-ds-blue-500 focus:outline-none"
                       >
                         <option value="QA">Q&amp;A</option>
                         <option value="TRUE_FALSE">True / False</option>
@@ -260,7 +260,7 @@ export default function ReviewCardsPage() {
                         type="text"
                         value={editForm.tags}
                         onChange={(e) => setEditForm((f) => ({ ...f, tags: e.target.value }))}
-                        className="flex-1 rounded-lg border border-gray-300 px-2 py-1.5 text-xs focus:border-indigo-500 focus:outline-none"
+                        className="flex-1 rounded-lg border border-ink-6 px-2 py-1.5 text-xs focus:border-ds-blue-500 focus:outline-none"
                         placeholder="Tags (comma-separated)"
                       />
                     </div>
@@ -268,13 +268,13 @@ export default function ReviewCardsPage() {
                       <button
                         onClick={() => void handleApprove(card.id, true)}
                         disabled={working}
-                        className="flex items-center gap-1 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-500 disabled:opacity-60"
+                        className="flex items-center gap-1 rounded-lg bg-ds-green-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-ds-green-600 disabled:opacity-60"
                       >
                         <Check className="h-3 w-3" /> Save & Approve
                       </button>
                       <button
                         onClick={() => setEditingId(null)}
-                        className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
+                        className="rounded-lg border border-ink-6 px-3 py-1.5 text-xs text-ink-3 hover:bg-paper-sunken"
                       >
                         Cancel
                       </button>
@@ -288,20 +288,20 @@ export default function ReviewCardsPage() {
                         type="checkbox"
                         checked={selected.has(card.id)}
                         onChange={() => toggleSelect(card.id)}
-                        className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600"
+                        className="mt-1 h-4 w-4 rounded border-ink-6 text-ds-blue-600"
                       />
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900">{card.question}</p>
-                        <p className="mt-1 text-sm text-gray-500">{card.answer}</p>
+                        <p className="font-medium text-ink-1">{card.question}</p>
+                        <p className="mt-1 text-sm text-ink-3">{card.answer}</p>
                         <div className="mt-2 flex flex-wrap gap-1.5">
-                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                          <span className="rounded-full bg-ink-6 px-2 py-0.5 text-xs text-ink-3">
                             {FORMAT_LABELS[card.format]}
                           </span>
-                          <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-600">
+                          <span className="rounded-full bg-ds-blue-50 px-2 py-0.5 text-xs text-ds-blue-600">
                             {DIFF_LABELS[card.difficulty] ?? "Easy"}
                           </span>
                           {card.tags.map((tag) => (
-                            <span key={tag} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400">
+                            <span key={tag} className="rounded-full bg-ink-6 px-2 py-0.5 text-xs text-ink-4">
                               #{tag}
                             </span>
                           ))}
@@ -311,14 +311,14 @@ export default function ReviewCardsPage() {
                         <button
                           onClick={() => void handleApprove(card.id)}
                           disabled={working}
-                          className="rounded-lg bg-green-600 p-1.5 text-white hover:bg-green-500 disabled:opacity-60"
+                          className="rounded-lg bg-ds-green-500 p-1.5 text-white hover:bg-ds-green-600 disabled:opacity-60"
                           title="Approve"
                         >
                           <Check className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => startEdit(card)}
-                          className="rounded-lg border border-gray-200 p-1.5 text-gray-500 hover:bg-gray-50"
+                          className="rounded-lg border border-ink-6 p-1.5 text-ink-3 hover:bg-paper-sunken"
                           title="Edit & Approve"
                         >
                           <Pencil className="h-4 w-4" />
@@ -326,7 +326,7 @@ export default function ReviewCardsPage() {
                         <button
                           onClick={() => void handleReject(card.id)}
                           disabled={working}
-                          className="rounded-lg border border-red-100 p-1.5 text-red-400 hover:bg-red-50 disabled:opacity-60"
+                          className="rounded-lg border border-ds-red-100 p-1.5 text-ds-red-500 hover:bg-ds-red-50 disabled:opacity-60"
                           title="Reject"
                         >
                           <X className="h-4 w-4" />
@@ -342,17 +342,17 @@ export default function ReviewCardsPage() {
       </div>
 
       {/* ── Right panel (source doc) ─────────────────────────────────────── */}
-      <div className="flex w-2/5 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <div className="border-b border-gray-100 px-4 py-3">
-          <h2 className="text-sm font-semibold text-gray-700">Source Document</h2>
+      <div className="flex w-2/5 flex-col overflow-hidden rounded-xl border border-ink-6 bg-paper-raised">
+        <div className="border-b border-ink-6 px-4 py-3">
+          <h2 className="text-sm font-semibold text-ink-2">Source Document</h2>
         </div>
         <div className="flex-1 overflow-y-auto p-4">
           {sourceText ? (
-            <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-gray-600">
+            <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-ink-3">
               {sourceText}
             </pre>
           ) : (
-            <p className="text-sm text-gray-400">No source document text available.</p>
+            <p className="text-sm text-ink-4">No source document text available.</p>
           )}
         </div>
       </div>

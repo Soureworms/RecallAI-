@@ -111,7 +111,7 @@ export function ContentPipeline({ deckId }: Props) {
     <>
       <button
         onClick={openWizard}
-        className="flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+        className="flex items-center gap-2 rounded-lg border border-ds-blue-100 bg-ds-blue-50 px-4 py-2 text-sm font-medium text-ds-blue-ink hover:bg-ds-blue-100"
       >
         <Sparkles className="h-4 w-4" />
         Add Content
@@ -125,21 +125,21 @@ export function ContentPipeline({ deckId }: Props) {
               <div
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold ${
                   step === s.n
-                    ? "bg-indigo-600 text-white"
+                    ? "bg-ink-1 text-white"
                     : step > s.n
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-100 text-gray-400"
+                    ? "bg-ds-green-500 text-white"
+                    : "bg-ink-6 text-ink-4"
                 }`}
               >
                 {step > s.n ? "✓" : s.n}
               </div>
               <span
-                className={`text-sm ${step === s.n ? "font-medium text-gray-900" : "text-gray-400"}`}
+                className={`text-sm ${step === s.n ? "font-medium text-ink-1" : "text-ink-4"}`}
               >
                 {s.label}
               </span>
               {i < STEPS.length - 1 && (
-                <div className={`h-px w-8 ${step > s.n ? "bg-green-400" : "bg-gray-200"}`} />
+                <div className={`h-px w-8 ${step > s.n ? "bg-ds-green-500" : "bg-ink-6"}`} />
               )}
             </div>
           ))}
@@ -154,21 +154,21 @@ export function ContentPipeline({ deckId }: Props) {
               onDrop={onDrop}
               onClick={() => fileRef.current?.click()}
               className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-12 transition-colors ${
-                dragging ? "border-indigo-400 bg-indigo-50" : "border-gray-200 hover:border-gray-300"
+                dragging ? "border-ds-blue-500 bg-ds-blue-50" : "border-ink-6 hover:border-ink-6"
               }`}
             >
               {uploading ? (
                 <>
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
-                  <p className="text-sm text-gray-500">Uploading and extracting text…</p>
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-ds-blue-500 border-t-transparent" />
+                  <p className="text-sm text-ink-3">Uploading and extracting text…</p>
                 </>
               ) : (
                 <>
-                  <Upload className="h-8 w-8 text-gray-300" />
-                  <p className="text-sm font-medium text-gray-700">
+                  <Upload className="h-8 w-8 text-ink-5" />
+                  <p className="text-sm font-medium text-ink-2">
                     Drop a file here or click to browse
                   </p>
-                  <p className="text-xs text-gray-400">PDF, DOCX, TXT, MD · max 10 MB</p>
+                  <p className="text-xs text-ink-4">PDF, DOCX, TXT, MD · max 10 MB</p>
                 </>
               )}
             </div>
@@ -183,7 +183,7 @@ export function ContentPipeline({ deckId }: Props) {
               }}
             />
             {uploadError && (
-              <p className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+              <p className="flex items-center gap-2 rounded-lg bg-ds-red-50 px-3 py-2 text-sm text-ds-red-ink">
                 <X className="h-4 w-4 shrink-0" />
                 {uploadError}
               </p>
@@ -196,26 +196,26 @@ export function ContentPipeline({ deckId }: Props) {
           <div className="flex flex-col items-center gap-5 py-10">
             {generating ? (
               <>
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent" />
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-ds-blue-500 border-t-transparent" />
                 <div className="text-center">
-                  <p className="font-medium text-gray-900">Generating cards with AI…</p>
+                  <p className="font-medium text-ink-1">Generating cards with AI…</p>
                   {uploadedDoc && (
-                    <p className="mt-1 flex items-center justify-center gap-1.5 text-sm text-gray-400">
+                    <p className="mt-1 flex items-center justify-center gap-1.5 text-sm text-ink-4">
                       <FileText className="h-4 w-4" />
                       {uploadedDoc.filename}
                     </p>
                   )}
-                  <p className="mt-1 text-xs text-gray-400">
+                  <p className="mt-1 text-xs text-ink-4">
                     This may take a moment for longer documents.
                   </p>
                 </div>
               </>
             ) : genError ? (
               <div className="w-full space-y-3">
-                <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{genError}</p>
+                <p className="rounded-lg bg-ds-red-50 px-4 py-3 text-sm text-ds-red-ink">{genError}</p>
                 <button
                   onClick={() => { if (uploadedDoc) void triggerGenerate(uploadedDoc.id) }}
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+                  className="rounded-lg bg-ink-1 px-4 py-2 text-sm font-medium text-white hover:bg-ink-2"
                 >
                   Retry
                 </button>
@@ -227,21 +227,21 @@ export function ContentPipeline({ deckId }: Props) {
         {/* ── Step 3: Review ─────────────────────────────────────────────── */}
         {step === 3 && (
           <div className="flex flex-col items-center gap-5 py-8 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-100">
-              <CheckCheck className="h-7 w-7 text-green-600" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-ds-green-100">
+              <CheckCheck className="h-7 w-7 text-ds-green-ink" />
             </div>
             <div>
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-lg font-semibold text-ink-1">
                 Generation complete!
               </p>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-ink-3">
                 {genCount ?? 0} draft card{genCount !== 1 ? "s" : ""} created.
                 Review and approve them before they go live.
               </p>
             </div>
             <button
               onClick={finish}
-              className="rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500"
+              className="rounded-xl bg-ink-1 px-6 py-2.5 text-sm font-semibold text-white hover:bg-ink-2"
             >
               Review Cards →
             </button>

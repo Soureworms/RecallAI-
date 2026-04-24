@@ -65,12 +65,12 @@ type UserAnalyticsData = {
 // ─── skeleton ─────────────────────────────────────────────────────────────────
 
 function Skeleton({ className }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-gray-200 ${className ?? ""}`} />
+  return <div className={`animate-pulse rounded bg-ink-6 ${className ?? ""}`} />
 }
 
 function ChartSkeleton() {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="rounded-xl border border-ink-6 bg-paper-raised p-6 shadow-s1">
       <Skeleton className="mb-4 h-4 w-40" />
       <Skeleton className="h-48 w-full" />
     </div>
@@ -80,10 +80,10 @@ function ChartSkeleton() {
 // ─── rating label ─────────────────────────────────────────────────────────────
 
 const RATING_LABELS: Record<number, { label: string; color: string }> = {
-  1: { label: "Again", color: "bg-red-100 text-red-700" },
-  2: { label: "Hard", color: "bg-amber-100 text-amber-700" },
-  3: { label: "Good", color: "bg-blue-100 text-blue-700" },
-  4: { label: "Easy", color: "bg-green-100 text-green-700" },
+  1: { label: "Again", color: "bg-ds-red-100 text-ds-red-ink" },
+  2: { label: "Hard", color: "bg-ds-amber-100 text-ds-amber-ink" },
+  3: { label: "Good", color: "bg-ds-blue-100 text-ds-blue-ink" },
+  4: { label: "Easy", color: "bg-ds-green-100 text-ds-green-ink" },
 }
 
 // ─── main component ───────────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ export function UserAnalytics({
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+      <div className="rounded-lg border border-ds-red-100 bg-ds-red-50 p-4 text-sm text-ds-red-ink">
         {error}
       </div>
     )
@@ -129,30 +129,30 @@ export function UserAnalytics({
     <div className="space-y-8">
       {title && (
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+          <h1 className="text-2xl font-bold text-ink-1">{title}</h1>
         </div>
       )}
 
       {/* New hire ramp */}
       {!loading && data?.newHireProgress && (
-        <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-5">
+        <div className="rounded-xl border border-ds-blue-100 bg-ds-blue-50 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-indigo-800">
+              <p className="text-sm font-semibold text-ds-blue-ink">
                 Onboarding — Week {data.newHireProgress.weeksOnboarding}
               </p>
-              <p className="mt-0.5 text-xs text-indigo-500">
+              <p className="mt-0.5 text-xs text-ds-blue-500">
                 {data.newHireProgress.onTrack ? "On track" : "Behind schedule"}
               </p>
             </div>
-            <span className="text-2xl font-bold text-indigo-700">
+            <span className="text-2xl font-bold text-ds-blue-ink">
               {data.newHireProgress.completionPct}%
             </span>
           </div>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-indigo-200">
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-ds-blue-100">
             <div
               className={`h-full rounded-full ${
-                data.newHireProgress.onTrack ? "bg-indigo-500" : "bg-amber-400"
+                data.newHireProgress.onTrack ? "bg-ds-blue-500" : "bg-ds-amber-500"
               }`}
               style={{ width: `${data.newHireProgress.completionPct}%` }}
             />
@@ -161,8 +161,8 @@ export function UserAnalytics({
       )}
 
       {/* Retention timeline */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-sm font-semibold text-gray-700">
+      <div className="rounded-xl border border-ink-6 bg-paper-raised p-6 shadow-s1">
+        <h2 className="mb-4 text-sm font-semibold text-ink-2">
           Retention Over Time
         </h2>
         {loading ? (
@@ -193,13 +193,13 @@ export function UserAnalytics({
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-sm text-gray-400">No review history yet.</p>
+          <p className="text-sm text-ink-4">No review history yet.</p>
         )}
       </div>
 
       {/* Review activity */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-sm font-semibold text-gray-700">
+      <div className="rounded-xl border border-ink-6 bg-paper-raised p-6 shadow-s1">
+        <h2 className="mb-4 text-sm font-semibold text-ink-2">
           Daily Review Activity (Last 30 Days)
         </h2>
         {loading ? (
@@ -224,13 +224,13 @@ export function UserAnalytics({
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-sm text-gray-400">No activity yet.</p>
+          <p className="text-sm text-ink-4">No activity yet.</p>
         )}
       </div>
 
       {/* Deck progress */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-sm font-semibold text-gray-700">Deck Progress</h2>
+      <div className="rounded-xl border border-ink-6 bg-paper-raised p-6 shadow-s1">
+        <h2 className="mb-4 text-sm font-semibold text-ink-2">Deck Progress</h2>
         {loading ? (
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -242,51 +242,51 @@ export function UserAnalytics({
             {data.deckProgress.map((d) => (
               <div key={d.deckId}>
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">{d.deckName}</span>
-                  <span className="text-xs text-gray-400">{d.totalCards} cards</span>
+                  <span className="text-sm font-medium text-ink-2">{d.deckName}</span>
+                  <span className="text-xs text-ink-4">{d.totalCards} cards</span>
                 </div>
-                <div className="flex h-2.5 overflow-hidden rounded-full bg-gray-100">
+                <div className="flex h-2.5 overflow-hidden rounded-full bg-ink-6">
                   <div
-                    className="bg-green-500"
+                    className="bg-ds-green-500"
                     style={{ width: `${d.masteredPct}%` }}
                     title={`Mastered: ${d.masteredPct}%`}
                   />
                   <div
-                    className="bg-indigo-400"
+                    className="bg-ds-blue-500"
                     style={{ width: `${d.learningPct}%` }}
                     title={`Learning: ${d.learningPct}%`}
                   />
                   <div
-                    className="bg-gray-300"
+                    className="bg-ink-5"
                     style={{ width: `${d.newPct}%` }}
                     title={`New: ${d.newPct}%`}
                   />
                 </div>
-                <div className="mt-1 flex gap-3 text-xs text-gray-400">
+                <div className="mt-1 flex gap-3 text-xs text-ink-4">
                   <span>
-                    <span className="font-medium text-green-600">{d.masteredPct}%</span> mastered
+                    <span className="font-medium text-ds-green-ink">{d.masteredPct}%</span> mastered
                   </span>
                   <span>
-                    <span className="font-medium text-indigo-500">{d.learningPct}%</span> learning
+                    <span className="font-medium text-ds-blue-500">{d.learningPct}%</span> learning
                   </span>
                   <span>
-                    <span className="font-medium text-gray-500">{d.newPct}%</span> new
+                    <span className="font-medium text-ink-3">{d.newPct}%</span> new
                   </span>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-400">No decks assigned.</p>
+          <p className="text-sm text-ink-4">No decks assigned.</p>
         )}
       </div>
 
       {/* Weakest cards */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-100 px-6 py-4">
+      <div className="rounded-xl border border-ink-6 bg-paper-raised shadow-s1">
+        <div className="border-b border-ink-6 px-6 py-4">
           <div className="flex items-center gap-2">
-            <TrendingDown className="h-4 w-4 text-red-500" />
-            <h2 className="text-sm font-semibold text-gray-700">Weakest Cards</h2>
+            <TrendingDown className="h-4 w-4 text-ds-red-500" />
+            <h2 className="text-sm font-semibold text-ink-2">Weakest Cards</h2>
           </div>
         </div>
         {loading ? (
@@ -296,44 +296,44 @@ export function UserAnalytics({
             ))}
           </div>
         ) : data && data.weakCards.length > 0 ? (
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-ink-6">
             {data.weakCards.map((c) => (
               <div key={c.cardId} className="flex items-start gap-4 px-6 py-4">
-                <Brain className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+                <Brain className="mt-0.5 h-4 w-4 shrink-0 text-ds-red-500" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-900">
+                  <p className="truncate text-sm font-medium text-ink-1">
                     {c.question}
                   </p>
-                  <p className="text-xs text-gray-400">{c.deckName}</p>
+                  <p className="text-xs text-ink-4">{c.deckName}</p>
                 </div>
                 <div className="shrink-0 text-right">
                   <span
                     className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
                       c.retention >= 60
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-red-100 text-red-700"
+                        ? "bg-ds-amber-100 text-ds-amber-ink"
+                        : "bg-ds-red-100 text-ds-red-ink"
                     }`}
                   >
                     {c.retention}%
                   </span>
                   {c.lapses > 0 && (
-                    <p className="mt-0.5 text-xs text-gray-400">{c.lapses} lapses</p>
+                    <p className="mt-0.5 text-xs text-ink-4">{c.lapses} lapses</p>
                   )}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="p-6 text-sm text-gray-400">No weak cards — great work!</p>
+          <p className="p-6 text-sm text-ink-4">No weak cards — great work!</p>
         )}
       </div>
 
       {/* Recent reviews */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-100 px-6 py-4">
+      <div className="rounded-xl border border-ink-6 bg-paper-raised shadow-s1">
+        <div className="border-b border-ink-6 px-6 py-4">
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-gray-400" />
-            <h2 className="text-sm font-semibold text-gray-700">Recent Reviews</h2>
+            <Clock className="h-4 w-4 text-ink-4" />
+            <h2 className="text-sm font-semibold text-ink-2">Recent Reviews</h2>
           </div>
         </div>
         {loading ? (
@@ -346,25 +346,25 @@ export function UserAnalytics({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <tr className="border-b border-ink-6 bg-paper-sunken text-left text-xs font-semibold uppercase tracking-wide text-ink-3">
                   <th className="px-4 py-3">Question</th>
                   <th className="px-4 py-3">Deck</th>
                   <th className="px-4 py-3">Rating</th>
                   <th className="px-4 py-3">When</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-ink-6">
                 {data.recentReviews.map((r, i) => {
                   const ratingInfo = RATING_LABELS[r.rating] ?? {
                     label: String(r.rating),
-                    color: "bg-gray-100 text-gray-600",
+                    color: "bg-ink-6 text-ink-3",
                   }
                   return (
-                    <tr key={`${r.cardId}-${i}`} className="hover:bg-gray-50">
-                      <td className="max-w-xs truncate px-4 py-3 text-gray-900">
+                    <tr key={`${r.cardId}-${i}`} className="hover:bg-paper-sunken">
+                      <td className="max-w-xs truncate px-4 py-3 text-ink-1">
                         {r.question}
                       </td>
-                      <td className="px-4 py-3 text-gray-500">{r.deckName}</td>
+                      <td className="px-4 py-3 text-ink-3">{r.deckName}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${ratingInfo.color}`}
@@ -372,7 +372,7 @@ export function UserAnalytics({
                           {ratingInfo.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-400">
+                      <td className="px-4 py-3 text-ink-4">
                         {new Date(r.reviewedAt).toLocaleDateString(undefined, {
                           month: "short",
                           day: "numeric",
@@ -387,7 +387,7 @@ export function UserAnalytics({
             </table>
           </div>
         ) : (
-          <p className="p-6 text-sm text-gray-400">No reviews yet.</p>
+          <p className="p-6 text-sm text-ink-4">No reviews yet.</p>
         )}
       </div>
     </div>

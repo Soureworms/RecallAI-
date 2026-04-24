@@ -75,14 +75,14 @@ type TeamData = {
 function Skeleton({ className }: { className?: string }) {
   return (
     <div
-      className={`animate-pulse rounded bg-gray-200 ${className ?? ""}`}
+      className={`animate-pulse rounded bg-ink-6 ${className ?? ""}`}
     />
   )
 }
 
 function StatCardSkeleton() {
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="flex flex-col gap-3 rounded-xl border border-ink-6 bg-paper-raised p-5 shadow-s1">
       <Skeleton className="h-4 w-32" />
       <Skeleton className="h-10 w-20" />
     </div>
@@ -105,13 +105,13 @@ function StatCard({
   color: string
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div className={`flex items-center gap-2 text-sm font-medium text-gray-500`}>
+    <div className="flex flex-col gap-3 rounded-xl border border-ink-6 bg-paper-raised p-5 shadow-s1">
+      <div className={`flex items-center gap-2 text-sm font-medium text-ink-3`}>
         <span className={color}>{icon}</span>
         {label}
       </div>
-      <p className="text-4xl font-bold text-gray-900">{value}</p>
-      {sub && <p className="text-xs text-gray-400">{sub}</p>}
+      <p className="text-4xl font-bold text-ink-1">{value}</p>
+      {sub && <p className="text-xs text-ink-4">{sub}</p>}
     </div>
   )
 }
@@ -153,11 +153,11 @@ function useSortedRows<T extends Record<string, unknown>>(
   }
 
   function SortIcon({ col }: { col: keyof T }) {
-    if (col !== key) return <ChevronDown className="inline h-3 w-3 text-gray-300" />
+    if (col !== key) return <ChevronDown className="inline h-3 w-3 text-ink-5" />
     return dir === "asc" ? (
-      <ChevronUp className="inline h-3 w-3 text-indigo-500" />
+      <ChevronUp className="inline h-3 w-3 text-ds-blue-500" />
     ) : (
-      <ChevronDown className="inline h-3 w-3 text-indigo-500" />
+      <ChevronDown className="inline h-3 w-3 text-ds-blue-500" />
     )
   }
 
@@ -175,10 +175,10 @@ function retentionColor(r: number): string {
 function RetentionBadge({ value }: { value: number }) {
   const color =
     value >= 80
-      ? "bg-green-100 text-green-700"
+      ? "bg-ds-green-100 text-ds-green-ink"
       : value >= 60
-      ? "bg-amber-100 text-amber-700"
-      : "bg-red-100 text-red-700"
+      ? "bg-ds-amber-100 text-ds-amber-ink"
+      : "bg-ds-red-100 text-ds-red-ink"
   return (
     <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${color}`}>
       {value}%
@@ -277,8 +277,8 @@ export default function TeamPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Team Analytics</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-ink-1">Team Analytics</h1>
+          <p className="mt-1 text-sm text-ink-3">
             Monitor your team&apos;s learning performance
           </p>
         </div>
@@ -286,7 +286,7 @@ export default function TeamPage() {
           <select
             value={selectedTeam}
             onChange={(e) => setSelectedTeam(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="rounded-lg border border-ink-6 px-3 py-2 text-sm text-ink-2 focus:outline-none focus:ring-2 focus:ring-ds-blue-500"
           >
             {teams.map((t) => (
               <option key={t.id} value={t.id}>
@@ -303,9 +303,9 @@ export default function TeamPage() {
           {alerts.map((msg, i) => (
             <div
               key={i}
-              className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+              className="flex items-start gap-3 rounded-lg border border-ds-amber-100 bg-ds-amber-50 p-3 text-sm text-ds-amber-ink"
             >
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-ds-amber-500" />
               {msg}
             </div>
           ))}
@@ -313,7 +313,7 @@ export default function TeamPage() {
       )}
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="rounded-lg border border-ds-red-100 bg-ds-red-50 p-3 text-sm text-ds-red-ink">
           {error}
         </div>
       )}
@@ -328,34 +328,34 @@ export default function TeamPage() {
               icon={<Users className="h-4 w-4" />}
               label="Team Size"
               value={data?.teamSize ?? "—"}
-              color="text-indigo-500"
+              color="text-ds-blue-500"
             />
             <StatCard
               icon={<Brain className="h-4 w-4" />}
               label="Avg Retention"
               value={data ? `${data.avgRetention}%` : "—"}
               sub={data && data.avgRetention < 70 ? "Below target (70%)" : undefined}
-              color="text-purple-500"
+              color="text-ds-violet-500"
             />
             <StatCard
               icon={<CheckCircle className="h-4 w-4" />}
               label="Completion Rate"
               value={data ? `${data.avgCompletionRate}%` : "—"}
-              color="text-green-500"
+              color="text-ds-green-500"
             />
             <StatCard
               icon={<Brain className="h-4 w-4" />}
               label="Active Cards"
               value={data?.totalActiveCards ?? "—"}
-              color="text-blue-500"
+              color="text-ds-blue-500"
             />
           </>
         )}
       </div>
 
       {/* Retention by Deck chart */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-sm font-semibold text-gray-700">Retention by Deck</h2>
+      <div className="rounded-xl border border-ink-6 bg-paper-raised p-6 shadow-s1">
+        <h2 className="mb-4 text-sm font-semibold text-ink-2">Retention by Deck</h2>
         {loading ? (
           <div className="space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -388,14 +388,14 @@ export default function TeamPage() {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-sm text-gray-400">No deck data yet.</p>
+          <p className="text-sm text-ink-4">No deck data yet.</p>
         )}
       </div>
 
       {/* Team Members table */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-100 px-6 py-4">
-          <h2 className="text-sm font-semibold text-gray-700">Team Members</h2>
+      <div className="rounded-xl border border-ink-6 bg-paper-raised shadow-s1">
+        <div className="border-b border-ink-6 px-6 py-4">
+          <h2 className="text-sm font-semibold text-ink-2">Team Members</h2>
         </div>
         {loading ? (
           <div className="p-6 space-y-3">
@@ -407,7 +407,7 @@ export default function TeamPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <tr className="border-b border-ink-6 bg-paper-sunken text-left text-xs font-semibold uppercase tracking-wide text-ink-3">
                   {(
                     [
                       ["name", "Name"],
@@ -419,7 +419,7 @@ export default function TeamPage() {
                   ).map(([col, label]) => (
                     <th
                       key={col}
-                      className="cursor-pointer select-none px-4 py-3 hover:text-gray-700"
+                      className="cursor-pointer select-none px-4 py-3 hover:text-ink-2"
                       onClick={() => memberTable.toggle(col)}
                     >
                       {label} <memberTable.SortIcon col={col} />
@@ -428,12 +428,12 @@ export default function TeamPage() {
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-ink-6">
                 {memberTable.sorted.map((u) => (
-                  <tr key={u.userId} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">
+                  <tr key={u.userId} className="hover:bg-paper-sunken">
+                    <td className="px-4 py-3 font-medium text-ink-1">
                       {u.name}
-                      <div className="text-xs text-gray-400">{u.email}</div>
+                      <div className="text-xs text-ink-4">{u.email}</div>
                     </td>
                     <td className="px-4 py-3">
                       <RetentionBadge value={u.avgRetention} />
@@ -441,10 +441,10 @@ export default function TeamPage() {
                     <td className="px-4 py-3">
                       <RetentionBadge value={u.completionRate} />
                     </td>
-                    <td className="px-4 py-3 text-gray-600">
+                    <td className="px-4 py-3 text-ink-3">
                       {u.reviewsThisWeek}
                     </td>
-                    <td className="px-4 py-3 text-gray-400">
+                    <td className="px-4 py-3 text-ink-4">
                       {u.lastReviewAt
                         ? new Date(u.lastReviewAt).toLocaleDateString()
                         : "Never"}
@@ -452,7 +452,7 @@ export default function TeamPage() {
                     <td className="px-4 py-3">
                       <button
                         onClick={() => router.push(`/team/${u.userId}`)}
-                        className="text-xs text-indigo-600 hover:underline"
+                        className="text-xs text-ds-blue-600 hover:underline"
                       >
                         View
                       </button>
@@ -463,18 +463,18 @@ export default function TeamPage() {
             </table>
           </div>
         ) : (
-          <p className="p-6 text-sm text-gray-400">No team members found.</p>
+          <p className="p-6 text-sm text-ink-4">No team members found.</p>
         )}
       </div>
 
       {/* Knowledge Gaps table */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-100 px-6 py-4">
+      <div className="rounded-xl border border-ink-6 bg-paper-raised shadow-s1">
+        <div className="border-b border-ink-6 px-6 py-4">
           <div className="flex items-center gap-2">
-            <TrendingDown className="h-4 w-4 text-red-500" />
-            <h2 className="text-sm font-semibold text-gray-700">Knowledge Gaps</h2>
+            <TrendingDown className="h-4 w-4 text-ds-red-500" />
+            <h2 className="text-sm font-semibold text-ink-2">Knowledge Gaps</h2>
           </div>
-          <p className="mt-0.5 text-xs text-gray-400">
+          <p className="mt-0.5 text-xs text-ink-4">
             Cards with the lowest average retention across your org
           </p>
         </div>
@@ -488,7 +488,7 @@ export default function TeamPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <tr className="border-b border-ink-6 bg-paper-sunken text-left text-xs font-semibold uppercase tracking-wide text-ink-3">
                   {(
                     [
                       ["question", "Question"],
@@ -499,7 +499,7 @@ export default function TeamPage() {
                   ).map(([col, label]) => (
                     <th
                       key={col}
-                      className="cursor-pointer select-none px-4 py-3 hover:text-gray-700"
+                      className="cursor-pointer select-none px-4 py-3 hover:text-ink-2"
                       onClick={() => gapsTable.toggle(col)}
                     >
                       {label} <gapsTable.SortIcon col={col} />
@@ -507,61 +507,61 @@ export default function TeamPage() {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-ink-6">
                 {gapsTable.sorted.map((g) => (
-                  <tr key={g.cardId} className="hover:bg-gray-50">
-                    <td className="max-w-xs truncate px-4 py-3 text-gray-900">
+                  <tr key={g.cardId} className="hover:bg-paper-sunken">
+                    <td className="max-w-xs truncate px-4 py-3 text-ink-1">
                       {g.question}
                     </td>
-                    <td className="px-4 py-3 text-gray-500">{g.deckName}</td>
+                    <td className="px-4 py-3 text-ink-3">{g.deckName}</td>
                     <td className="px-4 py-3">
                       <RetentionBadge value={g.avgRetention} />
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{g.reviewCount}</td>
+                    <td className="px-4 py-3 text-ink-3">{g.reviewCount}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <p className="p-6 text-sm text-gray-400">No knowledge gaps detected.</p>
+          <p className="p-6 text-sm text-ink-4">No knowledge gaps detected.</p>
         )}
       </div>
 
       {/* New Hire Ramp */}
       {data && data.newHireProgress.length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="border-b border-gray-100 px-6 py-4">
-            <h2 className="text-sm font-semibold text-gray-700">New Hire Onboarding</h2>
+        <div className="rounded-xl border border-ink-6 bg-paper-raised shadow-s1">
+          <div className="border-b border-ink-6 px-6 py-4">
+            <h2 className="text-sm font-semibold text-ink-2">New Hire Onboarding</h2>
           </div>
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-ink-6">
             {data.newHireProgress.map((h) => (
               <div key={h.userId} className="flex items-center gap-4 px-6 py-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">{h.name}</span>
+                    <span className="font-medium text-ink-1">{h.name}</span>
                     {!h.onTrack && (
-                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600">
+                      <span className="rounded-full bg-ds-red-100 px-2 py-0.5 text-xs font-semibold text-ds-red-ink">
                         Behind
                       </span>
                     )}
                     {h.onTrack && (
-                      <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-600">
+                      <span className="rounded-full bg-ds-green-100 px-2 py-0.5 text-xs font-semibold text-ds-green-ink">
                         On track
                       </span>
                     )}
                   </div>
-                  <div className="mt-1 text-xs text-gray-400">
+                  <div className="mt-1 text-xs text-ink-4">
                     Week {h.weeksOnboarding} of onboarding
                   </div>
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-ink-6">
                     <div
-                      className={`h-full rounded-full ${h.onTrack ? "bg-green-500" : "bg-amber-400"}`}
+                      className={`h-full rounded-full ${h.onTrack ? "bg-ds-green-500" : "bg-ds-amber-500"}`}
                       style={{ width: `${h.completionPct}%` }}
                     />
                   </div>
                 </div>
-                <span className="shrink-0 text-sm font-semibold text-gray-700">
+                <span className="shrink-0 text-sm font-semibold text-ink-2">
                   {h.completionPct}%
                 </span>
               </div>

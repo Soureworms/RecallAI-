@@ -51,7 +51,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={copy}
-      className="ml-1 inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs text-indigo-600 hover:bg-indigo-50"
+      className="ml-1 inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs text-ds-blue-600 hover:bg-ds-blue-50"
     >
       {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
       {copied ? "Copied" : "Copy"}
@@ -64,10 +64,10 @@ function CopyButton({ text }: { text: string }) {
 function RoleBadge({ role }: { role: string }) {
   const color =
     role === "ADMIN"
-      ? "bg-purple-100 text-purple-700"
+      ? "bg-ds-violet-100 text-ds-violet-700"
       : role === "MANAGER"
-      ? "bg-blue-100 text-blue-700"
-      : "bg-gray-100 text-gray-600"
+      ? "bg-ds-blue-100 text-ds-blue-ink"
+      : "bg-ink-6 text-ink-3"
   return (
     <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${color}`}>
       {role}
@@ -208,15 +208,15 @@ export default function TeamSettingsPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <Settings className="h-5 w-5 text-gray-400" />
-          <h1 className="text-2xl font-bold text-gray-900">Team Settings</h1>
+          <Settings className="h-5 w-5 text-ink-4" />
+          <h1 className="text-2xl font-bold text-ink-1">Team Settings</h1>
         </div>
         <div className="flex items-center gap-3">
           {teams.length > 1 && (
             <select
               value={selectedTeamId}
               onChange={(e) => setSelectedTeamId(e.target.value)}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="rounded-lg border border-ink-6 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ds-blue-500"
             >
               {teams.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
@@ -226,7 +226,7 @@ export default function TeamSettingsPage() {
           {isAdmin && (
             <button
               onClick={() => setShowCreateTeam(true)}
-              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+              className="flex items-center gap-2 rounded-lg bg-ink-1 px-4 py-2 text-sm font-medium text-white hover:bg-ink-2"
             >
               <Plus className="h-4 w-4" />
               New Team
@@ -236,12 +236,12 @@ export default function TeamSettingsPage() {
       </div>
 
       {teams.length === 0 && (
-        <div className="rounded-xl border border-dashed border-gray-300 p-12 text-center text-sm text-gray-400">
+        <div className="rounded-xl border border-dashed border-ink-6 p-12 text-center text-sm text-ink-4">
           No teams yet.{" "}
           {isAdmin && (
             <button
               onClick={() => setShowCreateTeam(true)}
-              className="text-indigo-600 underline"
+              className="text-ds-blue-600 underline"
             >
               Create one
             </button>
@@ -252,35 +252,35 @@ export default function TeamSettingsPage() {
       {selectedTeam && (
         <>
           {/* Team name */}
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-sm font-semibold text-gray-700">Team Name</h2>
+          <div className="rounded-xl border border-ink-6 bg-paper-raised p-6 shadow-s1">
+            <h2 className="mb-4 text-sm font-semibold text-ink-2">Team Name</h2>
             {editingName ? (
               <div className="flex items-center gap-2">
                 <input
                   value={teamNameDraft}
                   onChange={(e) => setTeamNameDraft(e.target.value)}
-                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="rounded-lg border border-ink-6 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ds-blue-500"
                 />
                 <button
                   onClick={() => void handleSaveName()}
                   disabled={savingName}
-                  className="rounded-lg bg-indigo-600 px-3 py-2 text-sm text-white hover:bg-indigo-500 disabled:opacity-60"
+                  className="rounded-lg bg-ink-1 px-3 py-2 text-sm text-white hover:bg-ink-2 disabled:opacity-60"
                 >
                   {savingName ? "Saving…" : "Save"}
                 </button>
                 <button
                   onClick={() => setEditingName(false)}
-                  className="rounded-lg px-3 py-2 text-sm text-gray-500 hover:bg-gray-100"
+                  className="rounded-lg px-3 py-2 text-sm text-ink-3 hover:bg-ink-6"
                 >
                   Cancel
                 </button>
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <span className="text-base font-medium text-gray-900">{selectedTeam.name}</span>
+                <span className="text-base font-medium text-ink-1">{selectedTeam.name}</span>
                 <button
                   onClick={() => { setTeamNameDraft(selectedTeam.name); setEditingName(true) }}
-                  className="text-xs text-indigo-600 hover:underline"
+                  className="text-xs text-ds-blue-600 hover:underline"
                 >
                   Rename
                 </button>
@@ -289,41 +289,41 @@ export default function TeamSettingsPage() {
           </div>
 
           {/* Members */}
-          <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+          <div className="rounded-xl border border-ink-6 bg-paper-raised shadow-s1">
+            <div className="flex items-center justify-between border-b border-ink-6 px-6 py-4">
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-gray-400" />
-                <h2 className="text-sm font-semibold text-gray-700">
+                <Users className="h-4 w-4 text-ink-4" />
+                <h2 className="text-sm font-semibold text-ink-2">
                   Members ({selectedTeam.members.length})
                 </h2>
               </div>
               <button
                 onClick={() => { setShowInvite(true); setInviteResult(null); setInviteError(null) }}
-                className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
+                className="flex items-center gap-1 rounded-lg bg-ink-1 px-3 py-1.5 text-sm font-medium text-white hover:bg-ink-2"
               >
                 <UserPlus className="h-3.5 w-3.5" />
                 Invite Member
               </button>
             </div>
             {selectedTeam.members.length === 0 ? (
-              <p className="p-6 text-sm text-gray-400">No members yet.</p>
+              <p className="p-6 text-sm text-ink-4">No members yet.</p>
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-ink-6">
                 {selectedTeam.members.map(({ user }) => (
                   <div key={user.id} className="flex items-center gap-4 px-6 py-4">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ds-blue-100 text-xs font-semibold text-ds-blue-ink">
                       {(user.name ?? user.email).slice(0, 2).toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-ink-1">
                         {user.name ?? user.email}
                       </p>
-                      <p className="text-xs text-gray-400">{user.email}</p>
+                      <p className="text-xs text-ink-4">{user.email}</p>
                     </div>
                     <RoleBadge role={user.role} />
                     <button
                       onClick={() => void handleRemoveMember(user.id)}
-                      className="ml-2 rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                      className="ml-2 rounded p-1 text-ink-4 hover:bg-ds-red-50 hover:text-ds-red-500"
                       title="Remove from team"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -335,24 +335,24 @@ export default function TeamSettingsPage() {
           </div>
 
           {/* Pending invites */}
-          <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="border-b border-gray-100 px-6 py-4">
-              <h2 className="text-sm font-semibold text-gray-700">Pending Invites</h2>
+          <div className="rounded-xl border border-ink-6 bg-paper-raised shadow-s1">
+            <div className="border-b border-ink-6 px-6 py-4">
+              <h2 className="text-sm font-semibold text-ink-2">Pending Invites</h2>
             </div>
             {loadingInvites ? (
-              <div className="p-6 text-sm text-gray-400">Loading…</div>
+              <div className="p-6 text-sm text-ink-4">Loading…</div>
             ) : invites.length === 0 ? (
-              <p className="p-6 text-sm text-gray-400">No pending invites.</p>
+              <p className="p-6 text-sm text-ink-4">No pending invites.</p>
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-ink-6">
                 {invites.map((inv) => {
                   const inviteUrl = `${baseUrl}/invite/${inv.id}`
                   const expires = new Date(inv.expiresAt)
                   return (
                     <div key={inv.id} className="flex items-center gap-4 px-6 py-4">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900">{inv.email}</p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-sm font-medium text-ink-1">{inv.email}</p>
+                        <p className="text-xs text-ink-4">
                           Expires {expires.toLocaleDateString()}
                         </p>
                       </div>
@@ -375,17 +375,17 @@ export default function TeamSettingsPage() {
       >
         <form onSubmit={(e) => { void handleCreateTeam(e) }} className="space-y-4">
           {createTeamError && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+            <p className="rounded-lg bg-ds-red-50 px-3 py-2 text-sm text-ds-red-ink">
               {createTeamError}
             </p>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Team Name</label>
+            <label className="block text-sm font-medium text-ink-2">Team Name</label>
             <input
               required
               value={newTeamName}
               onChange={(e) => setNewTeamName(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 block w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500"
               placeholder="e.g. Support Team"
             />
           </div>
@@ -393,14 +393,14 @@ export default function TeamSettingsPage() {
             <button
               type="button"
               onClick={() => setShowCreateTeam(false)}
-              className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+              className="rounded-lg px-4 py-2 text-sm text-ink-3 hover:bg-ink-6"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={creatingTeam}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-60"
+              className="rounded-lg bg-ink-1 px-4 py-2 text-sm font-medium text-white hover:bg-ink-2 disabled:opacity-60"
             >
               {creatingTeam ? "Creating…" : "Create"}
             </button>
@@ -416,18 +416,18 @@ export default function TeamSettingsPage() {
       >
         {inviteResult ? (
           <div className="space-y-4">
-            <div className="flex items-start gap-2 rounded-lg bg-green-50 p-3 text-sm text-green-800">
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+            <div className="flex items-start gap-2 rounded-lg bg-ds-green-50 p-3 text-sm text-ds-green-ink">
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-ds-green-500" />
               Invite created! Share this link:
             </div>
-            <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700">
+            <div className="flex items-center gap-2 rounded-lg border border-ink-6 bg-paper-sunken px-3 py-2 text-xs text-ink-2">
               <span className="min-w-0 flex-1 truncate">{inviteResult.url}</span>
               <CopyButton text={inviteResult.url} />
             </div>
             <div className="flex justify-end">
               <button
                 onClick={() => { setShowInvite(false); setInviteResult(null) }}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+                className="rounded-lg bg-ink-1 px-4 py-2 text-sm font-medium text-white hover:bg-ink-2"
               >
                 Done
               </button>
@@ -436,36 +436,36 @@ export default function TeamSettingsPage() {
         ) : (
           <form onSubmit={(e) => { void handleInvite(e) }} className="space-y-4">
             {inviteError && (
-              <div className="flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+              <div className="flex items-start gap-2 rounded-lg bg-ds-red-50 p-3 text-sm text-ds-red-ink">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 {inviteError}
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
+              <label className="block text-sm font-medium text-ink-2">Email</label>
               <input
                 type="email"
                 required
                 value={inviteForm.email}
                 onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500"
                 placeholder="colleague@company.com"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Role</label>
+              <label className="block text-sm font-medium text-ink-2">Role</label>
               <select
                 value={inviteForm.role}
                 onChange={(e) =>
                   setInviteForm((f) => ({ ...f, role: e.target.value as "MANAGER" | "AGENT" }))
                 }
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="mt-1 block w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500"
               >
                 <option value="AGENT">Agent</option>
                 <option value="MANAGER">Manager</option>
               </select>
             </div>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-ink-4">
               An invite link will be generated. Share it with the person you&apos;re inviting.
               The link expires in 7 days.
             </p>
@@ -473,14 +473,14 @@ export default function TeamSettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowInvite(false)}
-                className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+                className="rounded-lg px-4 py-2 text-sm text-ink-3 hover:bg-ink-6"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={inviting}
-                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-60"
+                className="rounded-lg bg-ink-1 px-4 py-2 text-sm font-medium text-white hover:bg-ink-2 disabled:opacity-60"
               >
                 {inviting ? "Generating…" : "Generate Link"}
               </button>

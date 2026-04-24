@@ -52,7 +52,7 @@ export default function TeamMemberAnalyticsPage() {
       <div className="mb-6 flex items-center gap-3">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"
+          className="flex items-center gap-1 text-sm text-ink-3 hover:text-ink-2"
         >
           <ArrowLeft className="h-4 w-4" />
           Back

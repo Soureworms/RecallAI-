@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Upload, Sparkles, CheckCheck, X, FileText } from "lucide-react"
 import { Modal } from "@/components/ui/modal"
@@ -11,7 +11,14 @@ type SourceDoc = {
   id: string
   filename: string
   status: string
-  textContent?: string
+}
+
+type JobStatus = {
+  jobId: string
+  state: "waiting" | "active" | "completed" | "failed" | "delayed" | "unknown"
+  progress: number
+  count?: number
+  error?: string
 }
 
 type Props = {
@@ -37,17 +44,61 @@ export function ContentPipeline({ deckId }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Step 2
-  const [generating, setGenerating] = useState(false)
+  const [jobId, setJobId] = useState<string | null>(null)
+  const [jobStatus, setJobStatus] = useState<JobStatus | null>(null)
   const [genError, setGenError] = useState<string | null>(null)
-  const [genCount, setGenCount] = useState<number | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Stop polling when the modal closes or component unmounts
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
+  }, [])
 
   function openWizard() {
     setStep(1)
     setUploadedDoc(null)
-    setGenCount(null)
+    setJobId(null)
+    setJobStatus(null)
     setUploadError(null)
     setGenError(null)
     setOpen(true)
+  }
+
+  function stopPolling() {
+    if (pollRef.current) {
+      clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+  }
+
+  function startPolling(id: string) {
+    stopPolling()
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/jobs/${id}`)
+        if (!res.ok) {
+          if (res.status === 404) {
+            stopPolling()
+            setGenError("Job not found. Please try again.")
+          }
+          return
+        }
+        const data = (await res.json()) as JobStatus
+        setJobStatus(data)
+
+        if (data.state === "completed") {
+          stopPolling()
+          setStep(3)
+        } else if (data.state === "failed") {
+          stopPolling()
+          setGenError(data.error ?? "Generation failed. Please try again.")
+        }
+      } catch {
+        // Network error — keep polling
+      }
+    }, 2000)
   }
 
   async function handleFile(file: File) {
@@ -66,15 +117,15 @@ export function ContentPipeline({ deckId }: Props) {
       return
     }
 
-    const doc = await res.json() as SourceDoc
+    const doc = (await res.json()) as SourceDoc
     setUploadedDoc(doc)
     setStep(2)
     void triggerGenerate(doc.id)
   }
 
   async function triggerGenerate(sourceDocumentId: string) {
-    setGenerating(true)
     setGenError(null)
+    setJobStatus(null)
 
     const res = await fetch(`/api/decks/${deckId}/generate`, {
       method: "POST",
@@ -82,20 +133,19 @@ export function ContentPipeline({ deckId }: Props) {
       body: JSON.stringify({ sourceDocumentId }),
     })
 
-    setGenerating(false)
-
     if (!res.ok) {
       const d = (await res.json()) as { error?: string }
       setGenError(d.error ?? "Generation failed")
       return
     }
 
-    const data = await res.json() as { count: number }
-    setGenCount(data.count)
-    setStep(3)
+    const data = (await res.json()) as { jobId: string }
+    setJobId(data.jobId)
+    startPolling(data.jobId)
   }
 
   function finish() {
+    stopPolling()
     setOpen(false)
     router.push(`/decks/${deckId}/review-cards`)
   }
@@ -107,6 +157,9 @@ export function ContentPipeline({ deckId }: Props) {
     if (file) void handleFile(file)
   }
 
+  const isGenerating = step === 2 && !genError && jobStatus?.state !== "completed"
+  const progress = jobStatus?.progress ?? 0
+
   return (
     <>
       <button
@@ -117,7 +170,7 @@ export function ContentPipeline({ deckId }: Props) {
         Add Content
       </button>
 
-      <Modal isOpen={open} onClose={() => setOpen(false)} title="Add Content" size="lg">
+      <Modal isOpen={open} onClose={() => { stopPolling(); setOpen(false) }} title="Add Content" size="lg">
         {/* Step indicator */}
         <div className="mb-6 flex items-center gap-2">
           {STEPS.map((s, i) => (
@@ -194,10 +247,10 @@ export function ContentPipeline({ deckId }: Props) {
         {/* ── Step 2: Generating ─────────────────────────────────────────── */}
         {step === 2 && (
           <div className="flex flex-col items-center gap-5 py-10">
-            {generating ? (
+            {isGenerating ? (
               <>
                 <div className="h-10 w-10 animate-spin rounded-full border-4 border-ds-blue-500 border-t-transparent" />
-                <div className="text-center">
+                <div className="w-full max-w-xs text-center">
                   <p className="font-medium text-ink-1">Generating cards with AI…</p>
                   {uploadedDoc && (
                     <p className="mt-1 flex items-center justify-center gap-1.5 text-sm text-ink-4">
@@ -205,8 +258,15 @@ export function ContentPipeline({ deckId }: Props) {
                       {uploadedDoc.filename}
                     </p>
                   )}
-                  <p className="mt-1 text-xs text-ink-4">
-                    This may take a moment for longer documents.
+                  {/* Progress bar */}
+                  <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-ink-6">
+                    <div
+                      className="h-full rounded-full bg-ds-blue-500 transition-all duration-500"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <p className="mt-2 text-xs text-ink-4">
+                    {progress > 0 ? `${progress}% complete` : "Queued — starting soon…"}
                   </p>
                 </div>
               </>
@@ -231,11 +291,9 @@ export function ContentPipeline({ deckId }: Props) {
               <CheckCheck className="h-7 w-7 text-ds-green-ink" />
             </div>
             <div>
-              <p className="text-lg font-semibold text-ink-1">
-                Generation complete!
-              </p>
+              <p className="text-lg font-semibold text-ink-1">Generation complete!</p>
               <p className="mt-1 text-sm text-ink-3">
-                {genCount ?? 0} draft card{genCount !== 1 ? "s" : ""} created.
+                {jobStatus?.count ?? 0} draft card{jobStatus?.count !== 1 ? "s" : ""} created.
                 Review and approve them before they go live.
               </p>
             </div>

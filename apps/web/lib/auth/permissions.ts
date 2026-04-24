@@ -49,7 +49,7 @@ export async function requireRole(minRole: MinRole): Promise<PermResult> {
       response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
     }
   }
-  const { allowed } = checkRateLimit(`api:${session.user.id}`, 100, 60_000)
+  const { allowed } = await checkRateLimit(`api:${session.user.id}`, 100, 60_000)
   if (!allowed) {
     return {
       ok: false,

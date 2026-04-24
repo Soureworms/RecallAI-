@@ -12,7 +12,7 @@ export async function POST(
     req.headers.get("x-real-ip") ??
     "unknown"
 
-  const { allowed } = checkRateLimit(`pwd-reset-confirm:${ip}`, 10, 60_000)
+  const { allowed } = await checkRateLimit(`pwd-reset-confirm:${ip}`, 10, 60_000)
   if (!allowed) {
     return NextResponse.json({ error: "Too many attempts." }, { status: 429 })
   }

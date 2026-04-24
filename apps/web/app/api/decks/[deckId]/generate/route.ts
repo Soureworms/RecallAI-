@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
-import { generateCardsFromText } from "@/lib/services/card-generator"
+import { getAiQueue } from "@/lib/queue/ai-queue"
 
 export async function POST(
   req: NextRequest,
@@ -38,37 +38,19 @@ export async function POST(
     )
   }
 
-  let rawCards
-  try {
-    rawCards = await generateCardsFromText(doc.textContent)
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Generation failed"
-    return NextResponse.json({ error: msg }, { status: 502 })
-  }
-
-  if (rawCards.length === 0) {
-    return NextResponse.json({
-      cards: [],
-      message: "No cards could be generated from this document",
-    })
-  }
-
-  const cards = await prisma.$transaction(
-    rawCards.map((c) =>
-      prisma.card.create({
-        data: {
-          deckId: params.deckId,
-          question: c.question,
-          answer: c.answer,
-          format: c.format,
-          tags: c.tags,
-          difficulty: c.difficulty,
-          status: "DRAFT",
-          sourceDocumentId: doc.id,
-        },
-      })
+  if (!process.env.REDIS_URL) {
+    return NextResponse.json(
+      { error: "Job queue is not configured. Set REDIS_URL in your environment." },
+      { status: 503 }
     )
-  )
+  }
 
-  return NextResponse.json({ cards, count: cards.length })
+  const queue = getAiQueue()
+  const job = await queue.add("generate", {
+    deckId: params.deckId,
+    documentId: doc.id,
+    orgId: session.user.orgId,
+  })
+
+  return NextResponse.json({ jobId: job.id, status: "queued" }, { status: 202 })
 }

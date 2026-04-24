@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     req.headers.get("x-real-ip") ??
     "unknown"
 
-  const { allowed } = checkRateLimit(`auth:${ip}`, 10, 60_000)
+  const { allowed } = await checkRateLimit(`auth:${ip}`, 10, 60_000)
   if (!allowed) {
     return NextResponse.json(
       { error: "Too many sign-in attempts. Please try again in a minute." },

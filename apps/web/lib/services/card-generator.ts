@@ -74,7 +74,8 @@ function parseCards(raw: string): RawGeneratedCard[] {
 }
 
 export async function generateCardsFromText(
-  text: string
+  text: string,
+  onProgress?: (pct: number) => Promise<void>
 ): Promise<RawGeneratedCard[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured")
@@ -84,7 +85,8 @@ export async function generateCardsFromText(
   const allCards: RawGeneratedCard[] = []
   const seenQuestions = new Set<string>()
 
-  for (const chunk of chunks) {
+  for (let chunkIdx = 0; chunkIdx < chunks.length; chunkIdx++) {
+    const chunk = chunks[chunkIdx]
     let response: Anthropic.Message
     try {
       response = await client.messages.create({
@@ -123,6 +125,10 @@ export async function generateCardsFromText(
       if (seenQuestions.has(key)) continue
       seenQuestions.add(key)
       allCards.push(card)
+    }
+
+    if (onProgress) {
+      await onProgress(Math.round(((chunkIdx + 1) / chunks.length) * 100))
     }
   }
 

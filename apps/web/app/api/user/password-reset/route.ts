@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   const { session } = authResult
 
   // Tighter rate limit for password reset: 3 per 10 minutes per user
-  const { allowed } = checkRateLimit(`pwd-reset:${session.user.id}`, 3, 10 * 60_000)
+  const { allowed } = await checkRateLimit(`pwd-reset:${session.user.id}`, 3, 10 * 60_000)
   if (!allowed) {
     return NextResponse.json(
       { error: "Too many reset requests. Please wait before trying again." },

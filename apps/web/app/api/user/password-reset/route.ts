@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
 import { checkRateLimit } from "@/lib/rate-limit"
 
-export async function POST(_req: NextRequest) {
+export async function POST() {
   const authResult = await requireRole("AGENT")
   if (!authResult.ok) return authResult.response
   const { session } = authResult

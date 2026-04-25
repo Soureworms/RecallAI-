@@ -1,7 +1,6 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
-import type { Role } from "@prisma/client"
 import { authConfig } from "./auth.config"
 import { prisma } from "@/lib/db"
 
@@ -17,9 +16,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         const email = credentials?.email
         const password = credentials?.password
-        if (typeof email !== "string" || typeof password !== "string") {
-          return null
-        }
+        if (typeof email !== "string" || typeof password !== "string") return null
 
         const user = await prisma.user.findUnique({ where: { email } })
         if (!user) return null
@@ -40,6 +37,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    // Inherit session callback from authConfig (maps token → session.user).
+    // This runs in both the Node.js instance and the middleware instance.
+    ...authConfig.callbacks,
+
     async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id as string
@@ -47,8 +48,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.orgId = user.orgId
         token.onboardedAt = user.onboardedAt ?? null
       }
-      // Re-fetch onboardedAt from DB when the client calls session.update()
-      // (e.g. after completing onboarding). The JWT is otherwise immutable.
+      // Re-read onboardedAt from DB when the client calls session.update()
+      // so the middleware sees the updated value immediately after onboarding.
       if (trigger === "update" && token.id) {
         const fresh = await prisma.user.findUnique({
           where: { id: token.id as string },
@@ -59,13 +60,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
       return token
-    },
-    session({ session, token }) {
-      session.user.id = token.id as string
-      session.user.role = token.role as Role
-      session.user.orgId = token.orgId as string
-      session.user.onboardedAt = (token.onboardedAt as string | null) ?? null
-      return session
     },
   },
 })

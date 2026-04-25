@@ -58,14 +58,14 @@ export default function HomePage() {
           fontSize: 12, fontWeight: 500, color: "var(--ink-3)",
           marginBottom: 28,
         }}>
-          Built for enterprise CX teams
+          Powered by memory science
         </div>
 
         <h1 style={{ fontSize: 42, fontWeight: 500, letterSpacing: "-0.03em", lineHeight: 1.1, color: "var(--ink-1)", margin: "0 0 20px" }}>
           Knowledge that actually sticks
         </h1>
         <p style={{ fontSize: 17, lineHeight: 1.6, color: "var(--ink-3)", margin: "0 0 36px", maxWidth: 540, marginLeft: "auto", marginRight: "auto" }}>
-          RecallAI turns your SOPs, product guides, and training docs into a daily 5-minute review habit — powered by AI card generation and FSRS spaced repetition.
+          RecallAI turns your documents, SOPs, and training materials into a daily 5-minute review habit — using AI to generate flashcards and FSRS to make sure your team retains them.
         </p>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
@@ -99,7 +99,7 @@ export default function HomePage() {
             How it works
           </div>
           <h2 style={{ fontSize: 28, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", margin: 0 }}>
-            From document to confident agent — in minutes
+            From document to knowledgeable team — in minutes
           </h2>
         </div>
 
@@ -108,17 +108,17 @@ export default function HomePage() {
             {
               step: "01",
               title: "Upload your knowledge base",
-              desc: "Drop in PDFs or paste text. RecallAI parses your SOPs, policies, and training materials.",
+              desc: "Drop in PDFs, Word docs, or paste text. RecallAI parses your SOPs, policies, and training materials automatically.",
             },
             {
               step: "02",
               title: "AI generates flashcards",
-              desc: "Claude extracts key facts, policies, and procedures — turning them into targeted Q&A cards ready for review.",
+              desc: "Claude reads your documents and extracts the key facts, procedures, and policies — turning them into targeted Q&A cards ready for review.",
             },
             {
               step: "03",
-              title: "Agents review daily",
-              desc: "5–10 minutes a day. FSRS surfaces the right cards at the right time, building lasting knowledge across your team.",
+              title: "Your team reviews daily",
+              desc: "5–10 minutes a day. FSRS surfaces the right cards at the right time for each person, building lasting knowledge across your whole team.",
             },
           ].map((item) => (
             <div key={item.step} style={{
@@ -149,8 +149,8 @@ export default function HomePage() {
           {[
             { value: "5–10 min",  label: "Daily review time" },
             { value: "90%+",      label: "Retention at 30 days" },
-            { value: "FSRS 5",    label: "Algorithm powering reviews" },
-            { value: "B2B only",  label: "Built for teams" },
+            { value: "FSRS 5",    label: "Adaptive scheduling algorithm" },
+            { value: "Any doc",   label: "PDF, Word, or plain text" },
           ].map((s) => (
             <div key={s.label}>
               <div style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)" }}>{s.value}</div>
@@ -160,7 +160,109 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Admin features */}
+      {/* FSRS section */}
+      <section style={{ maxWidth: 960, margin: "0 auto", padding: "64px 28px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "start" }}>
+          <div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 12 }}>
+              The science of remembering
+            </div>
+            <h2 style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", marginBottom: 14 }}>
+              Why most training doesn&apos;t stick — and why FSRS does
+            </h2>
+            <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, marginBottom: 24 }}>
+              Without reinforcement, people forget up to 70% of new information within 24 hours. Workshops, slide decks, and one-off sessions create the illusion of learning — without lasting results.
+            </p>
+            <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, marginBottom: 28 }}>
+              FSRS (Free Spaced Repetition Scheduler) is an open-source memory algorithm built on decades of cognitive science research. It tracks retention at the individual level — for each card, for each person — and schedules the next review at the precise moment before forgetting occurs.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {[
+                { title: "Adapts to each person", desc: "Review intervals adjust to individual memory curves, not a fixed schedule." },
+                { title: "Perfectly timed reviews", desc: "You only see a card when you need to — never too early, never too late." },
+                { title: "Knowledge that compounds", desc: "Each review strengthens the memory trace. Retention improves over time, not in spite of time." },
+              ].map((item) => (
+                <div key={item.title} style={{ display: "flex", gap: 10 }}>
+                  <div style={{
+                    width: 18, height: 18, borderRadius: 999,
+                    background: "var(--paper-sunken)", border: "1px solid var(--ink-6)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    flexShrink: 0, marginTop: 1,
+                  }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--green-600)" strokeWidth="2.5" strokeLinecap="round">
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-1)" }}>{item.title}</div>
+                    <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 2, lineHeight: 1.5 }}>{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Memory curve visual */}
+          <div style={{
+            background: "var(--paper-raised)", border: "1px solid var(--ink-6)",
+            borderRadius: 16, padding: 24, boxShadow: "var(--shadow-2)",
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)", marginBottom: 4 }}>Without spaced repetition</div>
+            <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 16 }}>Knowledge fades rapidly after training</div>
+            <div style={{ position: "relative", height: 56, marginBottom: 24 }}>
+              {[100, 58, 33, 19, 11].map((pct, i) => (
+                <div key={i} style={{
+                  position: "absolute", bottom: 0,
+                  left: `${i * 22}%`, width: "16%",
+                  height: `${pct}%`,
+                  background: i === 0 ? "var(--ink-2)" : "var(--ink-6)",
+                  borderRadius: "4px 4px 0 0",
+                  display: "flex", alignItems: "flex-start", justifyContent: "center",
+                  paddingTop: 4,
+                }}>
+                  <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: i === 0 ? "var(--paper)" : "var(--ink-4)" }}>{pct}%</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 4, marginBottom: 24, fontSize: 10, color: "var(--ink-4)", fontFamily: "var(--font-mono)" }}>
+              {["Day 0", "Day 1", "Day 3", "Day 7", "Day 14"].map((d) => (
+                <span key={d} style={{ flex: 1, textAlign: "center" }}>{d}</span>
+              ))}
+            </div>
+
+            <div style={{ borderTop: "1px solid var(--ink-6)", paddingTop: 20 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)", marginBottom: 4 }}>With FSRS</div>
+              <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 16 }}>Reviews keep retention consistently high</div>
+              <div style={{ position: "relative", height: 56 }}>
+                {[100, 91, 93, 88, 92].map((pct, i) => (
+                  <div key={i} style={{
+                    position: "absolute", bottom: 0,
+                    left: `${i * 22}%`, width: "16%",
+                    height: `${pct}%`,
+                    background: "var(--green-500)",
+                    borderRadius: "4px 4px 0 0",
+                    opacity: 0.85,
+                    display: "flex", alignItems: "flex-start", justifyContent: "center",
+                    paddingTop: 4,
+                  }}>
+                    <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--paper)" }}>{pct}%</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 4, marginTop: 6, fontSize: 10, color: "var(--ink-4)", fontFamily: "var(--font-mono)" }}>
+                {["Day 0", "Day 1", "Day 3", "Day 7", "Day 14"].map((d) => (
+                  <span key={d} style={{ flex: 1, textAlign: "center" }}>{d}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Divider */}
+      <div style={{ borderTop: "1px solid var(--ink-6)", maxWidth: 960, margin: "0 auto" }} />
+
+      {/* Team management features */}
       <section style={{ maxWidth: 960, margin: "0 auto", padding: "64px 28px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "start" }}>
           <div>
@@ -168,14 +270,14 @@ export default function HomePage() {
               For team leads
             </div>
             <h2 style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", marginBottom: 20 }}>
-              Full control for your knowledge base
+              Full visibility over your team&apos;s knowledge
             </h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {[
-                { title: "Manage your knowledge library", desc: "Upload SOPs, review AI-generated cards, approve before publishing." },
-                { title: "Invite and onboard your team",  desc: "Add team members by email. They receive a setup link and get started in minutes." },
-                { title: "Track knowledge gaps",          desc: "See retention scores per topic. Identify struggling agents, prioritise next training." },
-                { title: "Mandatory decks",               desc: "Mark critical policy decks as mandatory — they auto-assign to every team member." },
+                { title: "Manage your knowledge library", desc: "Upload documents, review AI-generated cards, and approve them before publishing to your team." },
+                { title: "Onboard new members instantly",  desc: "Invite by email. New members receive a setup link and are reviewing within minutes." },
+                { title: "Spot knowledge gaps early",      desc: "Retention scores per topic show exactly where the team is confident — and where they're not." },
+                { title: "Mandatory decks",                desc: "Mark critical policy decks as required — they auto-assign to every team member on join." },
               ].map((item) => (
                 <div key={item.title} style={{ display: "flex", gap: 10 }}>
                   <div style={{
@@ -208,9 +310,9 @@ export default function HomePage() {
                 background: "var(--violet-100)", color: "var(--violet-ink)",
                 fontSize: 11, fontWeight: 600,
                 display: "flex", alignItems: "center", justifyContent: "center",
-              }}>CA</div>
+              }}>SL</div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-1)" }}>Customer admin</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-1)" }}>Sarah L. — Team Lead</div>
                 <div style={{ fontSize: 11, color: "var(--ink-3)" }}>Acme Support</div>
               </div>
             </div>
@@ -239,10 +341,10 @@ export default function HomePage() {
       <div style={{ borderTop: "1px solid var(--ink-6)", background: "var(--paper-sunken)" }}>
         <div style={{ maxWidth: 640, margin: "0 auto", padding: "64px 28px", textAlign: "center" }}>
           <h2 style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", marginBottom: 12 }}>
-            Ready to close the knowledge gap?
+            Ready to build a team that remembers?
           </h2>
-          <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.6, marginBottom: 28 }}>
-            RecallAI is available on an annual contract for CX teams. Get in touch to discuss your requirements.
+          <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, marginBottom: 28 }}>
+            Get in touch to see RecallAI in action with your own documents and team.
           </p>
           <a href="mailto:hello@recallai.app" style={{
             display: "inline-flex", alignItems: "center", gap: 8,
@@ -250,7 +352,7 @@ export default function HomePage() {
             background: "var(--ink-1)", color: "var(--paper)",
             fontSize: 14, fontWeight: 500, textDecoration: "none",
           }}>
-            Get in touch
+            Request a demo
           </a>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
 import { checkRateLimit } from "@/lib/rate-limit"
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   const authResult = await requireRole("AGENT")
   if (!authResult.ok) return authResult.response
   const { session } = authResult

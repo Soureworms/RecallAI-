@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect } from "vitest"
 import { fsrs, createEmptyCard, Rating as FSRSRating, type Grade, State } from "ts-fsrs"
-import { CardState, Rating as DbRating } from "@prisma/client"
+import { CardState } from "@prisma/client"
 import type { UserCard } from "@prisma/client"
 import { userCardToFSRS, fsrsStateToDb } from "../fsrs-mapper"
 

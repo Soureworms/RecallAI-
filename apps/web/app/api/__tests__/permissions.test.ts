@@ -81,7 +81,7 @@ describe("GET /api/decks — list decks", () => {
   it("returns 200 for agents (they can list decks)", async () => {
     mockAuth.mockResolvedValue(makeSession("AGENT"))
     const { GET } = await import("../decks/route")
-    const req = new NextRequest("http://localhost/api/decks")
+    const _req = new NextRequest("http://localhost/api/decks")
     const res = await GET()
     expect(res.status).toBe(200)
   })

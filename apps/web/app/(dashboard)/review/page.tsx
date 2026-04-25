@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useRef } from "react"
 import { X, Play } from "lucide-react"
-import { useRouter } from "next/navigation"
 
 type Rating = "AGAIN" | "HARD" | "GOOD" | "EASY"
 type SessionState = "pre" | "reviewing" | "done"
@@ -79,7 +78,6 @@ function Kbd({ children }: { children: React.ReactNode }) {
 }
 
 export default function ReviewPage() {
-  const router = useRouter()
   const [sessionState, setSessionState] = useState<SessionState>("pre")
   const [stats, setStats] = useState<ReviewStats | null>(null)
   const [queue, setQueue] = useState<DueCard[]>([])

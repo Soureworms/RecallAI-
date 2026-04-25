@@ -44,7 +44,6 @@ export function ContentPipeline({ deckId }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Step 2
-  const [jobId, setJobId] = useState<string | null>(null)
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null)
   const [genError, setGenError] = useState<string | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -140,7 +139,6 @@ export function ContentPipeline({ deckId }: Props) {
     }
 
     const data = (await res.json()) as { jobId: string }
-    setJobId(data.jobId)
     startPolling(data.jobId)
   }
 

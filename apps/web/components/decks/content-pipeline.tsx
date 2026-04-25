@@ -58,7 +58,6 @@ export function ContentPipeline({ deckId }: Props) {
   function openWizard() {
     setStep(1)
     setUploadedDoc(null)
-    setJobId(null)
     setJobStatus(null)
     setUploadError(null)
     setGenError(null)

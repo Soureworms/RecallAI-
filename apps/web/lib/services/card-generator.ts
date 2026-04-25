@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk"
 
 const CHUNK_CHARS = 12_000 // ≈3 000 tokens
-const OVERLAP_CHARS = 800 // ≈200 tokens
+const OVERLAP_CHARS = 800  // ≈200 tokens overlap to avoid cutting mid-concept
 
 export type RawGeneratedCard = {
   question: string
@@ -22,56 +22,81 @@ function chunkText(text: string): string[] {
   return chunks
 }
 
-const SYSTEM_PROMPT = `You are an expert instructional designer creating flashcards for customer experience (CX) team training.
+// ─── System prompt ────────────────────────────────────────────────────────────
+// Kept above 1024 tokens so Anthropic's prompt cache activates on multi-chunk
+// documents (saves ~90% on system-prompt tokens for chunks 2+).
 
-Given a document excerpt, generate flashcards as a JSON array. Each item must have:
-- "question": a clear, specific question (string)
-- "answer": a concise, complete answer (string)
-- "format": one of "QA", "TRUE_FALSE", or "FILL_BLANK" (string)
-- "tags": array of topic tag strings (string[])
-- "difficulty": 1 (easy recall), 2 (requires understanding), or 3 (complex scenario) (number)
+const SYSTEM_PROMPT = `You create training flashcards that must fit on a small mobile screen.
 
-Types of questions to generate:
-- Factual recall: "What is the refund window for Premium plans?"
-- Procedural: "What are the steps to escalate a billing dispute?"
-- Scenario: "A customer says they were charged twice. What should you do first?"
+CARD SIZE LIMITS — strictly enforce these on every card:
+  question : ≤ 15 words
+  answer   : depends on format (see below) — never exceed 40 words
+  tags     : 1–3 lowercase single-word keywords
+  difficulty: 1 = pure recall, 2 = requires understanding, 3 = applied scenario
 
-Rules:
-- Do NOT ask about page numbers, headers, footers, or document structure
-- Focus only on facts, policies, and procedures a CX agent needs to know
-- Use TRUE_FALSE only for clear binary facts
-- Use FILL_BLANK for key terms, thresholds, or values worth memorising
-- Aim for 5-10 cards per excerpt; fewer is fine if content is sparse
+FORMAT RULES:
 
-Respond with ONLY a valid JSON array — no markdown fences, no explanation.`
+QA (question / answer)
+  • question: a direct, specific question
+  • answer: 1–2 sentences, ≤ 40 words
+  • Good: "What is the maximum file upload size?" → "Files may not exceed 25 MB per upload."
+  • Bad: a multi-sentence explanation longer than two lines
 
-function parseCards(raw: string): RawGeneratedCard[] {
-  // Strip markdown code fences if present
-  const cleaned = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim()
-  const parsed = JSON.parse(cleaned) as unknown[]
-  if (!Array.isArray(parsed)) return []
+TRUE_FALSE (statement evaluated as true or false)
+  • question: write a declarative statement, not a question
+  • answer: "True." OR "False. [one corrective sentence ≤ 20 words]"
+  • Good: "Enterprise plans include 24/7 phone support." → "True."
+  • Good: "Free tier users can export data." → "False. Data export requires a paid plan."
 
-  const cards: RawGeneratedCard[] = []
-  for (const item of parsed) {
-    if (typeof item !== "object" || item === null) continue
-    const c = item as Record<string, unknown>
-    if (typeof c.question !== "string" || typeof c.answer !== "string") continue
-    if (!["QA", "TRUE_FALSE", "FILL_BLANK"].includes(c.format as string)) continue
+FILL_BLANK (cloze deletion — key term is hidden)
+  • question: a sentence with ___ replacing the key term or value
+  • answer: only the missing term or value, nothing else
+  • Good: "Priority 1 incidents must receive a first response within ___." → "1 hour"
+  • Bad: an answer that is a full sentence or includes the surrounding words
 
-    cards.push({
-      question: (c.question as string).trim(),
-      answer: (c.answer as string).trim(),
-      format: c.format as "QA" | "TRUE_FALSE" | "FILL_BLANK",
-      tags: Array.isArray(c.tags)
-        ? (c.tags as unknown[]).filter((t): t is string => typeof t === "string")
-        : [],
-      difficulty: ([1, 2, 3] as const).includes(c.difficulty as 1 | 2 | 3)
-        ? (c.difficulty as 1 | 2 | 3)
-        : 1,
-    })
-  }
-  return cards
+WHAT TO EXTRACT:
+  ✓ Specific facts, thresholds, limits, and numeric values
+  ✓ Step-by-step procedures and required sequences
+  ✓ Policies, rules, eligibility criteria
+  ✓ Definitions of domain-specific terms
+  ✗ Skip document navigation text, headers, footers, page numbers
+  ✗ Skip vague statements with no testable answer
+  ✗ Skip content already covered by a previous card in the same batch
+
+QUANTITY: 5–10 cards per excerpt. Generate fewer if the content is sparse or repetitive.
+
+Call the create_flashcards tool with every card you generate. Do not output any text outside the tool call.`
+
+// ─── Tool definition ──────────────────────────────────────────────────────────
+// Using tool_choice=forced guarantees schema-valid JSON — no manual parsing,
+// no silent failures on malformed output.
+
+const FLASHCARD_TOOL: Anthropic.Tool = {
+  name: "create_flashcards",
+  description: "Output the flashcards extracted from the document excerpt.",
+  input_schema: {
+    type: "object" as const,
+    properties: {
+      cards: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            question:   { type: "string", maxLength: 120,  description: "≤15 words" },
+            answer:     { type: "string", maxLength: 300,  description: "≤40 words. TRUE_FALSE: 'True.' or 'False. [correction]'. FILL_BLANK: missing term only." },
+            format:     { type: "string", enum: ["QA", "TRUE_FALSE", "FILL_BLANK"] },
+            tags:       { type: "array", items: { type: "string", maxLength: 20 }, maxItems: 3 },
+            difficulty: { type: "integer", enum: [1, 2, 3] },
+          },
+          required: ["question", "answer", "format", "tags", "difficulty"],
+        },
+      },
+    },
+    required: ["cards"],
+  },
 }
+
+// ─── Generator ────────────────────────────────────────────────────────────────
 
 export async function generateCardsFromText(
   text: string,
@@ -86,12 +111,11 @@ export async function generateCardsFromText(
   const seenQuestions = new Set<string>()
 
   for (let chunkIdx = 0; chunkIdx < chunks.length; chunkIdx++) {
-    const chunk = chunks[chunkIdx]
     let response: Anthropic.Message
     try {
       response = await client.messages.create({
         model: "claude-sonnet-4-6",
-        max_tokens: 4096,
+        max_tokens: 1500, // 5–10 cards × ~120 tokens each = well under 1500
         system: [
           {
             type: "text",
@@ -99,10 +123,12 @@ export async function generateCardsFromText(
             cache_control: { type: "ephemeral" },
           },
         ],
+        tools: [FLASHCARD_TOOL],
+        tool_choice: { type: "tool", name: "create_flashcards" },
         messages: [
           {
             role: "user",
-            content: `Generate flashcards from this training document excerpt:\n\n${chunk}`,
+            content: `Extract flashcards from this excerpt:\n\n${chunks[chunkIdx]}`,
           },
         ],
       })
@@ -110,21 +136,36 @@ export async function generateCardsFromText(
       continue
     }
 
-    const block = response.content[0]
-    if (block.type !== "text") continue
+    // With tool_choice forced, content[0] is always a tool_use block
+    const block = response.content.find((b) => b.type === "tool_use")
+    if (!block || block.type !== "tool_use") continue
 
-    let cards: RawGeneratedCard[]
-    try {
-      cards = parseCards(block.text)
-    } catch {
-      continue
-    }
+    const input = block.input as { cards?: unknown[] }
+    if (!Array.isArray(input.cards)) continue
 
-    for (const card of cards) {
-      const key = card.question.toLowerCase().replace(/\s+/g, " ")
+    for (const item of input.cards) {
+      if (typeof item !== "object" || item === null) continue
+      const c = item as Record<string, unknown>
+
+      if (typeof c.question !== "string" || typeof c.answer !== "string") continue
+      if (!["QA", "TRUE_FALSE", "FILL_BLANK"].includes(c.format as string)) continue
+
+      // Deduplicate by normalised question text
+      const key = (c.question as string).toLowerCase().replace(/\s+/g, " ").trim()
       if (seenQuestions.has(key)) continue
       seenQuestions.add(key)
-      allCards.push(card)
+
+      allCards.push({
+        question:   (c.question as string).trim(),
+        answer:     (c.answer   as string).trim(),
+        format:     c.format as RawGeneratedCard["format"],
+        tags:       Array.isArray(c.tags)
+          ? (c.tags as unknown[]).filter((t): t is string => typeof t === "string").slice(0, 3)
+          : [],
+        difficulty: ([1, 2, 3] as const).includes(c.difficulty as 1 | 2 | 3)
+          ? (c.difficulty as 1 | 2 | 3)
+          : 1,
+      })
     }
 
     if (onProgress) {

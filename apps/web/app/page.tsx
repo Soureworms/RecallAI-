@@ -14,6 +14,52 @@ function LogoMark({ size = 20 }: { size?: number }) {
 export default function HomePage() {
   return (
     <div style={{ background: "var(--paper)", minHeight: "100vh", fontFamily: "var(--font-sans)" }}>
+      <style>{`
+        .hp-two-col {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 48px;
+          align-items: start;
+        }
+        .hp-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+          text-align: center;
+        }
+        .hp-steps-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 16px;
+        }
+        @media (max-width: 680px) {
+          .hp-two-col {
+            grid-template-columns: 1fr;
+            gap: 28px;
+          }
+          .hp-two-col-reverse > *:first-child {
+            order: 2;
+          }
+          .hp-two-col-reverse > *:last-child {
+            order: 1;
+          }
+          .hp-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .hp-steps-grid {
+            grid-template-columns: 1fr;
+          }
+          .hp-hero-title {
+            font-size: 32px !important;
+          }
+          .hp-section-title {
+            font-size: 22px !important;
+          }
+          .hp-section-h2 {
+            font-size: 20px !important;
+          }
+        }
+      `}</style>
 
       {/* Nav */}
       <header style={{
@@ -61,7 +107,7 @@ export default function HomePage() {
           Powered by memory science
         </div>
 
-        <h1 style={{ fontSize: 42, fontWeight: 500, letterSpacing: "-0.03em", lineHeight: 1.1, color: "var(--ink-1)", margin: "0 0 20px" }}>
+        <h1 className="hp-hero-title" style={{ fontSize: 42, fontWeight: 500, letterSpacing: "-0.03em", lineHeight: 1.1, color: "var(--ink-1)", margin: "0 0 20px" }}>
           Knowledge that actually sticks
         </h1>
         <p style={{ fontSize: 17, lineHeight: 1.6, color: "var(--ink-3)", margin: "0 0 36px", maxWidth: 540, marginLeft: "auto", marginRight: "auto" }}>
@@ -98,12 +144,12 @@ export default function HomePage() {
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 12 }}>
             How it works
           </div>
-          <h2 style={{ fontSize: 28, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", margin: 0 }}>
+          <h2 className="hp-section-title" style={{ fontSize: 28, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", margin: 0 }}>
             From document to knowledgeable team — in minutes
           </h2>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+        <div className="hp-steps-grid">
           {[
             {
               step: "01",
@@ -141,16 +187,12 @@ export default function HomePage() {
 
       {/* Stats strip */}
       <div style={{ borderTop: "1px solid var(--ink-6)", borderBottom: "1px solid var(--ink-6)", background: "var(--paper-sunken)" }}>
-        <div style={{
-          maxWidth: 960, margin: "0 auto", padding: "32px 28px",
-          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16,
-          textAlign: "center",
-        }}>
+        <div className="hp-stats-grid" style={{ maxWidth: 960, margin: "0 auto", padding: "32px 28px" }}>
           {[
-            { value: "5–10 min",  label: "Daily review time" },
-            { value: "90%+",      label: "Retention at 30 days" },
-            { value: "FSRS 5",    label: "Adaptive scheduling algorithm" },
-            { value: "Any doc",   label: "PDF, Word, or plain text" },
+            { value: "5–10 min", label: "Daily review time" },
+            { value: "90%+",     label: "Retention at 30 days" },
+            { value: "FSRS 5",   label: "Adaptive scheduling algorithm" },
+            { value: "Any doc",  label: "PDF, Word, or plain text" },
           ].map((s) => (
             <div key={s.label}>
               <div style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)" }}>{s.value}</div>
@@ -162,15 +204,15 @@ export default function HomePage() {
 
       {/* FSRS section */}
       <section style={{ maxWidth: 960, margin: "0 auto", padding: "64px 28px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "start" }}>
+        <div className="hp-two-col">
           <div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 12 }}>
               The science of remembering
             </div>
-            <h2 style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", marginBottom: 14 }}>
+            <h2 className="hp-section-h2" style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", marginBottom: 14 }}>
               Why most training doesn&apos;t stick — and why FSRS does
             </h2>
-            <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, marginBottom: 24 }}>
+            <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, marginBottom: 20 }}>
               Without reinforcement, people forget up to 70% of new information within 24 hours. Workshops, slide decks, and one-off sessions create the illusion of learning — without lasting results.
             </p>
             <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, marginBottom: 28 }}>
@@ -180,7 +222,7 @@ export default function HomePage() {
               {[
                 { title: "Adapts to each person", desc: "Review intervals adjust to individual memory curves, not a fixed schedule." },
                 { title: "Perfectly timed reviews", desc: "You only see a card when you need to — never too early, never too late." },
-                { title: "Knowledge that compounds", desc: "Each review strengthens the memory trace. Retention improves over time, not in spite of time." },
+                { title: "Knowledge that compounds", desc: "Each review strengthens the memory trace. Retention improves over time, not in spite of it." },
               ].map((item) => (
                 <div key={item.title} style={{ display: "flex", gap: 10 }}>
                   <div style={{
@@ -202,56 +244,57 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Memory curve visual */}
+          {/* Retention comparison visual */}
           <div style={{
             background: "var(--paper-raised)", border: "1px solid var(--ink-6)",
             borderRadius: 16, padding: 24, boxShadow: "var(--shadow-2)",
           }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)", marginBottom: 4 }}>Without spaced repetition</div>
-            <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 16 }}>Knowledge fades rapidly after training</div>
-            <div style={{ position: "relative", height: 56, marginBottom: 24 }}>
-              {[100, 58, 33, 19, 11].map((pct, i) => (
-                <div key={i} style={{
-                  position: "absolute", bottom: 0,
-                  left: `${i * 22}%`, width: "16%",
-                  height: `${pct}%`,
-                  background: i === 0 ? "var(--ink-2)" : "var(--ink-6)",
-                  borderRadius: "4px 4px 0 0",
-                  display: "flex", alignItems: "flex-start", justifyContent: "center",
-                  paddingTop: 4,
-                }}>
-                  <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: i === 0 ? "var(--paper)" : "var(--ink-4)" }}>{pct}%</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: "flex", gap: 4, marginBottom: 24, fontSize: 10, color: "var(--ink-4)", fontFamily: "var(--font-mono)" }}>
-              {["Day 0", "Day 1", "Day 3", "Day 7", "Day 14"].map((d) => (
-                <span key={d} style={{ flex: 1, textAlign: "center" }}>{d}</span>
-              ))}
-            </div>
-
-            <div style={{ borderTop: "1px solid var(--ink-6)", paddingTop: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)", marginBottom: 4 }}>With FSRS</div>
-              <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 16 }}>Reviews keep retention consistently high</div>
-              <div style={{ position: "relative", height: 56 }}>
-                {[100, 91, 93, 88, 92].map((pct, i) => (
-                  <div key={i} style={{
-                    position: "absolute", bottom: 0,
-                    left: `${i * 22}%`, width: "16%",
-                    height: `${pct}%`,
-                    background: "var(--green-500)",
-                    borderRadius: "4px 4px 0 0",
-                    opacity: 0.85,
-                    display: "flex", alignItems: "flex-start", justifyContent: "center",
-                    paddingTop: 4,
-                  }}>
-                    <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--paper)" }}>{pct}%</span>
+            {/* Without FSRS */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-2)", marginBottom: 2 }}>Without spaced repetition</div>
+              <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 16 }}>Retention fades within days of training</div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
+                {[
+                  { pct: 100, label: "Day 0" },
+                  { pct: 58,  label: "Day 1" },
+                  { pct: 33,  label: "Day 3" },
+                  { pct: 19,  label: "Day 7" },
+                  { pct: 11,  label: "Day 14" },
+                ].map(({ pct, label }) => (
+                  <div key={label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ink-3)", fontWeight: 500 }}>{pct}%</span>
+                    <div style={{
+                      width: "100%", height: `${pct * 0.6}px`,
+                      background: pct === 100 ? "var(--ink-2)" : "var(--ink-6)",
+                      borderRadius: "3px 3px 0 0",
+                    }} />
+                    <span style={{ fontSize: 9, color: "var(--ink-4)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>{label}</span>
                   </div>
                 ))}
               </div>
-              <div style={{ display: "flex", gap: 4, marginTop: 6, fontSize: 10, color: "var(--ink-4)", fontFamily: "var(--font-mono)" }}>
-                {["Day 0", "Day 1", "Day 3", "Day 7", "Day 14"].map((d) => (
-                  <span key={d} style={{ flex: 1, textAlign: "center" }}>{d}</span>
+            </div>
+
+            <div style={{ borderTop: "1px solid var(--ink-6)", paddingTop: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-2)", marginBottom: 2 }}>With FSRS</div>
+              <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 16 }}>Timely reviews keep retention consistently high</div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
+                {[
+                  { pct: 100, label: "Day 0" },
+                  { pct: 91,  label: "Day 1" },
+                  { pct: 93,  label: "Day 3" },
+                  { pct: 88,  label: "Day 7" },
+                  { pct: 92,  label: "Day 14" },
+                ].map(({ pct, label }) => (
+                  <div key={label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--green-700, #15803d)", fontWeight: 500 }}>{pct}%</span>
+                    <div style={{
+                      width: "100%", height: `${pct * 0.6}px`,
+                      background: "var(--green-500, #22c55e)",
+                      borderRadius: "3px 3px 0 0",
+                      opacity: 0.85,
+                    }} />
+                    <span style={{ fontSize: 9, color: "var(--ink-4)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>{label}</span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -264,20 +307,20 @@ export default function HomePage() {
 
       {/* Team management features */}
       <section style={{ maxWidth: 960, margin: "0 auto", padding: "64px 28px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, alignItems: "start" }}>
+        <div className="hp-two-col hp-two-col-reverse">
           <div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 12 }}>
               For team leads
             </div>
-            <h2 style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", marginBottom: 20 }}>
+            <h2 className="hp-section-h2" style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", marginBottom: 20 }}>
               Full visibility over your team&apos;s knowledge
             </h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {[
                 { title: "Manage your knowledge library", desc: "Upload documents, review AI-generated cards, and approve them before publishing to your team." },
-                { title: "Onboard new members instantly",  desc: "Invite by email. New members receive a setup link and are reviewing within minutes." },
-                { title: "Spot knowledge gaps early",      desc: "Retention scores per topic show exactly where the team is confident — and where they're not." },
-                { title: "Mandatory decks",                desc: "Mark critical policy decks as required — they auto-assign to every team member on join." },
+                { title: "Onboard new members instantly", desc: "Invite by email. New members receive a setup link and are reviewing within minutes." },
+                { title: "Spot knowledge gaps early",     desc: "Retention scores per topic show exactly where the team is confident — and where they're not." },
+                { title: "Mandatory decks",               desc: "Mark critical policy decks as required — they auto-assign to every team member on join." },
               ].map((item) => (
                 <div key={item.title} style={{ display: "flex", gap: 10 }}>
                   <div style={{
@@ -317,8 +360,8 @@ export default function HomePage() {
               </div>
             </div>
             {[
-              { label: "Team members", value: "24", note: "+3 this week" },
-              { label: "Active decks",  value: "8",  note: "2 pending review" },
+              { label: "Team members",  value: "24",  note: "+3 this week" },
+              { label: "Active decks",  value: "8",   note: "2 pending review" },
               { label: "Avg. retention", value: "87%", note: "↑ 4% vs last month" },
               { label: "Reviews today", value: "142", note: "68% completion rate" },
             ].map((row) => (

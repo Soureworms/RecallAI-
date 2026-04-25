@@ -17,15 +17,21 @@ import {
 
 const ROLE_RANK: Record<string, number> = { AGENT: 0, MANAGER: 1, ADMIN: 2, SUPER_ADMIN: 3 }
 
-const navItems = [
-  { href: "/dashboard",     label: "Dashboard",     icon: LayoutDashboard },
-  { href: "/review",        label: "Study",         icon: Play },
-  { href: "/decks",         label: "Decks",         icon: Folder },
-  { href: "/stats",         label: "Stats",         icon: BarChart2 },
-  { href: "/team",          label: "Team",          icon: Users,       minRole: "MANAGER" },
-  { href: "/org",           label: "Organisation",  icon: Building2,   minRole: "ADMIN" },
-  { href: "/admin",         label: "Admin",         icon: ShieldCheck, minRole: "SUPER_ADMIN" },
-  { href: "/settings",      label: "Settings",      icon: Settings },
+// What super admins see — platform-management only
+const ADMIN_NAV = [
+  { href: "/admin",    label: "Platform Admin", icon: ShieldCheck },
+  { href: "/settings", label: "Settings",       icon: Settings },
+]
+
+// What regular workspace users see, filtered by minRole
+const USER_NAV = [
+  { href: "/dashboard", label: "Dashboard",    icon: LayoutDashboard },
+  { href: "/review",    label: "Study",        icon: Play },
+  { href: "/decks",     label: "Decks",        icon: Folder },
+  { href: "/stats",     label: "Stats",        icon: BarChart2 },
+  { href: "/team",      label: "Team",         icon: Users,     minRole: "MANAGER" },
+  { href: "/org",       label: "Organisation", icon: Building2, minRole: "ADMIN" },
+  { href: "/settings",  label: "Settings",     icon: Settings },
 ]
 
 function LogoMark({ size = 20 }: { size?: number }) {
@@ -44,19 +50,42 @@ function initials(name: string | null | undefined, email: string | null | undefi
   return (email ?? "?")[0].toUpperCase()
 }
 
+function NavLink({ href, label, icon: Icon, pathname }: { href: string; label: string; icon: React.ElementType; pathname: string }) {
+  const active = pathname === href || (href !== "/dashboard" && href !== "/admin" && pathname.startsWith(href + "/"))
+               || (href === "/admin" && pathname.startsWith("/admin"))
+  return (
+    <Link
+      href={href}
+      style={{
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "7px 10px", borderRadius: "var(--r-2)",
+        background: active ? "var(--paper-sunken)" : "transparent",
+        color: active ? "var(--ink-1)" : "var(--ink-2)",
+        fontSize: 13, fontWeight: active ? 500 : 400,
+        textDecoration: "none", transition: `background var(--dur-quick) var(--ease-out)`,
+      }}
+    >
+      <Icon size={15} style={{ flexShrink: 0, color: active ? "var(--ink-1)" : "var(--ink-3)" }} strokeWidth={1.75} />
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+    </Link>
+  )
+}
+
 export function Sidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
   const role = session?.user?.role ?? "AGENT"
   const userRank = ROLE_RANK[role] ?? 0
+  const isSuperAdmin = role === "SUPER_ADMIN"
 
-  const visible = navItems.filter(
-    (item) => !item.minRole || userRank >= (ROLE_RANK[item.minRole] ?? 0)
-  )
+  const navItems = isSuperAdmin
+    ? ADMIN_NAV
+    : USER_NAV.filter((item) => !item.minRole || userRank >= (ROLE_RANK[item.minRole] ?? 0))
 
   const userName = session?.user?.name ?? null
   const userEmail = session?.user?.email ?? null
   const userInitials = initials(userName, userEmail)
+  const roleLabel = isSuperAdmin ? "Super Admin" : role.charAt(0) + role.slice(1).toLowerCase()
 
   return (
     <>
@@ -65,7 +94,6 @@ export function Sidebar() {
         className="hidden md:flex w-[240px] shrink-0 flex-col"
         style={{ borderRight: "1px solid var(--ink-6)", background: "var(--paper)" }}
       >
-        {/* Logo */}
         <div style={{ padding: "16px 12px 0" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 8px 14px" }}>
             <div style={{
@@ -80,34 +108,20 @@ export function Sidebar() {
             </div>
           </div>
 
-          {/* Nav */}
+          {isSuperAdmin && (
+            <div style={{
+              fontSize: 10, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase",
+              color: "var(--ink-4)", padding: "0 10px 8px",
+              fontFamily: "var(--font-mono)",
+            }}>
+              Platform
+            </div>
+          )}
+
           <nav style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {visible.map(({ href, label, icon: Icon }) => {
-              const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href + "/"))
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    padding: "7px 10px", borderRadius: "var(--r-2)",
-                    background: active ? "var(--paper-sunken)" : "transparent",
-                    color: active ? "var(--ink-1)" : "var(--ink-2)",
-                    fontSize: 13, fontWeight: active ? 500 : 400,
-                    textDecoration: "none", transition: `background var(--dur-quick) var(--ease-out)`,
-                  }}
-                >
-                  <Icon
-                    size={15}
-                    style={{ flexShrink: 0, color: active ? "var(--ink-1)" : "var(--ink-3)" }}
-                    strokeWidth={1.75}
-                  />
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {label}
-                  </span>
-                </Link>
-              )
-            })}
+            {navItems.map(({ href, label, icon }) => (
+              <NavLink key={href} href={href} label={label} icon={icon} pathname={pathname} />
+            ))}
           </nav>
         </div>
 
@@ -120,7 +134,8 @@ export function Sidebar() {
         }}>
           <div style={{
             width: 26, height: 26, borderRadius: "999px",
-            background: "var(--violet-100)", color: "var(--violet-ink)",
+            background: isSuperAdmin ? "var(--amber-100, #fef3c7)" : "var(--violet-100)",
+            color: isSuperAdmin ? "var(--amber-700, #b45309)" : "var(--violet-ink)",
             fontSize: 11, fontWeight: 600,
             display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
           }}>
@@ -130,7 +145,7 @@ export function Sidebar() {
             <div style={{ fontSize: 12.5, fontWeight: 500, color: "var(--ink-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {userName ?? userEmail ?? "User"}
             </div>
-            <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{role.charAt(0) + role.slice(1).toLowerCase()}</div>
+            <div style={{ fontSize: 11, color: "var(--ink-3)" }}>{roleLabel}</div>
           </div>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
@@ -139,7 +154,6 @@ export function Sidebar() {
               background: "transparent", border: 0,
               color: "var(--ink-3)", cursor: "pointer", padding: 4,
               borderRadius: "var(--r-1)", flexShrink: 0,
-              transition: `color var(--dur-quick) var(--ease-out)`,
             }}
           >
             <LogOut size={15} strokeWidth={1.75} />
@@ -152,8 +166,9 @@ export function Sidebar() {
         className="fixed bottom-0 inset-x-0 z-50 flex md:hidden"
         style={{ borderTop: "1px solid var(--ink-6)", background: "var(--paper-raised)" }}
       >
-        {visible.slice(0, 5).map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href + "/"))
+        {navItems.slice(0, 5).map(({ href, label, icon: Icon }) => {
+          const active = pathname === href || (href !== "/dashboard" && href !== "/admin" && pathname.startsWith(href + "/"))
+                       || (href === "/admin" && pathname.startsWith("/admin"))
           return (
             <Link
               key={href}

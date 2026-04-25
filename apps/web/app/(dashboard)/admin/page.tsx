@@ -5,8 +5,10 @@ import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import {
   Building2, Users, Layers, BookOpen, Plus, Pencil, Trash2,
-  Check, X, UserPlus, ChevronDown, ChevronRight,
+  Check, X, UserPlus, ChevronDown, ChevronRight, Activity, TrendingUp,
 } from "lucide-react"
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type OrgStats = {
   id: string
@@ -19,7 +21,10 @@ type PlatformStats = {
   orgs: number
   users: number
   decks: number
+  cards: number
   reviews: number
+  reviewsToday: number
+  activeUsersToday: number
 }
 
 type AdminUser = {
@@ -31,20 +36,47 @@ type AdminUser = {
   org: { id: string; name: string } | null
 }
 
-function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number | string }) {
+// ─── Small components ─────────────────────────────────────────────────────────
+
+function StatCard({
+  icon, label, value, sub,
+}: { icon: React.ReactNode; label: string; value: number | string; sub?: string }) {
   return (
     <div style={{
       background: "var(--paper-raised)", border: "1px solid var(--ink-6)",
       borderRadius: 12, padding: "16px 20px", boxShadow: "var(--shadow-1)",
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, color: "var(--ink-3)", fontSize: 13 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, color: "var(--ink-3)", fontSize: 12 }}>
         {icon}
         {label}
       </div>
-      <div style={{ fontSize: 32, fontWeight: 700, color: "var(--ink-1)", letterSpacing: "-0.02em" }}>{value}</div>
+      <div style={{ fontSize: 30, fontWeight: 700, color: "var(--ink-1)", letterSpacing: "-0.02em", lineHeight: 1 }}>{value}</div>
+      {sub && <div style={{ fontSize: 11, color: "var(--ink-4)", marginTop: 4 }}>{sub}</div>}
     </div>
   )
 }
+
+const inputStyle: React.CSSProperties = {
+  width: "100%", padding: "7px 11px", borderRadius: 8, boxSizing: "border-box",
+  border: "1px solid var(--ink-6)", background: "var(--paper-sunken)",
+  fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink-1)", outline: "none",
+}
+const btnPrimary: React.CSSProperties = {
+  padding: "7px 14px", borderRadius: 8,
+  background: "var(--ink-1)", color: "var(--paper)",
+  border: "1px solid transparent",
+  fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 500, cursor: "pointer",
+  display: "inline-flex", alignItems: "center", gap: 6,
+}
+const btnGhost: React.CSSProperties = {
+  padding: "7px 12px", borderRadius: 8,
+  background: "transparent", color: "var(--ink-2)",
+  border: "1px solid var(--ink-6)",
+  fontFamily: "var(--font-sans)", fontSize: 13, cursor: "pointer",
+  display: "inline-flex", alignItems: "center", gap: 6,
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
   const { data: session, status } = useSession()
@@ -73,12 +105,9 @@ export default function AdminPage() {
   const [userError, setUserError] = useState<string | null>(null)
   const [userSuccess, setUserSuccess] = useState<string | null>(null)
 
-  // Redirect non-SUPER_ADMIN
   useEffect(() => {
     if (status === "loading") return
-    if (session?.user?.role !== "SUPER_ADMIN") {
-      router.replace("/dashboard")
-    }
+    if (session?.user?.role !== "SUPER_ADMIN") router.replace("/dashboard")
   }, [session, status, router])
 
   const fetchData = useCallback(async () => {
@@ -87,7 +116,10 @@ export default function AdminPage() {
       fetch("/api/admin/organizations"),
     ])
     if (statsRes.ok) setStats(await statsRes.json() as PlatformStats)
-    if (orgsRes.ok) setOrgs(await orgsRes.json() as OrgStats[])
+    if (orgsRes.ok) {
+      const all = (await orgsRes.json() as OrgStats[]).filter((o) => o.id !== "system-org-001")
+      setOrgs(all)
+    }
   }, [])
 
   useEffect(() => { void fetchData() }, [fetchData])
@@ -126,11 +158,7 @@ export default function AdminPage() {
       body: JSON.stringify({ name: newOrgName }),
     })
     setCreatingOrg(false)
-    if (!res.ok) {
-      const d = (await res.json()) as { error?: string }
-      setOrgError(d.error ?? "Failed to create")
-      return
-    }
+    if (!res.ok) { const d = (await res.json()) as { error?: string }; setOrgError(d.error ?? "Failed"); return }
     setNewOrgName("")
     setShowCreateOrg(false)
     void fetchData()
@@ -145,14 +173,11 @@ export default function AdminPage() {
       body: JSON.stringify({ name: renameValue }),
     })
     setRenaming(false)
-    if (res.ok) {
-      setRenamingOrgId(null)
-      void fetchData()
-    }
+    if (res.ok) { setRenamingOrgId(null); void fetchData() }
   }
 
   async function handleDeleteOrg(orgId: string, name: string) {
-    if (!confirm(`Delete organisation "${name}"? This will delete all associated data.`)) return
+    if (!confirm(`Delete organisation "${name}"? This will permanently delete all associated data.`)) return
     await fetch(`/api/admin/organizations/${orgId}`, { method: "DELETE" })
     void fetchData()
   }
@@ -174,7 +199,7 @@ export default function AdminPage() {
       setUserError(d.error ?? "Failed to create user")
       return
     }
-    setUserSuccess(`${userForm.name} created — a setup link was sent to ${userForm.email}`)
+    setUserSuccess(`${userForm.name} created — setup email sent to ${userForm.email}`)
     setUserForm({ name: "", email: "", role: "ADMIN" })
     setOrgUsers({})
     void fetchData()
@@ -182,30 +207,11 @@ export default function AdminPage() {
 
   if (status === "loading" || session?.user?.role !== "SUPER_ADMIN") return null
 
-  const inputStyle: React.CSSProperties = {
-    width: "100%", padding: "7px 11px", borderRadius: 8, boxSizing: "border-box",
-    border: "1px solid var(--ink-6)", background: "var(--paper-sunken)",
-    fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ink-1)", outline: "none",
-  }
-
-  const btnPrimary: React.CSSProperties = {
-    padding: "7px 14px", borderRadius: 8,
-    background: "var(--ink-1)", color: "var(--paper)",
-    border: "1px solid transparent",
-    fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 500, cursor: "pointer",
-    display: "inline-flex", alignItems: "center", gap: 6,
-  }
-
-  const btnGhost: React.CSSProperties = {
-    padding: "7px 12px", borderRadius: 8,
-    background: "transparent", color: "var(--ink-2)",
-    border: "1px solid var(--ink-6)",
-    fontFamily: "var(--font-sans)", fontSize: 13, cursor: "pointer",
-    display: "inline-flex", alignItems: "center", gap: 6,
-  }
+  const workspaceOrgs = orgs
 
   return (
-    <div style={{ maxWidth: 900 }}>
+    <div style={{ maxWidth: 900, padding: "28px 28px 60px" }}>
+
       {/* Header */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--ink-1)", marginBottom: 4 }}>
@@ -216,30 +222,54 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Platform stats — two rows */}
       {stats && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
-          <StatCard icon={<Building2 style={{ width: 14, height: 14 }} />} label="Organisations" value={stats.orgs} />
-          <StatCard icon={<Users style={{ width: 14, height: 14 }} />} label="Users" value={stats.users} />
-          <StatCard icon={<Layers style={{ width: 14, height: 14 }} />} label="Decks" value={stats.decks} />
-          <StatCard icon={<BookOpen style={{ width: 14, height: 14 }} />} label="Total Reviews" value={stats.reviews.toLocaleString()} />
+        <div style={{ marginBottom: 28 }}>
+          {/* Today */}
+          <div style={{
+            fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em",
+            textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 10,
+          }}>Today</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 16 }}>
+            <StatCard
+              icon={<Activity style={{ width: 13, height: 13 }} />}
+              label="Reviews today"
+              value={stats.reviewsToday.toLocaleString()}
+              sub={`across ${stats.activeUsersToday} active user${stats.activeUsersToday !== 1 ? "s" : ""}`}
+            />
+            <StatCard
+              icon={<TrendingUp style={{ width: 13, height: 13 }} />}
+              label="Active users"
+              value={stats.activeUsersToday}
+              sub="reviewed at least once"
+            />
+          </div>
+
+          {/* Platform totals */}
+          <div style={{
+            fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em",
+            textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 10,
+          }}>Platform totals</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+            <StatCard icon={<Building2 style={{ width: 13, height: 13 }} />} label="Organisations" value={stats.orgs} />
+            <StatCard icon={<Users style={{ width: 13, height: 13 }} />} label="Users" value={stats.users} />
+            <StatCard icon={<Layers style={{ width: 13, height: 13 }} />} label="Active cards" value={stats.cards.toLocaleString()} />
+            <StatCard icon={<BookOpen style={{ width: 13, height: 13 }} />} label="Total reviews" value={stats.reviews.toLocaleString()} />
+          </div>
         </div>
       )}
 
       {/* Organisations */}
       <div style={{
         background: "var(--paper-raised)", border: "1px solid var(--ink-6)",
-        borderRadius: 16, overflow: "hidden", boxShadow: "var(--shadow-1)", marginBottom: 24,
+        borderRadius: 16, overflow: "hidden", boxShadow: "var(--shadow-1)",
       }}>
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "14px 20px", borderBottom: "1px solid var(--ink-6)",
         }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink-1)" }}>Organisations</div>
-          <button
-            onClick={() => { setShowCreateOrg(!showCreateOrg); setOrgError(null) }}
-            style={btnPrimary}
-          >
+          <button onClick={() => { setShowCreateOrg(!showCreateOrg); setOrgError(null) }} style={btnPrimary}>
             <Plus style={{ width: 13, height: 13 }} />
             New Organisation
           </button>
@@ -253,12 +283,9 @@ export default function AdminPage() {
             <div style={{ flex: 1 }}>
               <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--ink-3)", marginBottom: 4 }}>Organisation name</label>
               <input
-                required
-                autoFocus
-                value={newOrgName}
+                required autoFocus value={newOrgName}
                 onChange={(e) => setNewOrgName(e.target.value)}
-                style={inputStyle}
-                placeholder="Acme Corp"
+                style={inputStyle} placeholder="Acme Corp"
               />
               {orgError && <div style={{ fontSize: 12, color: "var(--red-ink)", marginTop: 4 }}>{orgError}</div>}
             </div>
@@ -271,20 +298,18 @@ export default function AdminPage() {
           </form>
         )}
 
-        {orgs.length === 0 ? (
+        {workspaceOrgs.length === 0 ? (
           <div style={{ padding: "32px 20px", textAlign: "center", fontSize: 13, color: "var(--ink-4)" }}>
             No organisations yet. Create the first one above.
           </div>
         ) : (
-          orgs.map((org) => {
+          workspaceOrgs.map((org) => {
             const isExpanded = expandedOrg === org.id
-            const users = orgUsers[org.id] ?? []
+            const users = (orgUsers[org.id] ?? []).filter((u) => u.org?.id === org.id)
             return (
               <div key={org.id} style={{ borderBottom: "1px solid var(--ink-6)" }}>
-                <div style={{
-                  display: "flex", alignItems: "center", gap: 12, padding: "12px 20px",
-                  cursor: "pointer",
-                }}
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", cursor: "pointer" }}
                   onClick={() => toggleOrg(org.id)}
                 >
                   {isExpanded
@@ -292,24 +317,12 @@ export default function AdminPage() {
                     : <ChevronRight style={{ width: 14, height: 14, color: "var(--ink-4)", flexShrink: 0 }} />
                   }
 
-                  {/* Name / rename */}
                   {renamingOrgId === org.id ? (
                     <div style={{ display: "flex", gap: 6, flex: 1 }} onClick={(e) => e.stopPropagation()}>
-                      <input
-                        autoFocus
-                        value={renameValue}
-                        onChange={(e) => setRenameValue(e.target.value)}
-                        style={{ ...inputStyle, width: 220 }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") void handleRenameOrg(org.id)
-                          if (e.key === "Escape") setRenamingOrgId(null)
-                        }}
+                      <input autoFocus value={renameValue} onChange={(e) => setRenameValue(e.target.value)} style={{ ...inputStyle, width: 220 }}
+                        onKeyDown={(e) => { if (e.key === "Enter") void handleRenameOrg(org.id); if (e.key === "Escape") setRenamingOrgId(null) }}
                       />
-                      <button
-                        onClick={() => void handleRenameOrg(org.id)}
-                        disabled={renaming}
-                        style={{ ...btnPrimary, padding: "5px 10px" }}
-                      >
+                      <button onClick={() => void handleRenameOrg(org.id)} disabled={renaming} style={{ ...btnPrimary, padding: "5px 10px" }}>
                         <Check style={{ width: 12, height: 12 }} />
                       </button>
                       <button onClick={() => setRenamingOrgId(null)} style={{ ...btnGhost, padding: "5px 10px" }}>
@@ -327,18 +340,12 @@ export default function AdminPage() {
 
                   {renamingOrgId !== org.id && (
                     <div style={{ display: "flex", gap: 4 }} onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => { setRenamingOrgId(org.id); setRenameValue(org.name) }}
-                        style={{ padding: 6, borderRadius: 6, border: "none", background: "transparent", cursor: "pointer", color: "var(--ink-4)" }}
-                        title="Rename"
-                      >
+                      <button onClick={() => { setRenamingOrgId(org.id); setRenameValue(org.name) }}
+                        style={{ padding: 6, borderRadius: 6, border: "none", background: "transparent", cursor: "pointer", color: "var(--ink-4)" }} title="Rename">
                         <Pencil style={{ width: 13, height: 13 }} />
                       </button>
-                      <button
-                        onClick={() => void handleDeleteOrg(org.id, org.name)}
-                        style={{ padding: 6, borderRadius: 6, border: "none", background: "transparent", cursor: "pointer", color: "var(--ink-4)" }}
-                        title="Delete"
-                      >
+                      <button onClick={() => void handleDeleteOrg(org.id, org.name)}
+                        style={{ padding: 6, borderRadius: 6, border: "none", background: "transparent", cursor: "pointer", color: "var(--ink-4)" }} title="Delete">
                         <Trash2 style={{ width: 13, height: 13 }} />
                       </button>
                     </div>
@@ -347,10 +354,9 @@ export default function AdminPage() {
 
                 {isExpanded && (
                   <div style={{ background: "var(--paper-sunken)", padding: "12px 20px 16px 48px" }}>
-                    {/* Create user for this org */}
+                    {/* Add user form */}
                     {createUserOrgId === org.id ? (
-                      <form
-                        onSubmit={(e) => { void handleCreateUser(e) }}
+                      <form onSubmit={(e) => { void handleCreateUser(e) }}
                         style={{ background: "var(--paper-raised)", border: "1px solid var(--ink-6)", borderRadius: 10, padding: "14px 16px", marginBottom: 12 }}
                       >
                         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)", marginBottom: 10 }}>Add user to {org.name}</div>
@@ -368,26 +374,29 @@ export default function AdminPage() {
                           <div>
                             <label style={{ display: "block", fontSize: 11, color: "var(--ink-3)", marginBottom: 3 }}>Role</label>
                             <select value={userForm.role} onChange={(e) => setUserForm((f) => ({ ...f, role: e.target.value }))} style={{ ...inputStyle, width: "auto" }}>
-                              <option value="ADMIN">Admin</option>
-                              <option value="MANAGER">Manager</option>
-                              <option value="AGENT">Agent</option>
+                              <option value="ADMIN">Admin — full org management</option>
+                              <option value="MANAGER">Manager — upload SOPs, manage decks</option>
+                              <option value="AGENT">Agent — study only</option>
                             </select>
                           </div>
                         </div>
-                        <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+                        <div style={{ marginTop: 6, marginBottom: 10 }}>
+                          <div style={{ fontSize: 11, color: "var(--ink-4)", lineHeight: 1.5 }}>
+                            <strong>Admin</strong>: full org control, invite users, manage teams and decks.<br />
+                            <strong>Manager</strong>: upload training documents, generate and approve flashcards.<br />
+                            <strong>Agent</strong>: study assigned decks only.
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 6 }}>
                           <button type="submit" disabled={creatingUser} style={btnPrimary}>
                             {creatingUser ? "Creating…" : <><UserPlus style={{ width: 12, height: 12 }} /> Create &amp; Send Setup Email</>}
                           </button>
-                          <button type="button" onClick={() => { setCreateUserOrgId(null); setUserError(null); setUserSuccess(null) }} style={btnGhost}>
-                            Cancel
-                          </button>
+                          <button type="button" onClick={() => { setCreateUserOrgId(null); setUserError(null); setUserSuccess(null) }} style={btnGhost}>Cancel</button>
                         </div>
                       </form>
                     ) : (
-                      <button
-                        onClick={() => { setCreateUserOrgId(org.id); setUserError(null); setUserSuccess(null) }}
-                        style={{ ...btnGhost, marginBottom: 10, fontSize: 12 }}
-                      >
+                      <button onClick={() => { setCreateUserOrgId(org.id); setUserError(null); setUserSuccess(null) }}
+                        style={{ ...btnGhost, marginBottom: 10, fontSize: 12 }}>
                         <UserPlus style={{ width: 12, height: 12 }} /> Add user
                       </button>
                     )}
@@ -397,7 +406,7 @@ export default function AdminPage() {
                       <div style={{ fontSize: 12, color: "var(--ink-4)" }}>No users in this organisation yet.</div>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        {users.filter((u) => u.org?.id === org.id).map((u) => (
+                        {users.map((u) => (
                           <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0" }}>
                             <div style={{
                               width: 28, height: 28, borderRadius: "50%", background: "var(--ink-6)",

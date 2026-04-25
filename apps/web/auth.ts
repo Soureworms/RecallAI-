@@ -40,12 +40,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id as string
         token.role = user.role
         token.orgId = user.orgId
         token.onboardedAt = user.onboardedAt ?? null
+      }
+      // Re-fetch onboardedAt from DB when the client calls session.update()
+      // (e.g. after completing onboarding). The JWT is otherwise immutable.
+      if (trigger === "update" && token.id) {
+        const fresh = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { onboardedAt: true },
+        })
+        if (fresh) {
+          token.onboardedAt = fresh.onboardedAt ? fresh.onboardedAt.toISOString() : null
+        }
       }
       return token
     },

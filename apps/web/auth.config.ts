@@ -24,10 +24,17 @@ export const authConfig = {
       // Public routes — always allow
       const isPublicAuth = path.startsWith("/login") || path.startsWith("/reset-password") || path.startsWith("/onboarding")
       if (isPublicAuth) {
-        // Redirect already-onboarded users away from onboarding
+        // Super admins and onboarded users skip onboarding entirely
         if (path.startsWith("/onboarding") && isLoggedIn && (isOnboarded || isSuperAdmin)) {
-          return Response.redirect(new URL("/dashboard", nextUrl))
+          return Response.redirect(new URL(isSuperAdmin ? "/admin" : "/dashboard", nextUrl))
         }
+        return true
+      }
+
+      // /admin — SUPER_ADMIN only
+      if (path === "/admin" || path.startsWith("/admin/")) {
+        if (!isLoggedIn) return false
+        if (!isSuperAdmin) return Response.redirect(new URL("/dashboard", nextUrl))
         return true
       }
 
@@ -38,6 +45,11 @@ export const authConfig = {
 
       if (isDashboard) {
         if (!isLoggedIn) return false
+
+        // Super admins land on /admin, not /dashboard
+        if (isSuperAdmin && path === "/dashboard") {
+          return Response.redirect(new URL("/admin", nextUrl))
+        }
 
         // Redirect unonboarded non-super-admins to onboarding
         if (!isOnboarded && !isSuperAdmin) {
@@ -54,13 +66,6 @@ export const authConfig = {
           return Response.redirect(new URL("/dashboard", nextUrl))
         }
 
-        return true
-      }
-
-      // /admin requires SUPER_ADMIN
-      if (path === "/admin" || path.startsWith("/admin/")) {
-        if (!isLoggedIn) return false
-        if (!isSuperAdmin) return false
         return true
       }
 

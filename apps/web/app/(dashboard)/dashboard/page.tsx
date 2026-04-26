@@ -44,10 +44,12 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   )
 }
 
-function Panel({ children }: { children: React.ReactNode }) {
+function Panel({ children, accent }: { children: React.ReactNode; accent?: string }) {
   return (
     <div style={{
-      background: "var(--paper-raised)", border: "1px solid var(--ink-6)",
+      background: "var(--paper-raised)",
+      border: "1px solid var(--ink-6)",
+      borderLeft: accent ? `3px solid ${accent}` : "1px solid var(--ink-6)",
       borderRadius: 14, padding: 16,
     }}>
       {children}
@@ -76,16 +78,18 @@ function DeckTile({ deck, onStart }: { deck: DeckSummary; onStart: () => void })
         background: "var(--paper-raised)", border: "1px solid var(--ink-6)",
         borderRadius: 14, padding: 16,
         display: "flex", flexDirection: "column", gap: 10, cursor: "pointer",
-        transition: `box-shadow var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out)`,
+        transition: `box-shadow var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out), transform var(--dur-quick) var(--ease-out)`,
       }}
       onClick={onStart}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow-2)"
+        (e.currentTarget as HTMLDivElement).style.boxShadow = "var(--shadow-lift)"
         ;(e.currentTarget as HTMLDivElement).style.borderColor = "var(--ink-5)"
+        ;(e.currentTarget as HTMLDivElement).style.transform = "translateY(-1px)"
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLDivElement).style.boxShadow = "none"
         ;(e.currentTarget as HTMLDivElement).style.borderColor = "var(--ink-6)"
+        ;(e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
@@ -189,7 +193,7 @@ export default function DashboardPage() {
         {/* Stats panels */}
         <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 14 }}>
           {/* Retention */}
-          <Panel>
+          <Panel accent="var(--green-500)">
             <Eyebrow>Retention · 30 days</Eyebrow>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
               <div style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", lineHeight: 1 }}>
@@ -227,7 +231,7 @@ export default function DashboardPage() {
           </Panel>
 
           {/* Streak */}
-          <Panel>
+          <Panel accent="var(--amber-500)">
             <Eyebrow>Streak</Eyebrow>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
               <div style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", lineHeight: 1 }}>
@@ -238,9 +242,10 @@ export default function DashboardPage() {
             <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 32, marginTop: 10 }}>
               {Array.from({ length: 13 }, (_, i) => {
                 const filled = i < streakDays
+                const barH = filled ? 40 + ((i * 53 + 17) % 51) : 15
                 return (
                   <div key={i} style={{
-                    width: 8, height: `${filled ? 60 + Math.random() * 40 : 15}%`,
+                    width: 8, height: `${barH}%`,
                     background: filled ? "var(--green-500)" : "var(--ink-6)",
                     borderRadius: 2, flexShrink: 0,
                   }} />

@@ -108,15 +108,24 @@ export default function DecksPage() {
             <button
               key={deck.id}
               onClick={() => router.push(`/decks/${deck.id}`)}
-              className="rounded-r3 p-5 text-left transition-shadow"
+              className="rounded-r3 p-5 text-left"
               style={{
                 background: "var(--paper-raised)",
                 border: "1px solid var(--ink-6)",
                 boxShadow: "var(--shadow-1)",
                 cursor: "pointer",
+                transition: `box-shadow var(--dur-quick) var(--ease-out), border-color var(--dur-quick) var(--ease-out), transform var(--dur-quick) var(--ease-out)`,
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-2)" }}
-              onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-1)" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = "var(--shadow-lift)"
+                e.currentTarget.style.borderColor = "var(--ink-5)"
+                e.currentTarget.style.transform = "translateY(-1px)"
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = "var(--shadow-1)"
+                e.currentTarget.style.borderColor = "var(--ink-6)"
+                e.currentTarget.style.transform = "translateY(0)"
+              }}
             >
               <div className="flex items-start justify-between gap-2">
                 <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--ink-1)" }}>{deck.name}</h3>

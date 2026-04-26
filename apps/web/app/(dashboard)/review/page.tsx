@@ -190,13 +190,23 @@ export default function ReviewPage() {
               </div>
               <button
                 onClick={() => void startSession()}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)"
+                  e.currentTarget.style.boxShadow = "0 2px 0 rgba(26,25,23,.12), var(--shadow-lift)"
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)"
+                  e.currentTarget.style.boxShadow = "var(--shadow-btn)"
+                }}
                 style={{
                   display: "inline-flex", alignItems: "center", gap: 8,
-                  padding: "12px 18px", borderRadius: 12,
+                  padding: "12px 22px", borderRadius: 12,
                   background: "var(--ink-1)", color: "var(--paper)",
-                  border: "1px solid transparent",
+                  border: "none",
+                  boxShadow: "var(--shadow-btn)",
                   fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 500,
                   cursor: "pointer",
+                  transition: "box-shadow var(--dur-quick) var(--ease-out), transform var(--dur-quick) var(--ease-out)",
                 }}
               >
                 <Play size={13} strokeWidth={0} style={{ fill: "currentColor" }} />
@@ -359,11 +369,12 @@ export default function ReviewPage() {
         </button>
       </div>
 
-      {/* Progress hairline */}
-      <div style={{ height: 2, background: "var(--paper-sunken)", flexShrink: 0 }}>
+      {/* Progress bar */}
+      <div style={{ height: 4, background: "var(--paper-sunken)", flexShrink: 0 }}>
         <div style={{
           width: `${(idx / queue.length) * 100}%`, height: "100%",
-          background: "var(--ink-1)", transition: "width var(--dur-slide) var(--ease-out)",
+          background: "var(--violet-500)", transition: "width var(--dur-slide) var(--ease-out)",
+          borderRadius: "0 2px 2px 0",
         }} />
       </div>
 
@@ -414,13 +425,15 @@ export default function ReviewPage() {
               </div>
             </div>
 
-            {/* Back face */}
+            {/* Back face — tinted to signal "revealed" state */}
             <div style={{
               position: "absolute", inset: 0,
               backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
               transform: "rotateY(180deg)",
-              background: "var(--paper-raised)", borderRadius: 20,
-              boxShadow: "var(--shadow-3)", border: "1px solid rgba(26,25,23,.04)",
+              background: "var(--paper-tint)", borderRadius: 20,
+              boxShadow: "var(--shadow-3)",
+              border: "1px solid var(--ink-5)",
+              borderTop: "3px solid var(--violet-500)",
               padding: "26px 28px", minHeight: 280,
               display: "flex", flexDirection: "column", gap: 14,
               opacity: flipped ? 1 : 0.01,
@@ -444,14 +457,26 @@ export default function ReviewPage() {
                   key={rating}
                   disabled={!flipped || !!exiting}
                   onClick={() => void rate(rating)}
+                  onMouseEnter={(e) => {
+                    if (!flipped || !!exiting) return
+                    e.currentTarget.style.boxShadow = "var(--shadow-2)"
+                    e.currentTarget.style.transform = "translateY(-1px)"
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = "none"
+                    e.currentTarget.style.transform = "translateY(0)"
+                  }}
                   style={{
                     padding: "14px 12px", borderRadius: 12,
-                    border: "1px solid var(--ink-6)",
+                    borderTop: "1px solid var(--ink-6)",
+                    borderLeft: "1px solid var(--ink-6)",
+                    borderRight: "1px solid var(--ink-6)",
+                    borderBottom: `3px solid ${bar}`,
                     background: chosen ? bg : "var(--paper-raised)",
                     display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8,
                     cursor: flipped && !exiting ? "pointer" : "default",
                     opacity: flipped ? 1 : 0.5,
-                    transition: "background var(--dur-quick) var(--ease-out)",
+                    transition: `background var(--dur-quick) var(--ease-out), box-shadow var(--dur-quick) var(--ease-out), transform var(--dur-quick) var(--ease-out)`,
                     fontFamily: "inherit", textAlign: "left",
                   }}
                 >

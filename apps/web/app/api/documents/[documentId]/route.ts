@@ -10,6 +10,8 @@ export async function GET(
   if (!auth.ok) return auth.response
   const { session } = auth
 
+  // Shared workspace: org-scoped isolation is the boundary here.
+  // Any MANAGER in the org can retrieve any org document — intentional under Option A.
   const doc = await prisma.sourceDocument.findUnique({
     where: { id: params.documentId },
   })

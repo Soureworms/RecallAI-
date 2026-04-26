@@ -10,6 +10,7 @@ export type GenerateJobData = {
 export type JobState = {
   state: "queued" | "active" | "completed" | "failed"
   progress: number
+  orgId: string   // stored so the jobs endpoint can verify the caller's org
   count?: number
   error?: string
 }

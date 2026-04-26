@@ -9,6 +9,7 @@ export async function GET(
 ) {
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
+  const { session } = auth
 
   const redis = getRedis()
   if (!redis) {
@@ -17,6 +18,11 @@ export async function GET(
 
   const status = await redis.get<JobState>(`job:${params.jobId}`)
   if (!status) {
+    return NextResponse.json({ error: "Job not found" }, { status: 404 })
+  }
+
+  // Verify the job belongs to the caller's org
+  if (status.orgId && status.orgId !== session.user.orgId) {
     return NextResponse.json({ error: "Job not found" }, { status: 404 })
   }
 

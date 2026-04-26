@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     const current = (await redis.get<JobState>(`job:${jobId}`)) ?? {
       state: "active" as const,
       progress: 0,
+      orgId,
     }
     await redis.setex(`job:${jobId}`, 3600, { ...current, ...patch })
   }
@@ -84,6 +85,7 @@ export async function POST(req: NextRequest) {
     await redis.setex(`job:${jobId}`, 3600, {
       state: "completed",
       progress: 100,
+      orgId,
       count: rawCards.length,
     } satisfies JobState)
 
@@ -93,6 +95,7 @@ export async function POST(req: NextRequest) {
     await redis.setex(`job:${jobId}`, 3600, {
       state: "failed",
       progress: 0,
+      orgId,
       error,
     } satisfies JobState)
 

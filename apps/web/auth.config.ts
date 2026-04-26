@@ -63,8 +63,9 @@ export const authConfig = {
       if (isDashboard) {
         if (!isLoggedIn) return false
 
-        // Super admins go straight to /admin
-        if (isSuperAdmin && path === "/dashboard") {
+        // Super admins belong in /admin — redirect them away from all workspace
+        // routes. /settings is the sole exception (profile/password management).
+        if (isSuperAdmin && path !== "/settings" && !path.startsWith("/settings/")) {
           return Response.redirect(new URL("/admin", nextUrl))
         }
 

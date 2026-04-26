@@ -25,8 +25,13 @@ export async function GET(
   const deck = await ownedDeck(params.deckId, session.user.orgId)
   if (!deck) return notFound()
 
+  const isAgent = session.user.role === "AGENT"
   const statusParam = req.nextUrl.searchParams.get("status")
-  const whereStatus = statusParam === "DRAFT"
+
+  // Agents always see only ACTIVE cards — never drafts or archived
+  const whereStatus = isAgent
+    ? "ACTIVE"
+    : statusParam === "DRAFT"
     ? "DRAFT"
     : statusParam === "ACTIVE"
     ? "ACTIVE"

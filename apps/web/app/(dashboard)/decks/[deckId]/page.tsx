@@ -324,8 +324,8 @@ export default function DeckDetailPage() {
         </div>
       )}
 
-      {/* Draft cards pending review banner */}
-      {draftCount > 0 && (
+      {/* Draft cards pending review banner — managers only */}
+      {isManager && draftCount > 0 && (
         <div className="mt-4 flex items-center justify-between rounded-xl border border-ds-blue-100 bg-ds-blue-50 px-4 py-3 text-sm text-ds-blue-ink">
           <div className="flex items-center gap-2">
             <ClipboardCheck className="h-4 w-4 text-ds-blue-500" />
@@ -430,8 +430,8 @@ export default function DeckDetailPage() {
         </details>
       )}
 
-      {/* Source documents section */}
-      {(docs.length > 0 || isManager) && (
+      {/* Source documents section — managers only */}
+      {isManager && (
         <div className="mt-8">
           <h2 className="mb-3 text-sm font-semibold text-ink-2">Source Documents</h2>
           {regenMsg && (

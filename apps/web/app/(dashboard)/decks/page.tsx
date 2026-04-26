@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Layers, Lock } from "lucide-react"
+import { Plus, Layers, Lock, FileText } from "lucide-react"
 import { Modal } from "@/components/ui/modal"
 import { usePermissions } from "@/hooks/use-permissions"
 
@@ -83,6 +83,25 @@ export default function DecksPage() {
           </button>
         )}
       </div>
+
+      {isManager && !loading && decks.length > 0 && (
+        <div style={{
+          marginTop: 16,
+          padding: "10px 14px",
+          background: "var(--violet-50, #f5f3ff)",
+          border: "1px solid var(--violet-100, #ede9fe)",
+          borderRadius: 10,
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}>
+          <FileText size={14} style={{ color: "var(--violet-600, #7c3aed)", flexShrink: 0 }} strokeWidth={1.75} />
+          <p style={{ fontSize: 12.5, color: "var(--violet-700, #6d28d9)", margin: 0 }}>
+            To upload documents and generate cards with AI, open any deck and use the{" "}
+            <strong>Add Content</strong> button.
+          </p>
+        </div>
+      )}
 
       {loading ? (
         <div className="mt-10 text-center" style={{ fontSize: 13, color: "var(--ink-4)" }}>Loading…</div>

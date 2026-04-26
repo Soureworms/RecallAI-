@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireRole, requireOrgAccess } from "@/lib/auth/permissions"
+import { prisma } from "@/lib/db"
 import {
   getRetentionTimeline,
   getReviewActivity,
@@ -25,10 +26,24 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  // Managers can only view users in their org
   if (!isSelf) {
+    // Verify target user is in the same org
     const orgCheck = await requireOrgAccess(session, params.userId)
     if (!orgCheck.ok) return orgCheck.response
+
+    // MANAGERs can only view analytics for users in their own teams.
+    // ADMIN and SUPER_ADMIN can view any user in the org.
+    if (session.user.role === "MANAGER") {
+      const sharedTeam = await prisma.teamMember.findFirst({
+        where: {
+          userId: params.userId,
+          team: { members: { some: { userId: session.user.id } } },
+        },
+      })
+      if (!sharedTeam) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      }
+    }
   }
 
   const [timeline, activity, deckProgress, weakCards, recentReviews, newHireProgress] =

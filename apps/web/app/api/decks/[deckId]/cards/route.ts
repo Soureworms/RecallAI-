@@ -48,6 +48,7 @@ export async function GET(
   return NextResponse.json(cards)
 }
 
+// Shared workspace: any MANAGER in the org can add cards to any deck.
 export async function POST(
   req: NextRequest,
   { params }: { params: { deckId: string } }

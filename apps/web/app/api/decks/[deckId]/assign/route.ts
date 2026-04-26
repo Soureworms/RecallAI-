@@ -7,6 +7,7 @@ function notFound() {
   return NextResponse.json({ error: "Not found" }, { status: 404 })
 }
 
+// Shared workspace: any MANAGER in the org can view/manage assignments for any deck.
 export async function GET(
   _req: NextRequest,
   { params }: { params: { deckId: string } }

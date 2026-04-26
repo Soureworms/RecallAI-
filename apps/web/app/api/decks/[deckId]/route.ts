@@ -33,6 +33,8 @@ export async function GET(
   return NextResponse.json(deck)
 }
 
+// Shared workspace: any MANAGER in the org can edit or archive any deck.
+// This is intentional — deck access is org-wide, not per-creator.
 export async function PUT(
   req: NextRequest,
   { params }: { params: { deckId: string } }

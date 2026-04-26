@@ -10,7 +10,7 @@ function retrievability(stability: number, lastReviewDate: Date): number {
 }
 
 export async function GET() {
-  const authResult = await requireRole("MANAGER")
+  const authResult = await requireRole("ADMIN")
   if (!authResult.ok) return authResult.response
   const { session } = authResult
 

@@ -13,13 +13,13 @@ export default function MyStatsPage() {
   if (!session?.user?.id) return null
 
   const role = session.user.role ?? "AGENT"
-  const isManager = (ROLE_RANK[role] ?? 0) >= ROLE_RANK.MANAGER
+  const isAdmin = (ROLE_RANK[role] ?? 0) >= ROLE_RANK.ADMIN
 
   return (
     <div className="p-6">
       <div className="max-w-4xl mx-auto">
-        {isManager && <OrgAnalytics />}
-        <UserAnalytics userId={session.user.id} title={isManager ? "My Learning Stats" : undefined} />
+        {isAdmin && <OrgAnalytics />}
+        <UserAnalytics userId={session.user.id} title={isAdmin ? "My Learning Stats" : undefined} />
       </div>
     </div>
   )

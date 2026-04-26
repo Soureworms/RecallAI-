@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { createEmptyCard } from "ts-fsrs"
 
+// Shared workspace: any MANAGER in the org can bulk-approve cards in any deck.
 export async function POST(
   req: NextRequest,
   { params }: { params: { deckId: string } }

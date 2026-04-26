@@ -44,6 +44,8 @@ async function autoAssignCard(cardId: string, deckId: string) {
   })
 }
 
+// Shared workspace: any MANAGER in the org can edit, approve, or archive
+// any card in any deck. Deck access is org-wide, not per-creator.
 export async function PUT(
   req: NextRequest,
   { params }: { params: { deckId: string; cardId: string } }

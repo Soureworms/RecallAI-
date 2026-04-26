@@ -7,8 +7,15 @@ export async function GET() {
   if (!auth.ok) return auth.response
   const { session } = auth
 
+  // Shared workspace: MANAGER+ sees all org teams.
+  // AGENT sees only teams they belong to — prevents org-structure enumeration.
   const teams = await prisma.team.findMany({
-    where: { orgId: session.user.orgId },
+    where: {
+      orgId: session.user.orgId,
+      ...(session.user.role === "AGENT"
+        ? { members: { some: { userId: session.user.id } } }
+        : {}),
+    },
     include: {
       members: {
         include: { user: { select: { id: true, name: true, email: true, role: true } } },

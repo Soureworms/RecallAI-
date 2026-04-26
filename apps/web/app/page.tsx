@@ -380,6 +380,100 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Divider */}
+      <div style={{ borderTop: "1px solid var(--ink-6)", maxWidth: 960, margin: "0 auto" }} />
+
+      {/* Security section */}
+      <section style={{ maxWidth: 960, margin: "0 auto", padding: "64px 28px" }}>
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 12 }}>
+            Security &amp; privacy
+          </div>
+          <h2 className="hp-section-title" style={{ fontSize: 28, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", margin: "0 0 14px" }}>
+            Enterprise-grade security, by design
+          </h2>
+          <p style={{ fontSize: 15, color: "var(--ink-3)", margin: "0 auto", maxWidth: 520, lineHeight: 1.6 }}>
+            Your SOPs and training materials are sensitive. RecallAI is built on the same security foundations trusted by financial services and healthcare teams.
+          </p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))", gap: 16 }}>
+          {[
+            {
+              title: "TLS in transit, encrypted at rest",
+              desc:  "All data travels over TLS 1.3. Documents are never stored as raw files — only the extracted text, scoped to your organisation and encrypted in the database.",
+              icon:  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+            },
+            {
+              title: "Strict organisation isolation",
+              desc:  "Every database query is hard-scoped to your organisation ID. No data can cross org boundaries — this is enforced at the architecture level, not just policy.",
+              icon:  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+            },
+            {
+              title: "Magic-byte file verification",
+              desc:  "Uploaded files are verified against their declared type using binary file-signature inspection. Renamed or disguised payloads are rejected before any parsing occurs.",
+              icon:  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>,
+            },
+            {
+              title: "Role-based access control",
+              desc:  "Four permission tiers: Agent, Manager, Admin, Super Admin. Only Managers and above can upload documents or publish cards — agents review only.",
+              icon:  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+            },
+            {
+              title: "Rate limiting on every endpoint",
+              desc:  "All API calls are rate-limited per user via Redis. Login attempts, password resets, and file uploads each have independent, tighter limits to prevent abuse.",
+              icon:  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+            },
+            {
+              title: "Hardened authentication",
+              desc:  "Passwords hashed with bcrypt (12 salt rounds). Sessions stored in signed, httpOnly cookies. Password-reset tokens are single-use with a 1-hour expiry.",
+              icon:  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>,
+            },
+          ].map((item) => (
+            <div key={item.title} style={{
+              background: "var(--paper-raised)", border: "1px solid var(--ink-6)",
+              borderLeft: "3px solid var(--blue-100)",
+              borderRadius: 16, padding: "20px 20px 18px",
+            }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: 10,
+                background: "var(--blue-50)", border: "1px solid var(--blue-100)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                marginBottom: 12,
+              }}>
+                {item.icon}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-1)", marginBottom: 6 }}>{item.title}</div>
+              <div style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6 }}>{item.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Trust strip */}
+        <div style={{
+          marginTop: 40, padding: "18px 24px",
+          background: "var(--paper-sunken)", borderRadius: 12,
+          border: "1px solid var(--ink-6)",
+          display: "flex", flexWrap: "wrap", gap: 24, alignItems: "center", justifyContent: "center",
+        }}>
+          {[
+            "bcrypt 12-round password hashing",
+            "TLS 1.3 in transit",
+            "SHA-256 document fingerprinting",
+            "Duplicate-upload detection",
+            "HSTS + strict CSP headers",
+            "httpOnly session cookies",
+          ].map((label) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green-600)" strokeWidth="3" strokeLinecap="round">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+              <span style={{ fontSize: 12, color: "var(--ink-3)", fontFamily: "var(--font-mono)", letterSpacing: "0.02em" }}>{label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* CTA */}
       <div style={{ borderTop: "1px solid var(--ink-6)", background: "var(--paper-sunken)" }}>
         <div style={{ maxWidth: 640, margin: "0 auto", padding: "64px 28px", textAlign: "center" }}>

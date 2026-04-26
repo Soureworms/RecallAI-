@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { CardFormat } from "@prisma/client"
+import { sanitizeTags } from "@/lib/security/file-validation"
 
 function notFound() {
   return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -57,13 +58,22 @@ export async function POST(
     question?: string
     answer?: string
     format?: string
-    tags?: string[]
+    tags?: unknown
   }
 
-  if (!body.question?.trim() || !body.answer?.trim()) {
+  const question = body.question?.trim() ?? ""
+  const answer   = body.answer?.trim()   ?? ""
+
+  if (!question || !answer) {
     return NextResponse.json(
       { error: "Question and answer are required" },
-      { status: 400 }
+      { status: 400 },
+    )
+  }
+  if (question.length > 500 || answer.length > 2000) {
+    return NextResponse.json(
+      { error: "Question must be ≤ 500 chars and answer ≤ 2000 chars." },
+      { status: 400 },
     )
   }
 
@@ -72,13 +82,15 @@ export async function POST(
     return NextResponse.json({ error: "Invalid format" }, { status: 400 })
   }
 
+  const tags = sanitizeTags(body.tags)
+
   const card = await prisma.card.create({
     data: {
       deckId: params.deckId,
-      question: body.question.trim(),
-      answer: body.answer.trim(),
+      question,
+      answer,
       format,
-      tags: body.tags ?? [],
+      tags,
       status: "ACTIVE",
     },
   })

@@ -327,26 +327,26 @@ export default function TeamPage() {
             <StatCard
               icon={<Users className="h-4 w-4" />}
               label="Team Size"
-              value={data?.teamSize ?? "—"}
+              value={data?.teamSize ?? "–"}
               color="text-ds-blue-500"
             />
             <StatCard
               icon={<Brain className="h-4 w-4" />}
               label="Avg Retention"
-              value={data ? `${data.avgRetention}%` : "—"}
+              value={data ? `${data.avgRetention}%` : "–"}
               sub={data && data.avgRetention < 70 ? "Below target (70%)" : undefined}
               color="text-ds-violet-500"
             />
             <StatCard
               icon={<CheckCircle className="h-4 w-4" />}
               label="Completion Rate"
-              value={data ? `${data.avgCompletionRate}%` : "—"}
+              value={data ? `${data.avgCompletionRate}%` : "–"}
               color="text-ds-green-500"
             />
             <StatCard
               icon={<Brain className="h-4 w-4" />}
               label="Active Cards"
-              value={data?.totalActiveCards ?? "—"}
+              value={data?.totalActiveCards ?? "–"}
               color="text-ds-blue-500"
             />
           </>

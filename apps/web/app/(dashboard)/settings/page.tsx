@@ -222,7 +222,7 @@ export default function SettingsPage() {
             className="w-full rounded-xl border border-ink-6 bg-paper-sunken px-4 py-2.5 text-sm text-ink-3 cursor-default select-none"
           />
           <p className="mt-1 text-xs text-ink-4">
-            Email cannot be changed — contact your admin
+            Email cannot be changed. Contact your admin.
           </p>
         </div>
 

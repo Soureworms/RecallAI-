@@ -263,7 +263,7 @@ export function ContentPipeline({ deckId }: Props) {
                     />
                   </div>
                   <p className="mt-2 text-xs text-ink-4">
-                    {progress > 0 ? `${progress}% complete` : "Queued — starting soon…"}
+                    {progress > 0 ? `${progress}% complete` : "Queued, starting soon…"}
                   </p>
                 </div>
               </>

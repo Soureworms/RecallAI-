@@ -314,7 +314,7 @@ export default function ReviewPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {[
                 { label: "Time",     value: duration,    hint: elapsedSecs < 300 ? "Within 5-min ceiling" : "Over 5 minutes" },
-                { label: "Next due", value: stats?.nextDueDate ? `in ${formatTimeUntil(stats.nextDueDate)}` : "—", hint: "FSRS has rescheduled" },
+                { label: "Next due", value: stats?.nextDueDate ? `in ${formatTimeUntil(stats.nextDueDate)}` : "–", hint: "FSRS has rescheduled" },
               ].map(({ label, value, hint }) => (
                 <div key={label} style={{
                   background: "var(--paper-raised)", borderRadius: 14, padding: 14,

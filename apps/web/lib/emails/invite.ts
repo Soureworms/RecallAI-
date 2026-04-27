@@ -28,7 +28,7 @@ export async function sendWelcomeEmail({
       <p>A RecallAI account has been created for you${roleNote}.</p>
       <p><a href="${setupUrl}" style="color:#4f46e5;font-weight:bold">Set up your password and sign in</a></p>
       <p>This link expires in <strong>7 days</strong>.</p>
-      <p>— The RecallAI team</p>
+      <p>The RecallAI team</p>
     `,
     text: [
       `You've been invited to RecallAI.`,

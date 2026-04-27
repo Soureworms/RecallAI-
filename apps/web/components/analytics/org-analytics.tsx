@@ -147,7 +147,7 @@ export function OrgAnalytics() {
         }}
       >
         <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-2)", marginBottom: 14 }}>
-          Organisation Reviews — Last 14 Days
+          Organisation Reviews, Last 14 Days
         </h3>
         {loading ? (
           <Skeleton className="h-32 w-full" />

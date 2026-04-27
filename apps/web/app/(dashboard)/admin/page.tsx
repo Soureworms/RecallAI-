@@ -199,7 +199,7 @@ export default function AdminPage() {
       setUserError(d.error ?? "Failed to create user")
       return
     }
-    setUserSuccess(`${userForm.name} created — setup email sent to ${userForm.email}`)
+    setUserSuccess(`${userForm.name} created. Setup email sent to ${userForm.email}.`)
     setUserForm({ name: "", email: "", role: "ADMIN" })
     setOrgUsers({})
     void fetchData()
@@ -374,9 +374,9 @@ export default function AdminPage() {
                           <div>
                             <label style={{ display: "block", fontSize: 11, color: "var(--ink-3)", marginBottom: 3 }}>Role</label>
                             <select value={userForm.role} onChange={(e) => setUserForm((f) => ({ ...f, role: e.target.value }))} style={{ ...inputStyle, width: "auto" }}>
-                              <option value="ADMIN">Admin — full org management</option>
-                              <option value="MANAGER">Manager — upload SOPs, manage decks</option>
-                              <option value="AGENT">Agent — study only</option>
+                              <option value="ADMIN">Admin: full org management</option>
+                              <option value="MANAGER">Manager: upload SOPs, manage decks</option>
+                              <option value="AGENT">Agent: study only</option>
                             </select>
                           </div>
                         </div>

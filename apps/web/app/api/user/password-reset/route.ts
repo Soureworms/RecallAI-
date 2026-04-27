@@ -40,7 +40,7 @@ export const POST = withHandlerSimple(async () => {
       <p>You requested a password reset for your RecallAI account.</p>
       <p><a href="${resetUrl}" style="color:#4f46e5;font-weight:bold">Reset my password</a></p>
       <p>This link expires in <strong>1 hour</strong>. If you didn't request this, you can safely ignore this email.</p>
-      <p>— The RecallAI team</p>
+      <p>The RecallAI team</p>
     `,
     text: `Reset your RecallAI password\n\nVisit this link to reset your password (expires in 1 hour):\n${resetUrl}\n\nIf you didn't request this, ignore this email.`,
   })

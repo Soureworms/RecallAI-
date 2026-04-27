@@ -12,7 +12,7 @@ export function dailyDigestEmail(d: DigestData): { subject: string; html: string
   const hasNew = d.newCount > 0
 
   const subject = hasNew
-    ? `${d.newCount} new card${d.newCount !== 1 ? "s" : ""} added — ${total} ready to review on RecallAI`
+    ? `${d.newCount} new card${d.newCount !== 1 ? "s" : ""} added: ${total} ready to review on RecallAI`
     : `${total} card${total !== 1 ? "s" : ""} ready for your review on RecallAI`
 
   // ── Deck rows ──────────────────────────────────────────────────────────────
@@ -40,7 +40,7 @@ export function dailyDigestEmail(d: DigestData): { subject: string; html: string
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>RecallAI — Daily Review</title>
+<title>RecallAI: Daily Review</title>
 </head>
 <body style="margin:0;padding:0;background:#f7f5f2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f7f5f2;padding:32px 16px;">
@@ -66,7 +66,7 @@ export function dailyDigestEmail(d: DigestData): { subject: string; html: string
               <p style="margin:0 0 28px;font-size:14px;color:#6b6a66;line-height:1.5;">
                 ${
                   hasNew
-                    ? `New cards have been added to your training — time to get ahead of the curve.`
+                    ? `New cards have been added to your training. Time to get ahead of the curve.`
                     : `Your daily study reminder. Consistent short sessions keep your knowledge sharp.`
                 }
               </p>
@@ -135,7 +135,7 @@ export function dailyDigestEmail(d: DigestData): { subject: string; html: string
 
 ${
   hasNew
-    ? `New cards have been added to your training — time to review.`
+    ? `New cards have been added to your training. Time to review.`
     : `Your daily study reminder.`
 }
 

@@ -26,7 +26,7 @@ export async function apiFetch<T>(
     if (res.status === 204) return null
     return res.json() as Promise<T>
   } catch {
-    toast.error(errorMessage ?? "Network error — please check your connection")
+    toast.error(errorMessage ?? "Network error. Please check your connection.")
     return null
   }
 }

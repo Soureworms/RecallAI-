@@ -319,7 +319,7 @@ export default function DeckDetailPage() {
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-ds-amber-500" />
           <span>
             A source document was re-uploaded with different content.
-            Some cards may be outdated — regenerate from the updated document to create fresh drafts.
+            Some cards may be outdated. Regenerate from the updated document to create fresh drafts.
           </span>
         </div>
       )}

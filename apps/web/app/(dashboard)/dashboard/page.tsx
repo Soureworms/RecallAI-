@@ -197,7 +197,7 @@ export default function DashboardPage() {
             <Eyebrow>Retention · 30 days</Eyebrow>
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
               <div style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", lineHeight: 1 }}>
-                {retention ?? "—"}
+                {retention ?? "–"}
                 {retention !== null && <span style={{ fontSize: 18, color: "var(--ink-3)" }}>%</span>}
               </div>
             </div>

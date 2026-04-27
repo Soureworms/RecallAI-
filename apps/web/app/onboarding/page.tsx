@@ -167,7 +167,7 @@ function Step1({ name, setName, userName, onNext }: { name: string; setName: (v:
 function Step2({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const items = [
     { title: "AI-generated flashcards", desc: "Your manager uploads SOPs and training docs. RecallAI turns them into targeted Q&A cards automatically." },
-    { title: "Spaced repetition",        desc: "Cards appear at scientifically optimised intervals — most time on what you're most likely to forget." },
+    { title: "Spaced repetition",        desc: "Cards appear at scientifically optimised intervals, with more time on what you are most likely to forget." },
     { title: "Daily reviews",            desc: "5–10 minutes a day keeps knowledge fresh. RecallAI tells you exactly which cards are due each session." },
     { title: "Track your retention",     desc: "See your score improve over time and get insights into which topics need more attention." },
   ]
@@ -224,7 +224,7 @@ function Step3({ name, saving, error, onBack, onFinish }: { name: string; saving
       }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)", marginBottom: 2 }}>Quick tip</div>
         <div style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.55 }}>
-          Check your dashboard daily — even a 5-minute review session significantly improves long-term retention.
+          Check your dashboard daily. Even a 5-minute review session significantly improves long-term retention.
         </div>
       </div>
 

@@ -139,7 +139,7 @@ export function UserAnalytics({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-ds-blue-ink">
-                Onboarding — Week {data.newHireProgress.weeksOnboarding}
+                Onboarding, Week {data.newHireProgress.weeksOnboarding}
               </p>
               <p className="mt-0.5 text-xs text-ds-blue-500">
                 {data.newHireProgress.onTrack ? "On track" : "Behind schedule"}
@@ -324,7 +324,7 @@ export function UserAnalytics({
             ))}
           </div>
         ) : (
-          <p className="p-6 text-sm text-ink-4">No weak cards — great work!</p>
+          <p className="p-6 text-sm text-ink-4">No weak cards. Great work!</p>
         )}
       </div>
 

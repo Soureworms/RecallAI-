@@ -87,8 +87,8 @@ function InviteModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               value={role} onChange={(e) => setRole(e.target.value as "AGENT" | "MANAGER")}
               className="w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500"
             >
-              <option value="AGENT">Agent — reviews cards, no content management</option>
-              <option value="MANAGER">Manager — creates decks, views team analytics</option>
+              <option value="AGENT">Agent: reviews cards, no content management</option>
+              <option value="MANAGER">Manager: creates decks, views team analytics</option>
             </select>
           </div>
           <p className="text-xs text-ink-4">
@@ -350,7 +350,7 @@ export default function OrgPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 hidden sm:table-cell">
-                        <span className="text-xs text-ink-4">—</span>
+                        <span className="text-xs text-ink-4">–</span>
                       </td>
                       <td className="px-4 py-3 hidden sm:table-cell text-xs text-ink-4">
                         {new Date(u.createdAt).toLocaleDateString()}

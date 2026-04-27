@@ -104,14 +104,14 @@ export default function HomePage() {
           fontSize: 12, fontWeight: 500, color: "var(--ink-3)",
           marginBottom: 28,
         }}>
-          Powered by memory science
+          Grounded in cognitive science
         </div>
 
         <h1 className="hp-hero-title" style={{ fontSize: 42, fontWeight: 500, letterSpacing: "-0.03em", lineHeight: 1.1, color: "var(--ink-1)", margin: "0 0 20px" }}>
           Knowledge that actually sticks
         </h1>
         <p style={{ fontSize: 17, lineHeight: 1.6, color: "var(--ink-3)", margin: "0 0 36px", maxWidth: 540, marginLeft: "auto", marginRight: "auto" }}>
-          RecallAI turns your documents, SOPs, and training materials into a daily 5-minute review habit — using AI to generate flashcards and FSRS to make sure your team retains them.
+          RecallAI turns your documents, SOPs, and training materials into a daily 5-minute review habit, using AI to generate flashcards and FSRS to ensure your team retains them.
         </p>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
@@ -145,7 +145,7 @@ export default function HomePage() {
             How it works
           </div>
           <h2 className="hp-section-title" style={{ fontSize: 28, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", margin: 0 }}>
-            From document to knowledgeable team — in minutes
+            From document to knowledgeable team, in minutes
           </h2>
         </div>
 
@@ -159,7 +159,7 @@ export default function HomePage() {
             {
               step: "02",
               title: "AI generates flashcards",
-              desc: "Claude reads your documents and extracts the key facts, procedures, and policies — turning them into targeted Q&A cards ready for review.",
+              desc: "Claude reads your documents and extracts the key facts, procedures, and policies, turning them into targeted Q&A cards ready for review.",
             },
             {
               step: "03",
@@ -210,18 +210,18 @@ export default function HomePage() {
               The science of remembering
             </div>
             <h2 className="hp-section-h2" style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", marginBottom: 14 }}>
-              Why most training doesn&apos;t stick — and why FSRS does
+              Why most training doesn&apos;t stick, and why FSRS does
             </h2>
             <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, marginBottom: 20 }}>
-              Without reinforcement, people forget up to 70% of new information within 24 hours. Workshops, slide decks, and one-off sessions create the illusion of learning — without lasting results.
+              Without reinforcement, people forget up to 70% of new information within 24 hours. Workshops, slide decks, and one-off sessions create the illusion of learning without producing lasting results.
             </p>
             <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, marginBottom: 28 }}>
-              FSRS (Free Spaced Repetition Scheduler) is an open-source memory algorithm built on decades of cognitive science research. It tracks retention at the individual level — for each card, for each person — and schedules the next review at the precise moment before forgetting occurs.
+              FSRS (Free Spaced Repetition Scheduler) is an open-source memory algorithm built on decades of cognitive science research. It tracks retention at the individual level (for each card, for each person) and schedules the next review at the precise moment before forgetting occurs.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {[
                 { title: "Adapts to each person", desc: "Review intervals adjust to individual memory curves, not a fixed schedule." },
-                { title: "Perfectly timed reviews", desc: "You only see a card when you need to — never too early, never too late." },
+                { title: "Perfectly timed reviews", desc: "You only see a card when you need to: never too early, never too late." },
                 { title: "Knowledge that compounds", desc: "Each review strengthens the memory trace. Retention improves over time, not in spite of it." },
               ].map((item) => (
                 <div key={item.title} style={{ display: "flex", gap: 10 }}>
@@ -319,8 +319,8 @@ export default function HomePage() {
               {[
                 { title: "Manage your knowledge library", desc: "Upload documents, review AI-generated cards, and approve them before publishing to your team." },
                 { title: "Onboard new members instantly", desc: "Invite by email. New members receive a setup link and are reviewing within minutes." },
-                { title: "Spot knowledge gaps early",     desc: "Retention scores per topic show exactly where the team is confident — and where they're not." },
-                { title: "Mandatory decks",               desc: "Mark critical policy decks as required — they auto-assign to every team member on join." },
+                { title: "Spot knowledge gaps early",     desc: "Retention scores per topic show exactly where the team is confident and where they are not." },
+                { title: "Mandatory decks",               desc: "Mark critical policy decks as required; they auto-assign to every team member on join." },
               ].map((item) => (
                 <div key={item.title} style={{ display: "flex", gap: 10 }}>
                   <div style={{
@@ -355,7 +355,7 @@ export default function HomePage() {
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>SL</div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-1)" }}>Sarah L. — Team Lead</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-1)" }}>Sarah L., Team Lead</div>
                 <div style={{ fontSize: 11, color: "var(--ink-3)" }}>Acme Support</div>
               </div>
             </div>
@@ -401,12 +401,12 @@ export default function HomePage() {
           {[
             {
               title: "TLS in transit, encrypted at rest",
-              desc:  "All data travels over TLS 1.3. Documents are never stored as raw files — only the extracted text, scoped to your organisation and encrypted in the database.",
+              desc:  "All data travels over TLS 1.3. Documents are never stored as raw files; only the extracted text is retained, scoped to your organisation and encrypted in the database.",
               icon:  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
             },
             {
               title: "Strict organisation isolation",
-              desc:  "Every database query is hard-scoped to your organisation ID. No data can cross org boundaries — this is enforced at the architecture level, not just policy.",
+              desc:  "Every database query is hard-scoped to your organisation ID. No data can cross org boundaries; this is enforced at the architecture level, not just policy.",
               icon:  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
             },
             {
@@ -416,7 +416,7 @@ export default function HomePage() {
             },
             {
               title: "Role-based access control",
-              desc:  "Four permission tiers: Agent, Manager, Admin, Super Admin. Only Managers and above can upload documents or publish cards — agents review only.",
+              desc:  "Four permission tiers: Agent, Manager, Admin, Super Admin. Only Managers and above can upload documents or publish cards; agents review only.",
               icon:  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue-600)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
             },
             {

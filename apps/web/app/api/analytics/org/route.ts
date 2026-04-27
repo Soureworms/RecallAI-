@@ -3,13 +3,14 @@ import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { getKnowledgeGaps } from "@/lib/services/analytics"
 import { forgetting_curve, default_request_retention } from "ts-fsrs"
+import { withHandlerSimple } from "@/lib/api/handler"
 
 function retrievability(stability: number, lastReviewDate: Date): number {
   const elapsed = (Date.now() - lastReviewDate.getTime()) / 86_400_000
   return Math.max(0, Math.min(1, forgetting_curve(default_request_retention, elapsed, stability)))
 }
 
-export async function GET() {
+export const GET = withHandlerSimple(async () => {
   const authResult = await requireRole("ADMIN")
   if (!authResult.ok) return authResult.response
   const { session } = authResult
@@ -27,7 +28,11 @@ export async function GET() {
       prisma.deck.count({ where: { orgId, isArchived: false } }),
       prisma.card.count({ where: { status: "ACTIVE", deck: { orgId, isArchived: false } } }),
       prisma.userCard.findMany({
-        where: { card: { status: "ACTIVE", deck: { orgId, isArchived: false } }, stability: { gt: 0 }, lastReviewDate: { not: null } },
+        where: {
+          card: { status: "ACTIVE", deck: { orgId, isArchived: false } },
+          stability: { gt: 0 },
+          lastReviewDate: { not: null },
+        },
         select: { stability: true, lastReviewDate: true },
         take: 5000,
       }),
@@ -43,7 +48,6 @@ export async function GET() {
       ? Math.round((retentionScores.reduce((a, b) => a + b, 0) / retentionScores.length) * 100)
       : 0
 
-  // Reviews per day for the last 14 days
   const twoWeeksAgo = new Date(Date.now() - 14 * 86_400_000)
   const recentLogs = await prisma.reviewLog.findMany({
     where: { user: { orgId }, reviewedAt: { gte: twoWeeksAgo } },
@@ -69,4 +73,4 @@ export async function GET() {
     reviewActivity,
     knowledgeGaps: knowledgeGaps.slice(0, 5),
   })
-}
+})

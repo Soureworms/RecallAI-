@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
+import { withHandlerSimple } from "@/lib/api/handler"
+import { createDeckSchema } from "@/lib/schemas/api"
 
-export async function GET() {
+export const GET = withHandlerSimple(async () => {
   const auth = await requireRole("AGENT")
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -16,35 +18,29 @@ export async function GET() {
   })
 
   return NextResponse.json(decks)
-}
+})
 
-export async function POST(req: NextRequest) {
+export const POST = withHandlerSimple(async (req: NextRequest) => {
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
   const { session } = auth
 
-  const body = (await req.json()) as {
-    name?: string
-    description?: string
-    isMandatory?: boolean
+  const parsed = createDeckSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
-
-  if (!body.name?.trim()) {
-    return NextResponse.json({ error: "Name is required" }, { status: 400 })
-  }
+  const { name, description, isMandatory } = parsed.data
 
   const deck = await prisma.deck.create({
     data: {
-      name: body.name.trim(),
-      description: body.description?.trim() ?? null,
-      isMandatory: body.isMandatory ?? false,
+      name,
+      description: description ?? null,
+      isMandatory,
       orgId: session.user.orgId,
       createdById: session.user.id,
     },
-    include: {
-      _count: { select: { cards: true } },
-    },
+    include: { _count: { select: { cards: true } } },
   })
 
   return NextResponse.json(deck, { status: 201 })
-}
+})

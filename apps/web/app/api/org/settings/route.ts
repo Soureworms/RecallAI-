@@ -1,28 +1,28 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
+import { withHandlerSimple } from "@/lib/api/handler"
+import { orgSettingsSchema } from "@/lib/schemas/api"
 
-// PATCH /api/org/settings — rename the caller's organization (ADMIN+)
-export async function PATCH(req: NextRequest) {
+export const PATCH = withHandlerSimple(async (req: NextRequest) => {
   const auth = await requireRole("ADMIN")
   if (!auth.ok) return auth.response
 
-  const body = await req.json() as { name?: string }
-  if (!body.name?.trim()) {
-    return NextResponse.json({ error: "name is required" }, { status: 400 })
+  const parsed = orgSettingsSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
   const org = await prisma.organization.update({
     where: { id: auth.session.user.orgId },
-    data: { name: body.name.trim() },
+    data: { name: parsed.data.name },
     select: { id: true, name: true },
   })
 
   return NextResponse.json(org)
-}
+})
 
-// GET /api/org/settings — fetch the caller's org details (ADMIN+)
-export async function GET() {
+export const GET = withHandlerSimple(async () => {
   const auth = await requireRole("ADMIN")
   if (!auth.ok) return auth.response
 
@@ -37,4 +37,4 @@ export async function GET() {
 
   if (!org) return NextResponse.json({ error: "Not found" }, { status: 404 })
   return NextResponse.json(org)
-}
+})

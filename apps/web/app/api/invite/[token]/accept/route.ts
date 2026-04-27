@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/db"
+import { withHandler } from "@/lib/api/handler"
+import { acceptInviteSchema } from "@/lib/schemas/api"
 import type { Role } from "@prisma/client"
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export const POST = withHandler<{ token: string }>(async (req: NextRequest, { params }) => {
   const invite = await prisma.invite.findUnique({
     where: { token: params.token },
     include: { team: true },
@@ -22,40 +21,30 @@ export async function POST(
     return NextResponse.json({ error: "Invite has expired" }, { status: 410 })
   }
 
-  const body = (await req.json()) as {
-    name?: string
-    password?: string
+  const parsed = acceptInviteSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
-
-  if (!body.password || body.password.length < 8) {
-    return NextResponse.json(
-      { error: "Password must be at least 8 characters" },
-      { status: 400 }
-    )
-  }
+  const { name, password } = parsed.data
 
   const existingUser = await prisma.user.findUnique({ where: { email: invite.email } })
-
   let userId: string
 
   if (existingUser) {
-    // Verify password for existing user
-    const valid = await bcrypt.compare(body.password, existingUser.hashedPassword)
+    const valid = await bcrypt.compare(password, existingUser.hashedPassword)
     if (!valid) {
       return NextResponse.json({ error: "Incorrect password" }, { status: 401 })
     }
     userId = existingUser.id
   } else {
-    // New user — name is required
-    if (!body.name?.trim()) {
+    if (!name?.trim()) {
       return NextResponse.json({ error: "Name is required for new accounts" }, { status: 400 })
     }
 
-    const hashedPassword = await bcrypt.hash(body.password, 12)
-
+    const hashedPassword = await bcrypt.hash(password, 12)
     const newUser = await prisma.user.create({
       data: {
-        name: body.name.trim(),
+        name: name.trim(),
         email: invite.email,
         hashedPassword,
         role: invite.role as Role,
@@ -66,7 +55,6 @@ export async function POST(
     userId = newUser.id
   }
 
-  // Add to team (idempotent) and mark invite accepted
   await prisma.$transaction([
     prisma.teamMember.upsert({
       where: { userId_teamId: { userId, teamId: invite.teamId } },
@@ -80,4 +68,4 @@ export async function POST(
   ])
 
   return NextResponse.json({ email: invite.email })
-}
+})

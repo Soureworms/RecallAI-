@@ -2,91 +2,58 @@ import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { requireSuperAdmin } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
-import { sendEmail } from "@/lib/email"
-import type { Role } from "@prisma/client"
+import { withHandlerSimple } from "@/lib/api/handler"
+import { createPlatformUserSchema } from "@/lib/schemas/api"
+import { sendWelcomeEmail } from "@/lib/emails/invite"
 
-export async function GET() {
+export const GET = withHandlerSimple(async () => {
   const auth = await requireSuperAdmin()
   if (!auth.ok) return auth.response
 
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
     select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      image: true,
-      onboardedAt: true,
-      createdAt: true,
+      id: true, name: true, email: true, role: true, image: true,
+      onboardedAt: true, createdAt: true,
       org: { select: { id: true, name: true } },
     },
   })
 
   return NextResponse.json(users)
-}
+})
 
-export async function POST(req: NextRequest) {
+export const POST = withHandlerSimple(async (req: NextRequest) => {
   const auth = await requireSuperAdmin()
   if (!auth.ok) return auth.response
 
-  const body = await req.json() as {
-    name?: string
-    email?: string
-    role?: string
-    orgId?: string
-    sendWelcomeEmail?: boolean
+  const parsed = createPlatformUserSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
+  const { name, email, role, orgId, sendWelcomeEmail: doSend } = parsed.data
 
-  if (!body.email?.trim() || !body.name?.trim() || !body.orgId) {
-    return NextResponse.json({ error: "name, email, and orgId are required" }, { status: 400 })
-  }
-
-  const validRoles: Role[] = ["AGENT", "MANAGER", "ADMIN", "SUPER_ADMIN"]
-  const role: Role = validRoles.includes(body.role as Role) ? (body.role as Role) : "AGENT"
-
-  const existing = await prisma.user.findUnique({ where: { email: body.email.trim() } })
+  const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) {
     return NextResponse.json({ error: "Email already registered" }, { status: 409 })
   }
 
-  // Create with a secure random temp password — user will set their own via reset email
-  const tempPassword = crypto.randomUUID()
-  const hashedPassword = await bcrypt.hash(tempPassword, 12)
+  const hashedPassword = await bcrypt.hash(crypto.randomUUID(), 12)
 
   const user = await prisma.user.create({
-    data: {
-      name: body.name.trim(),
-      email: body.email.trim().toLowerCase(),
-      hashedPassword,
-      role,
-      orgId: body.orgId,
+    data: { name, email, hashedPassword, role, orgId },
+    select: {
+      id: true, name: true, email: true, role: true, createdAt: true,
+      org: { select: { id: true, name: true } },
     },
-    select: { id: true, name: true, email: true, role: true, createdAt: true, org: { select: { id: true, name: true } } },
   })
 
-  // Send a password reset email so the new user can set their own password
-  if (body.sendWelcomeEmail !== false) {
+  if (doSend) {
     const token = crypto.randomUUID()
     await prisma.passwordResetToken.create({
       data: { userId: user.id, token, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60_000) },
     })
-    const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000"
-    const setupUrl = `${baseUrl}/reset-password/${token}`
-
-    await sendEmail({
-      to: user.email,
-      subject: "You've been invited to RecallAI",
-      html: `
-        <p>Hi ${user.name},</p>
-        <p>A RecallAI account has been created for you${role !== "AGENT" ? ` with the <strong>${role}</strong> role` : ""}.</p>
-        <p><a href="${setupUrl}" style="color:#4f46e5;font-weight:bold">Set up your password and sign in</a></p>
-        <p>This link expires in <strong>7 days</strong>.</p>
-        <p>— The RecallAI team</p>
-      `,
-      text: `You've been invited to RecallAI.\n\nSet your password here (link expires in 7 days):\n${setupUrl}`,
-    })
+    await sendWelcomeEmail({ name: user.name ?? name, email: user.email, role, token })
   }
 
   return NextResponse.json(user, { status: 201 })
-}
+})

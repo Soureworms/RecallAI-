@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
-import { CardFormat } from "@prisma/client"
-import { createEmptyCard } from "ts-fsrs"
+import { withHandler } from "@/lib/api/handler"
+import { updateCardSchema } from "@/lib/schemas/api"
+import { assignCardsToUsers } from "@/lib/services/user-card"
 
 function notFound() {
   return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -24,32 +25,12 @@ async function autoAssignCard(cardId: string, deckId: string) {
     distinct: ["userId"],
   })
   if (rows.length === 0) return
-
-  const empty = createEmptyCard(new Date())
-  await prisma.userCard.createMany({
-    data: rows.map(({ userId }) => ({
-      userId,
-      cardId,
-      stability: empty.stability,
-      difficulty: empty.difficulty,
-      elapsedDays: empty.elapsed_days,
-      scheduledDays: empty.scheduled_days,
-      learningSteps: empty.learning_steps,
-      reps: empty.reps,
-      lapses: empty.lapses,
-      state: "NEW" as const,
-      dueDate: new Date(),
-    })),
-    skipDuplicates: true,
-  })
+  await assignCardsToUsers(rows.map((r) => r.userId), [cardId])
 }
 
 // Shared workspace: any MANAGER in the org can edit, approve, or archive
 // any card in any deck. Deck access is org-wide, not per-creator.
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { deckId: string; cardId: string } }
-) {
+export const PUT = withHandler<{ deckId: string; cardId: string }>(async (req, { params }) => {
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -57,36 +38,27 @@ export async function PUT(
   const card = await ownedCard(params.cardId, params.deckId, session.user.orgId)
   if (!card) return notFound()
 
-  const body = (await req.json()) as {
-    question?: string
-    answer?: string
-    format?: string
-    tags?: string[]
+  const parsed = updateCardSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
-
-  const format = body.format ? (body.format as CardFormat) : card.format
-  if (body.format && !Object.values(CardFormat).includes(format)) {
-    return NextResponse.json({ error: "Invalid format" }, { status: 400 })
-  }
+  const { question, answer, format, tags } = parsed.data
 
   const updated = await prisma.card.update({
     where: { id: params.cardId },
     data: {
-      question: body.question?.trim() ?? card.question,
-      answer: body.answer?.trim() ?? card.answer,
-      format,
-      tags: body.tags ?? card.tags,
+      question: question ?? card.question,
+      answer:   answer   ?? card.answer,
+      format:   format   ?? card.format,
+      tags:     tags     ?? card.tags,
     },
   })
 
   return NextResponse.json(updated)
-}
+})
 
 // PATCH: approve a draft card (with optional inline edits)
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { deckId: string; cardId: string } }
-) {
+export const PATCH = withHandler<{ deckId: string; cardId: string }>(async (req, { params }) => {
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -97,39 +69,29 @@ export async function PATCH(
     return NextResponse.json({ error: "Only DRAFT cards can be approved" }, { status: 400 })
   }
 
-  const body = (await req.json()) as {
-    question?: string
-    answer?: string
-    format?: string
-    tags?: string[]
+  const parsed = updateCardSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
-
-  const format = body.format ? (body.format as CardFormat) : card.format
-  if (body.format && !Object.values(CardFormat).includes(format)) {
-    return NextResponse.json({ error: "Invalid format" }, { status: 400 })
-  }
+  const { question, answer, format, tags } = parsed.data
 
   const approved = await prisma.card.update({
     where: { id: params.cardId },
     data: {
-      question: body.question?.trim() ?? card.question,
-      answer: body.answer?.trim() ?? card.answer,
-      format,
-      tags: body.tags ?? card.tags,
+      question: question ?? card.question,
+      answer:   answer   ?? card.answer,
+      format:   format   ?? card.format,
+      tags:     tags     ?? card.tags,
       status: "ACTIVE",
     },
   })
 
   await autoAssignCard(params.cardId, params.deckId)
-
   return NextResponse.json(approved)
-}
+})
 
 // DELETE: permanently delete DRAFT cards; archive ACTIVE cards
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: { deckId: string; cardId: string } }
-) {
+export const DELETE = withHandler<{ deckId: string; cardId: string }>(async (_req, { params }) => {
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -147,4 +109,4 @@ export async function DELETE(
   }
 
   return new NextResponse(null, { status: 204 })
-}
+})

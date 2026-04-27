@@ -2,15 +2,15 @@ import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { initializeCard, getNextReview } from "@/lib/services/scheduler"
+import { withHandlerSimple } from "@/lib/api/handler"
 
-export async function GET() {
+export const GET = withHandlerSimple(async () => {
   const authResult = await requireRole("AGENT")
   if (!authResult.ok) return authResult.response
   const { session } = authResult
 
   const { id: userId, orgId } = session.user
 
-  // ── Auto-initialize mandatory deck cards the user has never seen ─────────
   const mandatoryCards = await prisma.card.findMany({
     where: {
       status: "ACTIVE",
@@ -21,10 +21,7 @@ export async function GET() {
 
   if (mandatoryCards.length > 0) {
     const existing = await prisma.userCard.findMany({
-      where: {
-        userId,
-        cardId: { in: mandatoryCards.map((c) => c.id) },
-      },
+      where: { userId, cardId: { in: mandatoryCards.map((c) => c.id) } },
       select: { cardId: true },
     })
     const existingIds = new Set(existing.map((uc) => uc.cardId))
@@ -35,7 +32,6 @@ export async function GET() {
     }
   }
 
-  // ── Fetch up to 20 due cards ──────────────────────────────────────────────
   const now = new Date()
   const userCards = await prisma.userCard.findMany({
     where: {
@@ -60,27 +56,14 @@ export async function GET() {
       format: uc.card.format,
       deckName: uc.card.deck.name,
       preview: {
-        again: {
-          nextDue: preview.again.nextDue.toISOString(),
-          scheduledDays: preview.again.scheduledDays,
-        },
-        hard: {
-          nextDue: preview.hard.nextDue.toISOString(),
-          scheduledDays: preview.hard.scheduledDays,
-        },
-        good: {
-          nextDue: preview.good.nextDue.toISOString(),
-          scheduledDays: preview.good.scheduledDays,
-        },
-        easy: {
-          nextDue: preview.easy.nextDue.toISOString(),
-          scheduledDays: preview.easy.scheduledDays,
-        },
+        again: { nextDue: preview.again.nextDue.toISOString(), scheduledDays: preview.again.scheduledDays },
+        hard:  { nextDue: preview.hard.nextDue.toISOString(),  scheduledDays: preview.hard.scheduledDays  },
+        good:  { nextDue: preview.good.nextDue.toISOString(),  scheduledDays: preview.good.scheduledDays  },
+        easy:  { nextDue: preview.easy.nextDue.toISOString(),  scheduledDays: preview.easy.scheduledDays  },
       },
     }
   })
 
-  // Next due date when no cards are ready
   let nextDueDate: string | null = null
   if (dueCards.length === 0) {
     const next = await prisma.userCard.findFirst({
@@ -96,4 +79,4 @@ export async function GET() {
   }
 
   return NextResponse.json({ dueCards, nextDueDate })
-}
+})

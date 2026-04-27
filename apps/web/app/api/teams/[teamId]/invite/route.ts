@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server"
 import { randomUUID } from "crypto"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
+import { withHandler } from "@/lib/api/handler"
+import { createInviteSchema } from "@/lib/schemas/api"
+import { env } from "@/lib/env"
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { teamId: string } }
-) {
+export const GET = withHandler<{ teamId: string }>(async (_req, { params }) => {
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -22,12 +22,9 @@ export async function GET(
   })
 
   return NextResponse.json(invites)
-}
+})
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { teamId: string } }
-) {
+export const POST = withHandler<{ teamId: string }>(async (req: NextRequest, { params }) => {
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -37,7 +34,6 @@ export async function POST(
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 
-  // Non-admin managers must be team members
   if (session.user.role !== "ADMIN") {
     const membership = await prisma.teamMember.findUnique({
       where: { userId_teamId: { userId: session.user.id, teamId: params.teamId } },
@@ -47,23 +43,12 @@ export async function POST(
     }
   }
 
-  const body = (await req.json()) as { email?: string; role?: string }
-
-  if (!body.email?.trim()) {
-    return NextResponse.json({ error: "Email is required" }, { status: 400 })
+  const parsed = createInviteSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
+  const { email, role } = parsed.data
 
-  const role = body.role
-  if (role !== "MANAGER" && role !== "AGENT") {
-    return NextResponse.json(
-      { error: "Role must be MANAGER or AGENT" },
-      { status: 400 }
-    )
-  }
-
-  const email = body.email.trim().toLowerCase()
-
-  // Check for existing pending (non-expired, non-accepted) invite for this email+team
   const existing = await prisma.invite.findFirst({
     where: {
       teamId: params.teamId,
@@ -73,10 +58,9 @@ export async function POST(
     },
   })
   if (existing) {
-    const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000"
     return NextResponse.json({
       invite: existing,
-      inviteUrl: `${baseUrl}/invite/${existing.token}`,
+      inviteUrl: `${env.NEXTAUTH_URL}/invite/${existing.token}`,
     })
   }
 
@@ -94,12 +78,8 @@ export async function POST(
     },
   })
 
-  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000"
   return NextResponse.json(
-    {
-      invite,
-      inviteUrl: `${baseUrl}/invite/${invite.token}`,
-    },
+    { invite, inviteUrl: `${env.NEXTAUTH_URL}/invite/${invite.token}` },
     { status: 201 }
   )
-}
+})

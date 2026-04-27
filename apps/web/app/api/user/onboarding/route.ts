@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
+import { withHandlerSimple } from "@/lib/api/handler"
 
-export async function POST() {
+export const POST = withHandlerSimple(async () => {
   const authResult = await requireRole("AGENT")
   if (!authResult.ok) return authResult.response
   const { session } = authResult
@@ -13,4 +14,4 @@ export async function POST() {
   })
 
   return NextResponse.json({ ok: true })
-}
+})

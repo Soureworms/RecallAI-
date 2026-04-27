@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
 import { requireSuperAdmin } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
+import { withHandlerSimple } from "@/lib/api/handler"
 
-export async function GET() {
+export const GET = withHandlerSimple(async () => {
   const auth = await requireSuperAdmin()
   if (!auth.ok) return auth.response
 
@@ -23,4 +24,4 @@ export async function GET() {
   ])
 
   return NextResponse.json({ orgs, users, decks, cards, reviews, reviewsToday, activeUsersToday })
-}
+})

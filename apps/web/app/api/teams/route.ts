@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
+import { withHandlerSimple } from "@/lib/api/handler"
+import { createTeamSchema } from "@/lib/schemas/api"
 
-export async function GET() {
+export const GET = withHandlerSimple(async () => {
   const auth = await requireRole("AGENT")
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -25,25 +27,22 @@ export async function GET() {
   })
 
   return NextResponse.json(teams)
-}
+})
 
-export async function POST(req: NextRequest) {
+export const POST = withHandlerSimple(async (req: NextRequest) => {
   const auth = await requireRole("ADMIN")
   if (!auth.ok) return auth.response
   const { session } = auth
 
-  const body = (await req.json()) as { name?: string }
-  if (!body.name?.trim()) {
-    return NextResponse.json({ error: "Name is required" }, { status: 400 })
+  const parsed = createTeamSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
   const team = await prisma.team.create({
-    data: {
-      name: body.name.trim(),
-      orgId: session.user.orgId,
-    },
+    data: { name: parsed.data.name, orgId: session.user.orgId },
     include: { members: true },
   })
 
   return NextResponse.json(team, { status: 201 })
-}
+})

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireSuperAdmin } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
+import { withHandlerSimple } from "@/lib/api/handler"
+import { createOrgSchema } from "@/lib/schemas/api"
 
-export async function GET() {
+export const GET = withHandlerSimple(async () => {
   const auth = await requireSuperAdmin()
   if (!auth.ok) return auth.response
 
@@ -14,21 +16,21 @@ export async function GET() {
   })
 
   return NextResponse.json(orgs)
-}
+})
 
-export async function POST(req: NextRequest) {
+export const POST = withHandlerSimple(async (req: NextRequest) => {
   const auth = await requireSuperAdmin()
   if (!auth.ok) return auth.response
 
-  const body = await req.json() as { name?: string }
-  if (!body.name?.trim()) {
-    return NextResponse.json({ error: "name is required" }, { status: 400 })
+  const parsed = createOrgSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
   const org = await prisma.organization.create({
-    data: { name: body.name.trim() },
+    data: { name: parsed.data.name },
     include: { _count: { select: { users: true, decks: true } } },
   })
 
   return NextResponse.json(org, { status: 201 })
-}
+})

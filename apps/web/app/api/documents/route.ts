@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
+import { withHandlerSimple } from "@/lib/api/handler"
 
-export async function GET(req: NextRequest) {
+export const GET = withHandlerSimple(async (req: NextRequest) => {
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -22,4 +23,4 @@ export async function GET(req: NextRequest) {
   })
 
   return NextResponse.json(docs)
-}
+})

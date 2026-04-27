@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { requireRole, requireTeamAccess } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import {
@@ -7,16 +7,13 @@ import {
   getKnowledgeGaps,
   getNewHireRampProgress,
 } from "@/lib/services/analytics"
+import { withHandler } from "@/lib/api/handler"
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { teamId: string } }
-) {
+export const GET = withHandler<{ teamId: string }>(async (_req, { params }) => {
   const authResult = await requireRole("MANAGER")
   if (!authResult.ok) return authResult.response
   const { session } = authResult
 
-  // Managers can only access teams they belong to; admins can access all org teams
   const teamAccess = await requireTeamAccess(session, params.teamId)
   if (!teamAccess.ok) return teamAccess.response
 
@@ -42,16 +39,12 @@ export async function GET(
 
   const avgRetention =
     userScores.length > 0
-      ? Math.round(
-          userScores.reduce((s, u) => s + u.avgRetention, 0) / userScores.length
-        )
+      ? Math.round(userScores.reduce((s, u) => s + u.avgRetention, 0) / userScores.length)
       : 0
 
   const avgCompletionRate =
     userScores.length > 0
-      ? Math.round(
-          userScores.reduce((s, u) => s + u.completionRate, 0) / userScores.length
-        )
+      ? Math.round(userScores.reduce((s, u) => s + u.completionRate, 0) / userScores.length)
       : 0
 
   return NextResponse.json({
@@ -64,4 +57,4 @@ export async function GET(
     knowledgeGaps,
     newHireProgress,
   })
-}
+})

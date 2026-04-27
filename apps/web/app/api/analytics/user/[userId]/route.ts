@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { requireRole, requireOrgAccess } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import {
@@ -9,30 +9,24 @@ import {
   getRecentReviews,
   getNewHireRampProgress,
 } from "@/lib/services/analytics"
+import { withHandler } from "@/lib/api/handler"
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+export const GET = withHandler<{ userId: string }>(async (_req, { params }) => {
   const authResult = await requireRole("AGENT")
   if (!authResult.ok) return authResult.response
   const { session } = authResult
 
   const isSelf = params.userId === session.user.id
-  const isManagerPlus =
-    session.user.role === "MANAGER" || session.user.role === "ADMIN"
+  const isManagerPlus = session.user.role === "MANAGER" || session.user.role === "ADMIN"
 
   if (!isSelf && !isManagerPlus) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
   if (!isSelf) {
-    // Verify target user is in the same org
     const orgCheck = await requireOrgAccess(session, params.userId)
     if (!orgCheck.ok) return orgCheck.response
 
-    // MANAGERs can only view analytics for users in their own teams.
-    // ADMIN and SUPER_ADMIN can view any user in the org.
     if (session.user.role === "MANAGER") {
       const sharedTeam = await prisma.teamMember.findFirst({
         where: {
@@ -64,4 +58,4 @@ export async function GET(
     recentReviews,
     newHireProgress,
   })
-}
+})

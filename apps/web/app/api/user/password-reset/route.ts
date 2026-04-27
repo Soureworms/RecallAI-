@@ -3,13 +3,14 @@ import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
 import { checkRateLimit } from "@/lib/rate-limit"
+import { withHandlerSimple } from "@/lib/api/handler"
+import { env } from "@/lib/env"
 
-export async function POST() {
+export const POST = withHandlerSimple(async () => {
   const authResult = await requireRole("AGENT")
   if (!authResult.ok) return authResult.response
   const { session } = authResult
 
-  // Tighter rate limit for password reset: 3 per 10 minutes per user
   const { allowed } = await checkRateLimit(`pwd-reset:${session.user.id}`, 3, 10 * 60_000)
   if (!allowed) {
     return NextResponse.json(
@@ -19,9 +20,8 @@ export async function POST() {
   }
 
   const token = crypto.randomUUID()
-  const expiresAt = new Date(Date.now() + 60 * 60_000) // 1 hour
+  const expiresAt = new Date(Date.now() + 60 * 60_000)
 
-  // Invalidate any existing unused tokens for this user
   await prisma.passwordResetToken.deleteMany({
     where: { userId: session.user.id, usedAt: null },
   })
@@ -30,8 +30,7 @@ export async function POST() {
     data: { userId: session.user.id, token, expiresAt },
   })
 
-  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000"
-  const resetUrl = `${baseUrl}/reset-password/${token}`
+  const resetUrl = `${env.NEXTAUTH_URL}/reset-password/${token}`
 
   await sendEmail({
     to: session.user.email,
@@ -47,4 +46,4 @@ export async function POST() {
   })
 
   return NextResponse.json({ ok: true })
-}
+})

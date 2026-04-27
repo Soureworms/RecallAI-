@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
-import { createEmptyCard } from "ts-fsrs"
+import { withHandler } from "@/lib/api/handler"
+import { assignSchema } from "@/lib/schemas/api"
+import { assignCardsToUsers } from "@/lib/services/user-card"
 
 function notFound() {
   return NextResponse.json({ error: "Not found" }, { status: 404 })
 }
 
 // Shared workspace: any MANAGER in the org can view/manage assignments for any deck.
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { deckId: string } }
-) {
+export const GET = withHandler<{ deckId: string }>(async (_req, { params }) => {
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -26,12 +25,9 @@ export async function GET(
   })
 
   return NextResponse.json({ assignedUserIds: rows.map((r) => r.userId) })
-}
+})
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { deckId: string } }
-) {
+export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { params }) => {
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -39,27 +35,25 @@ export async function POST(
   const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
   if (!deck || deck.orgId !== session.user.orgId) return notFound()
 
-  const body = (await req.json()) as { userIds?: string[]; teamId?: string }
+  const parsed = assignSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
+  }
 
   let userIds: string[]
-  if (body.teamId) {
+  if ("teamId" in parsed.data) {
     const team = await prisma.team.findUnique({
-      where: { id: body.teamId },
+      where: { id: parsed.data.teamId },
       include: { members: { select: { userId: true } } },
     })
     if (!team || team.orgId !== session.user.orgId) return notFound()
     userIds = team.members.map((m) => m.userId)
-  } else if (Array.isArray(body.userIds) && body.userIds.length > 0) {
+  } else {
     const users = await prisma.user.findMany({
-      where: { id: { in: body.userIds }, orgId: session.user.orgId },
+      where: { id: { in: parsed.data.userIds }, orgId: session.user.orgId },
       select: { id: true },
     })
     userIds = users.map((u) => u.id)
-  } else {
-    return NextResponse.json(
-      { error: "Provide userIds or teamId" },
-      { status: 400 }
-    )
   }
 
   if (userIds.length === 0) return NextResponse.json({ created: 0 })
@@ -71,27 +65,6 @@ export async function POST(
 
   if (cards.length === 0) return NextResponse.json({ created: 0 })
 
-  const empty = createEmptyCard(new Date())
-  const now = new Date()
-
-  const result = await prisma.userCard.createMany({
-    data: userIds.flatMap((userId) =>
-      cards.map((card) => ({
-        userId,
-        cardId: card.id,
-        stability: empty.stability,
-        difficulty: empty.difficulty,
-        elapsedDays: empty.elapsed_days,
-        scheduledDays: empty.scheduled_days,
-        learningSteps: empty.learning_steps,
-        reps: empty.reps,
-        lapses: empty.lapses,
-        state: "NEW" as const,
-        dueDate: now,
-      }))
-    ),
-    skipDuplicates: true,
-  })
-
-  return NextResponse.json({ created: result.count })
-}
+  const created = await assignCardsToUsers(userIds, cards.map((c) => c.id))
+  return NextResponse.json({ created })
+})

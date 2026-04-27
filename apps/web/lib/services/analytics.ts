@@ -92,81 +92,94 @@ export async function getUserRetentionScores(
   })
   if (members.length === 0) return []
 
+  const userIds = members.map((m) => m.user.id)
   const now = new Date()
   const weekAgo = new Date(now.getTime() - 7 * 86_400_000)
+  // Fetch up to 366 days of logs to cover any possible streak — bounded, single query
+  const yearAgo = new Date(now.getTime() - 366 * 86_400_000)
 
-  const results = await Promise.all(
-    members.map(async ({ user }) => {
-      const [userCards, reviewsThisWeek, lastLog] = await Promise.all([
-        prisma.userCard.findMany({
-          where: { userId: user.id, card: { status: "ACTIVE" } },
-          select: { stability: true, lastReviewDate: true, dueDate: true },
-        }),
-        prisma.reviewLog.count({
-          where: { userId: user.id, reviewedAt: { gte: weekAgo } },
-        }),
-        prisma.reviewLog.findFirst({
-          where: { userId: user.id },
-          orderBy: { reviewedAt: "desc" },
-          select: { reviewedAt: true },
-        }),
-      ])
+  const [allUserCards, weeklyGroups, allLogs] = await Promise.all([
+    prisma.userCard.findMany({
+      where: { userId: { in: userIds }, card: { status: "ACTIVE" } },
+      select: { userId: true, stability: true, lastReviewDate: true, dueDate: true },
+    }),
+    prisma.reviewLog.groupBy({
+      by: ["userId"],
+      where: { userId: { in: userIds }, reviewedAt: { gte: weekAgo } },
+      _count: true,
+    }),
+    prisma.reviewLog.findMany({
+      where: { userId: { in: userIds }, reviewedAt: { gte: yearAgo } },
+      select: { userId: true, reviewedAt: true },
+      orderBy: { reviewedAt: "desc" },
+    }),
+  ])
 
-      const scores = userCards
-        .map(retrievability)
-        .filter((r): r is number => r !== null)
+  const cardsByUser = new Map<string, typeof allUserCards>()
+  for (const uc of allUserCards) {
+    if (!cardsByUser.has(uc.userId)) cardsByUser.set(uc.userId, [])
+    cardsByUser.get(uc.userId)!.push(uc)
+  }
 
-      const avgRetention = scores.length > 0
-        ? pct(scores.reduce((a, b) => a + b, 0) / scores.length)
-        : 0
+  const weekCountByUser = new Map<string, number>()
+  for (const row of weeklyGroups) {
+    weekCountByUser.set(row.userId, row._count)
+  }
 
-      const dueThisWeek = userCards.filter(
-        (uc) => uc.dueDate >= weekAgo && uc.dueDate <= now
-      ).length
-
-      const completionRate = dueThisWeek > 0
-        ? pct(reviewsThisWeek / dueThisWeek)
-        : reviewsThisWeek > 0 ? 100 : 0
-
-      const streak = await computeStreak(user.id)
-
-      return {
-        userId: user.id,
-        name: user.name,
-        email: user.email,
-        avgRetention,
-        completionRate,
-        reviewsThisWeek,
-        lastActiveDate: lastLog?.reviewedAt.toISOString() ?? null,
-        streak,
-      }
-    })
-  )
-
-  return results.sort((a, b) => a.avgRetention - b.avgRetention)
-}
-
-async function computeStreak(userId: string): Promise<number> {
-  const logs = await prisma.reviewLog.findMany({
-    where: { userId },
-    select: { reviewedAt: true },
-    orderBy: { reviewedAt: "desc" },
-    take: 500,
-  })
-  if (logs.length === 0) return 0
+  const logsByUser = new Map<string, Date[]>()
+  for (const log of allLogs) {
+    if (!logsByUser.has(log.userId)) logsByUser.set(log.userId, [])
+    logsByUser.get(log.userId)!.push(log.reviewedAt)
+  }
 
   const toDay = (d: Date) => {
     const c = new Date(d)
     c.setHours(0, 0, 0, 0)
     return c.getTime()
   }
-  const today = toDay(new Date())
-  const dateSet = new Set(logs.map((l) => toDay(l.reviewedAt)))
-  if (!dateSet.has(today) && !dateSet.has(today - 86_400_000)) return 0
-  let check = dateSet.has(today) ? today : today - 86_400_000
-  let streak = 0
-  while (dateSet.has(check)) { streak++; check -= 86_400_000 }
-  return streak
+  const today = toDay(now)
+
+  function computeStreakFromLogs(dates: Date[]): number {
+    if (dates.length === 0) return 0
+    const dateSet = new Set(dates.map(toDay))
+    if (!dateSet.has(today) && !dateSet.has(today - 86_400_000)) return 0
+    let check = dateSet.has(today) ? today : today - 86_400_000
+    let streak = 0
+    while (dateSet.has(check)) { streak++; check -= 86_400_000 }
+    return streak
+  }
+
+  const results = members.map(({ user }) => {
+    const userCards = cardsByUser.get(user.id) ?? []
+    const reviewsThisWeek = weekCountByUser.get(user.id) ?? 0
+    const logs = logsByUser.get(user.id) ?? []
+
+    const scores = userCards.map(retrievability).filter((r): r is number => r !== null)
+    const avgRetention = scores.length > 0
+      ? pct(scores.reduce((a, b) => a + b, 0) / scores.length)
+      : 0
+
+    const dueThisWeek = userCards.filter(
+      (uc) => uc.dueDate >= weekAgo && uc.dueDate <= now
+    ).length
+
+    const completionRate = dueThisWeek > 0
+      ? pct(reviewsThisWeek / dueThisWeek)
+      : reviewsThisWeek > 0 ? 100 : 0
+
+    return {
+      userId: user.id,
+      name: user.name,
+      email: user.email,
+      avgRetention,
+      completionRate,
+      reviewsThisWeek,
+      lastActiveDate: logs.length > 0 ? logs[0].toISOString() : null,
+      streak: computeStreakFromLogs(logs),
+    }
+  })
+
+  return results.sort((a, b) => a.avgRetention - b.avgRetention)
 }
 
 export type KnowledgeGapItem = {
@@ -186,6 +199,7 @@ export async function getKnowledgeGaps(orgId: string): Promise<KnowledgeGapItem[
       lastReviewDate: true,
       card: { select: { tags: true } },
     },
+    take: 10_000,
   })
 
   type TagEntry = { scores: number[]; cards: Set<string>; users: Set<string> }

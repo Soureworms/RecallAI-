@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
-import { sendEmail } from "@/lib/email"
-import type { Role } from "@prisma/client"
+import { withHandlerSimple } from "@/lib/api/handler"
+import { createOrgUserSchema } from "@/lib/schemas/api"
+import { sendWelcomeEmail } from "@/lib/emails/invite"
 
 // GET /api/org/users — list all users in the caller's org (ADMIN+)
-export async function GET() {
+export const GET = withHandlerSimple(async () => {
   const auth = await requireRole("ADMIN")
   if (!auth.ok) return auth.response
 
@@ -14,50 +15,34 @@ export async function GET() {
     where: { orgId: auth.session.user.orgId },
     orderBy: { createdAt: "asc" },
     select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      image: true,
-      onboardedAt: true,
-      createdAt: true,
+      id: true, name: true, email: true, role: true,
+      image: true, onboardedAt: true, createdAt: true,
     },
   })
 
   return NextResponse.json(users)
-}
+})
 
 // POST /api/org/users — invite a new user into the caller's org (ADMIN+)
-export async function POST(req: NextRequest) {
+export const POST = withHandlerSimple(async (req: NextRequest) => {
   const auth = await requireRole("ADMIN")
   if (!auth.ok) return auth.response
 
-  const body = await req.json() as { name?: string; email?: string; role?: string }
-
-  if (!body.email?.trim() || !body.name?.trim()) {
-    return NextResponse.json({ error: "name and email are required" }, { status: 400 })
+  const parsed = createOrgUserSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
+  const { name, email, role } = parsed.data
 
-  // ADMIN can only create AGENT or MANAGER in their own org
-  const allowedRoles: Role[] = ["AGENT", "MANAGER"]
-  const role: Role = allowedRoles.includes(body.role as Role) ? (body.role as Role) : "AGENT"
-
-  const existing = await prisma.user.findUnique({ where: { email: body.email.trim().toLowerCase() } })
+  const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) {
     return NextResponse.json({ error: "Email already registered" }, { status: 409 })
   }
 
-  const tempPassword = crypto.randomUUID()
-  const hashedPassword = await bcrypt.hash(tempPassword, 12)
+  const hashedPassword = await bcrypt.hash(crypto.randomUUID(), 12)
 
   const user = await prisma.user.create({
-    data: {
-      name: body.name.trim(),
-      email: body.email.trim().toLowerCase(),
-      hashedPassword,
-      role,
-      orgId: auth.session.user.orgId,
-    },
+    data: { name, email, hashedPassword, role, orgId: auth.session.user.orgId },
     select: { id: true, name: true, email: true, role: true, createdAt: true },
   })
 
@@ -65,21 +50,7 @@ export async function POST(req: NextRequest) {
   await prisma.passwordResetToken.create({
     data: { userId: user.id, token, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60_000) },
   })
-  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000"
-  const setupUrl = `${baseUrl}/reset-password/${token}`
-
-  await sendEmail({
-    to: user.email,
-    subject: "You've been invited to RecallAI",
-    html: `
-      <p>Hi ${user.name},</p>
-      <p>Your team admin has created a RecallAI account for you.</p>
-      <p><a href="${setupUrl}" style="color:#4f46e5;font-weight:bold">Set up your password and sign in</a></p>
-      <p>This link expires in <strong>7 days</strong>.</p>
-      <p>— The RecallAI team</p>
-    `,
-    text: `You've been invited to RecallAI.\n\nSet your password here (link expires in 7 days):\n${setupUrl}`,
-  })
+  await sendWelcomeEmail({ name: user.name ?? name, email: user.email, role, token })
 
   return NextResponse.json(user, { status: 201 })
-}
+})

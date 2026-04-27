@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireSuperAdmin } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
+import { withHandler } from "@/lib/api/handler"
 import type { Role } from "@prisma/client"
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+export const PATCH = withHandler<{ userId: string }>(async (req: NextRequest, { params }) => {
   const auth = await requireSuperAdmin()
   if (!auth.ok) return auth.response
 
@@ -32,20 +30,16 @@ export async function PATCH(
   })
 
   return NextResponse.json(user)
-}
+})
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+export const DELETE = withHandler<{ userId: string }>(async (_req, { params }) => {
   const auth = await requireSuperAdmin()
   if (!auth.ok) return auth.response
 
-  // Prevent super admin from deleting themselves
   if (params.userId === auth.session.user.id) {
     return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 })
   }
 
   await prisma.user.delete({ where: { id: params.userId } })
   return new NextResponse(null, { status: 204 })
-}
+})

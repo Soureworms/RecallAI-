@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
-import { CardFormat } from "@prisma/client"
-import { sanitizeTags } from "@/lib/security/file-validation"
+import { withHandler } from "@/lib/api/handler"
+import { createCardSchema } from "@/lib/schemas/api"
 
 function notFound() {
   return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -14,10 +14,7 @@ async function ownedDeck(deckId: string, orgId: string) {
   return deck
 }
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { deckId: string } }
-) {
+export const GET = withHandler<{ deckId: string }>(async (req, { params }) => {
   const auth = await requireRole("AGENT")
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -46,13 +43,10 @@ export async function GET(
   })
 
   return NextResponse.json(cards)
-}
+})
 
 // Shared workspace: any MANAGER in the org can add cards to any deck.
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { deckId: string } }
-) {
+export const POST = withHandler<{ deckId: string }>(async (req, { params }) => {
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -60,46 +54,15 @@ export async function POST(
   const deck = await ownedDeck(params.deckId, session.user.orgId)
   if (!deck) return notFound()
 
-  const body = (await req.json()) as {
-    question?: string
-    answer?: string
-    format?: string
-    tags?: unknown
+  const parsed = createCardSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
-
-  const question = body.question?.trim() ?? ""
-  const answer   = body.answer?.trim()   ?? ""
-
-  if (!question || !answer) {
-    return NextResponse.json(
-      { error: "Question and answer are required" },
-      { status: 400 },
-    )
-  }
-  if (question.length > 500 || answer.length > 2000) {
-    return NextResponse.json(
-      { error: "Question must be ≤ 500 chars and answer ≤ 2000 chars." },
-      { status: 400 },
-    )
-  }
-
-  const format = (body.format as CardFormat | undefined) ?? CardFormat.QA
-  if (!Object.values(CardFormat).includes(format)) {
-    return NextResponse.json({ error: "Invalid format" }, { status: 400 })
-  }
-
-  const tags = sanitizeTags(body.tags)
+  const { question, answer, format, tags } = parsed.data
 
   const card = await prisma.card.create({
-    data: {
-      deckId: params.deckId,
-      question,
-      answer,
-      format,
-      tags,
-      status: "ACTIVE",
-    },
+    data: { deckId: params.deckId, question, answer, format, tags, status: "ACTIVE" },
   })
 
   return NextResponse.json(card, { status: 201 })
-}
+})

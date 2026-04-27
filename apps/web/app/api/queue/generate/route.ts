@@ -4,13 +4,13 @@ import { Redis } from "@upstash/redis"
 import { generateCardsFromText } from "@/lib/services/card-generator"
 import { prisma } from "@/lib/db"
 import type { GenerateJobData, JobState } from "@/lib/queue/qstash"
+import { env } from "@/lib/env"
 
 // QStash calls this endpoint when a job is ready to process.
 // Signature verification ensures only QStash can trigger generation.
 export async function POST(req: NextRequest) {
-  // ── Verify QStash signature ───────────────────────────────────────────────
-  const currentKey = process.env.QSTASH_CURRENT_SIGNING_KEY
-  const nextKey = process.env.QSTASH_NEXT_SIGNING_KEY
+  const currentKey = env.QSTASH_CURRENT_SIGNING_KEY
+  const nextKey = env.QSTASH_NEXT_SIGNING_KEY
 
   if (!currentKey || !nextKey) {
     return NextResponse.json({ error: "QStash signing keys not configured" }, { status: 503 })
@@ -28,12 +28,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
   }
 
-  // ── Parse job data ────────────────────────────────────────────────────────
   const { jobId, deckId, documentId, orgId } = JSON.parse(rawBody) as GenerateJobData
 
   const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL!,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    url: env.UPSTASH_REDIS_REST_URL,
+    token: env.UPSTASH_REDIS_REST_TOKEN,
   })
 
   async function setStatus(patch: Partial<JobState>) {
@@ -45,7 +44,6 @@ export async function POST(req: NextRequest) {
     await redis.setex(`job:${jobId}`, 3600, { ...current, ...patch })
   }
 
-  // ── Process job ───────────────────────────────────────────────────────────
   try {
     await setStatus({ state: "active", progress: 5 })
 

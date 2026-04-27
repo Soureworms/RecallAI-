@@ -1,12 +1,10 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { getRedis } from "@/lib/redis"
 import type { JobState } from "@/lib/queue/qstash"
+import { withHandler } from "@/lib/api/handler"
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { jobId: string } }
-) {
+export const GET = withHandler<{ jobId: string }>(async (_req, { params }) => {
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -21,10 +19,9 @@ export async function GET(
     return NextResponse.json({ error: "Job not found" }, { status: 404 })
   }
 
-  // Verify the job belongs to the caller's org
   if (status.orgId && status.orgId !== session.user.orgId) {
     return NextResponse.json({ error: "Job not found" }, { status: 404 })
   }
 
   return NextResponse.json({ jobId: params.jobId, ...status })
-}
+})

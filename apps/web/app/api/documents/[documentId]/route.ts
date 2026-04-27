@@ -1,17 +1,13 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
+import { withHandler } from "@/lib/api/handler"
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { documentId: string } }
-) {
+export const GET = withHandler<{ documentId: string }>(async (_req, { params }) => {
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
   const { session } = auth
 
-  // Shared workspace: org-scoped isolation is the boundary here.
-  // Any MANAGER in the org can retrieve any org document — intentional under Option A.
   const doc = await prisma.sourceDocument.findUnique({
     where: { id: params.documentId },
   })
@@ -21,4 +17,4 @@ export async function GET(
   }
 
   return NextResponse.json(doc)
-}
+})

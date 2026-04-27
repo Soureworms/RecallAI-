@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
+import { withHandlerSimple } from "@/lib/api/handler"
 
 function calculateStreak(reviewDates: Date[]): number {
   if (reviewDates.length === 0) return 0
@@ -13,31 +14,26 @@ function calculateStreak(reviewDates: Date[]): number {
 
   const today = toDay(new Date())
   const yesterday = today - 86_400_000
-
   const dateSet = new Set(reviewDates.map(toDay))
 
-  // Streak must touch today or yesterday
   if (!dateSet.has(today) && !dateSet.has(yesterday)) return 0
 
   let check = dateSet.has(today) ? today : yesterday
   let streak = 0
-
   while (dateSet.has(check)) {
     streak++
     check -= 86_400_000
   }
-
   return streak
 }
 
-export async function GET() {
+export const GET = withHandlerSimple(async () => {
   const authResult = await requireRole("AGENT")
   if (!authResult.ok) return authResult.response
   const { session } = authResult
 
   const { id: userId, orgId } = session.user
   const now = new Date()
-
   const todayStart = new Date(now)
   todayStart.setHours(0, 0, 0, 0)
 
@@ -77,4 +73,4 @@ export async function GET() {
     streak,
     nextDueDate: nextDue?.dueDate.toISOString() ?? null,
   })
-}
+})

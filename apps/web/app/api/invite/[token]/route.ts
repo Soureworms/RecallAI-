@@ -1,10 +1,8 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
+import { withHandler } from "@/lib/api/handler"
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { token: string } }
-) {
+export const GET = withHandler<{ token: string }>(async (_req, { params }) => {
   const invite = await prisma.invite.findUnique({
     where: { token: params.token },
     include: { team: { select: { name: true } } },
@@ -28,4 +26,4 @@ export async function GET(
     role: invite.role,
     expiresAt: invite.expiresAt,
   })
-}
+})

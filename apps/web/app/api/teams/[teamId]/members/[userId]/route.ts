@@ -1,11 +1,9 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
+import { withHandler } from "@/lib/api/handler"
 
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: { teamId: string; userId: string } }
-) {
+export const DELETE = withHandler<{ teamId: string; userId: string }>(async (_req, { params }) => {
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -15,7 +13,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 
-  // Managers must be members of the team themselves
   if (session.user.role !== "ADMIN") {
     const selfMembership = await prisma.teamMember.findUnique({
       where: { userId_teamId: { userId: session.user.id, teamId: params.teamId } },
@@ -30,4 +27,4 @@ export async function DELETE(
   })
 
   return new NextResponse(null, { status: 204 })
-}
+})

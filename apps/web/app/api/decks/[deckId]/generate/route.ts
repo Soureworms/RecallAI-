@@ -3,11 +3,11 @@ import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { getRedis } from "@/lib/redis"
 import { publishGenerateJob, type JobState } from "@/lib/queue/qstash"
+import { withHandler } from "@/lib/api/handler"
+import { generateCardsSchema } from "@/lib/schemas/api"
+import { env } from "@/lib/env"
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { deckId: string } }
-) {
+export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { params }) => {
   const auth = await requireRole("MANAGER")
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -17,13 +17,13 @@ export async function POST(
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 
-  const body = (await req.json()) as { sourceDocumentId?: string }
-  if (!body.sourceDocumentId) {
-    return NextResponse.json({ error: "sourceDocumentId is required" }, { status: 400 })
+  const parsed = generateCardsSchema.safeParse(await req.json())
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
   const doc = await prisma.sourceDocument.findUnique({
-    where: { id: body.sourceDocumentId },
+    where: { id: parsed.data.sourceDocumentId },
   })
   if (!doc || doc.orgId !== session.user.orgId || doc.status !== "READY") {
     return NextResponse.json(
@@ -32,14 +32,14 @@ export async function POST(
     )
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
       { error: "AI generation is not configured. Set ANTHROPIC_API_KEY." },
       { status: 503 }
     )
   }
 
-  if (!process.env.QSTASH_TOKEN) {
+  if (!env.QSTASH_TOKEN) {
     return NextResponse.json(
       { error: "Job queue is not configured. Set QSTASH_TOKEN." },
       { status: 503 }
@@ -48,12 +48,12 @@ export async function POST(
 
   const jobId = crypto.randomUUID()
 
-  // Store initial status so the polling endpoint can respond immediately
   const redis = getRedis()
   if (redis) {
     await redis.setex(`job:${jobId}`, 3600, {
       state: "queued",
       progress: 0,
+      orgId: session.user.orgId,
     } satisfies JobState)
   }
 
@@ -65,4 +65,4 @@ export async function POST(
   })
 
   return NextResponse.json({ jobId, status: "queued" }, { status: 202 })
-}
+})

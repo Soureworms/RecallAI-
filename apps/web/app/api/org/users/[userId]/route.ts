@@ -1,23 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
+import { withHandler } from "@/lib/api/handler"
 import type { Role } from "@prisma/client"
 
-// PATCH /api/org/users/[userId] — update name or role (ADMIN only, own org)
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+export const PATCH = withHandler<{ userId: string }>(async (req: NextRequest, { params }) => {
   const auth = await requireRole("ADMIN")
   if (!auth.ok) return auth.response
 
-  // Verify target user is in caller's org
   const target = await prisma.user.findUnique({ where: { id: params.userId } })
   if (!target || target.orgId !== auth.session.user.orgId) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 
-  // Cannot modify another ADMIN or SUPER_ADMIN
   if (target.role === "ADMIN" || target.role === "SUPER_ADMIN") {
     return NextResponse.json({ error: "Cannot modify admin accounts" }, { status: 403 })
   }
@@ -39,13 +34,9 @@ export async function PATCH(
   })
 
   return NextResponse.json(user)
-}
+})
 
-// DELETE /api/org/users/[userId] — remove user from org (ADMIN only, own org)
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+export const DELETE = withHandler<{ userId: string }>(async (_req, { params }) => {
   const auth = await requireRole("ADMIN")
   if (!auth.ok) return auth.response
 
@@ -54,7 +45,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 
-  // Cannot delete admins or self
   if (target.role === "ADMIN" || target.role === "SUPER_ADMIN") {
     return NextResponse.json({ error: "Cannot delete admin accounts" }, { status: 403 })
   }
@@ -64,4 +54,4 @@ export async function DELETE(
 
   await prisma.user.delete({ where: { id: params.userId } })
   return new NextResponse(null, { status: 204 })
-}
+})

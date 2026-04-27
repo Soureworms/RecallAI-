@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { withHandler } from "@/lib/api/handler"

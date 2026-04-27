@@ -21,9 +21,8 @@ function fileExt(name: string): string {
 
 async function extractText(buffer: Buffer, ext: string): Promise<string> {
   if (ext === ".pdf") {
-    const { PDFParse } = await import("pdf-parse")
-    const parser = new PDFParse({ data: buffer })
-    const result = await parser.getText()
+    const pdfParse = (await import("pdf-parse")).default
+    const result = await pdfParse(buffer)
     return result.text
   }
   if (ext === ".docx") {

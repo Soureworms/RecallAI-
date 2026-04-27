@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { createHash } from "crypto"
 import { requireRole } from "@/lib/auth/permissions"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/db"
 import { verifyMagicBytes, sanitizeFilename } from "@/lib/security/file-validation"
+import { withHandlerSimple } from "@/lib/api/handler"
 
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
 
@@ -33,7 +34,7 @@ async function extractText(buffer: Buffer, ext: string): Promise<string> {
   return buffer.toString("utf-8")
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withHandlerSimple(async (req) => {
   // ── Auth & role ───────────────────────────────────────────────────────────
   const authResult = await requireRole("MANAGER")
   if (!authResult.ok) return authResult.response
@@ -163,4 +164,4 @@ export async function POST(req: NextRequest) {
   })
 
   return NextResponse.json(updated, { status: 201 })
-}
+})

@@ -88,7 +88,8 @@ export async function optimizeUserParameters(userId: string): Promise<boolean> {
   const items = buildFSRSItems(logs)
   if (items.length < 3) return false
 
-  const opts = { enableShortTerm: true }
+  // numRelearningSteps must match actual relearning step count so W17/W18 are calibrated correctly
+  const opts = { enableShortTerm: true, numRelearningSteps: 1 }
 
   const [parameters, evaluation] = await Promise.all([
     computeParameters(items, opts),

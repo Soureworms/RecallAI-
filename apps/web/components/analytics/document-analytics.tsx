@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { FileText, AlertTriangle } from "lucide-react"
+import { AlertTriangle } from "lucide-react"
 
 type DocumentItem = {
   documentId: string

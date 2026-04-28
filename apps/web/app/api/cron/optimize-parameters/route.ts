@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
   for (const { userId } of candidates) {
     try {
       const ok = await optimizeUserParameters(userId)
-      ok ? results.optimized++ : results.skipped++
+      if (ok) results.optimized++
+      else results.skipped++
     } catch {
       results.errors++
     }

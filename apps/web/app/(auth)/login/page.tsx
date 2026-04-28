@@ -120,6 +120,20 @@ export default function LoginPage() {
               />
             </div>
 
+            {/* Remember me */}
+            <label style={{
+              display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
+              fontSize: 13, color: "var(--ink-2)",
+            }}>
+              <input
+                name="rememberMe"
+                type="checkbox"
+                defaultChecked
+                style={{ width: 15, height: 15, accentColor: "var(--ink-1)", cursor: "pointer", flexShrink: 0 }}
+              />
+              Remember me for 30 days
+            </label>
+
             <SubmitButton />
           </form>
         </div>

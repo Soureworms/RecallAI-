@@ -4,17 +4,21 @@ import bcrypt from "bcryptjs"
 import { authConfig } from "./auth.config"
 import { prisma } from "@/lib/db"
 
+const REMEMBER_ME_SECS = 30 * 24 * 60 * 60  // 30 days
+const SESSION_SECS     =      24 * 60 * 60   // 24 hours
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: REMEMBER_ME_SECS },
   providers: [
     Credentials({
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        email:      { label: "Email",       type: "email"    },
+        password:   { label: "Password",    type: "password" },
+        rememberMe: { label: "Remember me", type: "checkbox" },
       },
       async authorize(credentials) {
-        const email = credentials?.email
+        const email    = credentials?.email
         const password = credentials?.password
         if (typeof email !== "string" || typeof password !== "string") return null
 
@@ -25,34 +29,38 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!valid) return null
 
         return {
-          id: user.id,
-          email: user.email,
-          name: user.name ?? undefined,
-          image: user.image ?? undefined,
-          role: user.role,
-          orgId: user.orgId,
+          id:          user.id,
+          email:       user.email,
+          name:        user.name ?? undefined,
+          image:       user.image ?? undefined,
+          role:        user.role,
+          orgId:       user.orgId,
           onboardedAt: user.onboardedAt ? user.onboardedAt.toISOString() : null,
+          rememberMe:  credentials.rememberMe === "true",
         }
       },
     }),
   ],
   callbacks: {
-    // Inherit session callback from authConfig (maps token → session.user).
-    // This runs in both the Node.js instance and the middleware instance.
     ...authConfig.callbacks,
 
     async jwt({ token, user, trigger }) {
       if (user) {
-        token.id = user.id as string
-        token.role = user.role
-        token.orgId = user.orgId
+        token.id          = user.id as string
+        token.role        = user.role
+        token.orgId       = user.orgId
         token.onboardedAt = user.onboardedAt ?? null
+        token.rememberMe  = (user as { rememberMe?: boolean }).rememberMe ?? true
+
+        // Short session when "Remember me" is unchecked
+        if (!token.rememberMe) {
+          token.exp = Math.floor(Date.now() / 1000) + SESSION_SECS
+        }
       }
       // Re-read onboardedAt from DB when the client calls session.update()
-      // so the middleware sees the updated value immediately after onboarding.
       if (trigger === "update" && token.id) {
         const fresh = await prisma.user.findUnique({
-          where: { id: token.id as string },
+          where:  { id: token.id as string },
           select: { onboardedAt: true },
         })
         if (fresh) {

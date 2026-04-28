@@ -1,8 +1,8 @@
 "use client"
 
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { useState, useRef, useCallback, useEffect } from "react"
-import { Camera, User, Mail, Lock, CheckCircle, AlertCircle, Brain, RefreshCw } from "lucide-react"
+import { Camera, User, Mail, Lock, CheckCircle, AlertCircle, Brain, RefreshCw, LogOut } from "lucide-react"
 import { toast } from "sonner"
 
 type Status = "idle" | "saving" | "success" | "error"
@@ -430,6 +430,21 @@ export default function SettingsPage() {
         ) : (
           <div className="h-20 animate-pulse rounded-xl bg-paper-sunken" />
         )}
+      </section>
+
+      {/* ── Sign out ─────────────────────────────────────────────────────── */}
+      <section className="rounded-2xl border border-ink-6 bg-paper-raised p-6 shadow-s1">
+        <h2 className="mb-1 text-base font-semibold text-ink-1">Session</h2>
+        <p className="mb-5 text-sm text-ink-3">
+          Signed in as <span className="font-medium text-ink-2">{session.user.email}</span>
+        </p>
+        <button
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="flex items-center gap-2 rounded-xl border border-ink-6 px-5 py-2.5 text-sm font-medium text-ds-red-600 hover:bg-ds-red-50 hover:border-ds-red-200"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </button>
       </section>
     </div>
   )

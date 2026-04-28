@@ -17,13 +17,11 @@ import {
 
 const ROLE_RANK: Record<string, number> = { AGENT: 0, MANAGER: 1, ADMIN: 2, SUPER_ADMIN: 3 }
 
-// What super admins see — platform-management only
 const ADMIN_NAV = [
   { href: "/admin",    label: "Platform Admin", icon: ShieldCheck },
   { href: "/settings", label: "Settings",       icon: Settings },
 ]
 
-// What regular workspace users see, filtered by minRole
 const USER_NAV = [
   { href: "/dashboard", label: "Dashboard",    icon: LayoutDashboard },
   { href: "/review",    label: "Study",        icon: Play },
@@ -81,6 +79,13 @@ export function Sidebar() {
   const navItems = isSuperAdmin
     ? ADMIN_NAV
     : USER_NAV.filter((item) => !item.minRole || userRank >= (ROLE_RANK[item.minRole] ?? 0))
+
+  // Mobile: always show Settings as the 5th tab; fill first 4 from non-settings items
+  const settingsItem = navItems.find((i) => i.href === "/settings")
+  const mobileItems = [
+    ...navItems.filter((i) => i.href !== "/settings").slice(0, 4),
+    ...(settingsItem ? [settingsItem] : []),
+  ]
 
   const userName = session?.user?.name ?? null
   const userEmail = session?.user?.email ?? null
@@ -166,7 +171,7 @@ export function Sidebar() {
         className="fixed bottom-0 inset-x-0 z-50 flex md:hidden"
         style={{ borderTop: "1px solid var(--ink-6)", background: "var(--paper-raised)" }}
       >
-        {navItems.slice(0, 5).map(({ href, label, icon: Icon }) => {
+        {mobileItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== "/dashboard" && href !== "/admin" && pathname.startsWith(href + "/"))
                        || (href === "/admin" && pathname.startsWith("/admin"))
           return (

@@ -9,8 +9,9 @@ export async function loginAction(
 ): Promise<string | undefined> {
   try {
     await signIn("credentials", {
-      email: formData.get("email"),
-      password: formData.get("password"),
+      email:      formData.get("email"),
+      password:   formData.get("password"),
+      rememberMe: formData.get("rememberMe") === "on" ? "true" : "false",
       redirectTo: "/dashboard",
     })
   } catch (error) {

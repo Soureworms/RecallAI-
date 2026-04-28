@@ -39,7 +39,7 @@ export const PUT = withHandler<{ deckId: string }>(async (req: NextRequest, { pa
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
-  const { name, description, isMandatory } = parsed.data
+  const { name, description, isMandatory, inRotation } = parsed.data
 
   const turningMandatory = isMandatory === true && !deck.isMandatory
 
@@ -52,6 +52,7 @@ export const PUT = withHandler<{ deckId: string }>(async (req: NextRequest, { pa
         name:        name        ?? deck.name,
         description: description !== undefined ? description : deck.description,
         isMandatory: isMandatory ?? deck.isMandatory,
+        inRotation:  inRotation  ?? deck.inRotation,
       },
       include: {
         _count: { select: { cards: { where: { status: { not: "ARCHIVED" } } } } },

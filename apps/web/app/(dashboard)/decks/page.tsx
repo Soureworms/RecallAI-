@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Layers, Lock, FileText } from "lucide-react"
+import { Plus, Layers, Lock, FileText, RotateCcw } from "lucide-react"
 import { Modal } from "@/components/ui/modal"
 import { usePermissions } from "@/hooks/use-permissions"
+import { toast } from "sonner"
 
 type DeckWithCount = {
   id: string
@@ -12,6 +13,7 @@ type DeckWithCount = {
   description: string | null
   isMandatory: boolean
   isArchived: boolean
+  inRotation: boolean
   _count: { cards: number }
 }
 
@@ -24,10 +26,19 @@ export default function DecksPage() {
   const [form, setForm] = useState({ name: "", description: "", isMandatory: false })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [studyMode, setStudyMode] = useState<"AUTO_ROTATE" | "MANUAL">("AUTO_ROTATE")
+  const [togglingId, setTogglingId] = useState<string | null>(null)
 
   const fetchDecks = useCallback(async () => {
-    const res = await fetch("/api/decks")
-    if (res.ok) setDecks(await res.json() as DeckWithCount[])
+    const [decksRes, settingsRes] = await Promise.all([
+      fetch("/api/decks"),
+      fetch("/api/org/settings"),
+    ])
+    if (decksRes.ok) setDecks(await decksRes.json() as DeckWithCount[])
+    if (settingsRes.ok) {
+      const s = await settingsRes.json() as { studyMode?: "AUTO_ROTATE" | "MANUAL" }
+      setStudyMode(s.studyMode ?? "AUTO_ROTATE")
+    }
     setLoading(false)
   }, [])
 
@@ -51,6 +62,29 @@ export default function DecksPage() {
     setShowCreate(false)
     setForm({ name: "", description: "", isMandatory: false })
     void fetchDecks()
+  }
+
+  async function handleToggleRotation(e: React.MouseEvent, deck: DeckWithCount) {
+    e.stopPropagation()
+    if (togglingId) return
+    setTogglingId(deck.id)
+    const next = !deck.inRotation
+    try {
+      const res = await fetch(`/api/decks/${deck.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inRotation: next }),
+      })
+      if (!res.ok) throw new Error("Failed to update")
+      setDecks((prev) =>
+        prev.map((d) => (d.id === deck.id ? { ...d, inRotation: next } : d))
+      )
+      toast.success(next ? "Deck added to rotation" : "Deck removed from rotation")
+    } catch {
+      toast.error("Could not update rotation setting")
+    } finally {
+      setTogglingId(null)
+    }
   }
 
   const inputStyle: React.CSSProperties = {
@@ -84,7 +118,26 @@ export default function DecksPage() {
         )}
       </div>
 
-      {isManager && !loading && decks.length > 0 && (
+      {/* Manual-mode banner */}
+      {isManager && !loading && studyMode === "MANUAL" && (
+        <div style={{
+          marginTop: 16,
+          padding: "10px 14px",
+          background: "var(--amber-50, #fffbeb)",
+          border: "1px solid var(--amber-100, #fef3c7)",
+          borderRadius: 10,
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}>
+          <RotateCcw size={14} style={{ color: "var(--amber-600, #d97706)", flexShrink: 0 }} strokeWidth={1.75} />
+          <p style={{ fontSize: 12.5, color: "var(--amber-700, #b45309)", margin: 0 }}>
+            Manual scheduling is active. Use the rotation toggle on each deck to control what your team studies.
+          </p>
+        </div>
+      )}
+
+      {isManager && !loading && decks.length > 0 && studyMode !== "MANUAL" && (
         <div style={{
           marginTop: 16,
           padding: "10px 14px",
@@ -148,23 +201,60 @@ export default function DecksPage() {
             >
               <div className="flex items-start justify-between gap-2">
                 <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--ink-1)" }}>{deck.name}</h3>
-                {deck.isMandatory && (
-                  <span className="flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5"
-                    style={{ background: "var(--violet-50)", color: "var(--violet-600)", fontSize: 11, fontWeight: 500 }}
-                  >
-                    <Lock className="h-3 w-3" />
-                    Mandatory
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {deck.isMandatory && (
+                    <span className="flex items-center gap-1 rounded-full px-2 py-0.5"
+                      style={{ background: "var(--violet-50)", color: "var(--violet-600)", fontSize: 11, fontWeight: 500 }}
+                    >
+                      <Lock className="h-3 w-3" />
+                      Mandatory
+                    </span>
+                  )}
+                </div>
               </div>
               {deck.description && (
                 <p className="mt-1 line-clamp-2" style={{ fontSize: 13, color: "var(--ink-3)", lineHeight: 1.5 }}>
                   {deck.description}
                 </p>
               )}
-              <p className="mt-3" style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-4)", fontFamily: "var(--font-mono)", letterSpacing: "0.04em" }}>
-                {deck._count.cards} card{deck._count.cards !== 1 ? "s" : ""}
-              </p>
+              <div className="mt-3 flex items-center justify-between">
+                <p style={{ fontSize: 12, fontWeight: 500, color: "var(--ink-4)", fontFamily: "var(--font-mono)", letterSpacing: "0.04em" }}>
+                  {deck._count.cards} card{deck._count.cards !== 1 ? "s" : ""}
+                </p>
+
+                {/* Rotation toggle — only shown in MANUAL mode for managers */}
+                {isManager && studyMode === "MANUAL" && !deck.isMandatory && (
+                  <button
+                    onClick={(e) => { void handleToggleRotation(e, deck) }}
+                    disabled={togglingId === deck.id}
+                    title={deck.inRotation ? "In rotation — click to pause" : "Paused — click to add to rotation"}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "3px 8px",
+                      borderRadius: 999,
+                      fontSize: 11,
+                      fontWeight: 500,
+                      border: "1px solid",
+                      cursor: togglingId === deck.id ? "default" : "pointer",
+                      opacity: togglingId === deck.id ? 0.5 : 1,
+                      background: deck.inRotation ? "var(--green-50, #f0fdf4)" : "var(--paper-sunken)",
+                      borderColor: deck.inRotation ? "var(--green-200, #bbf7d0)" : "var(--ink-6)",
+                      color: deck.inRotation ? "var(--green-700, #15803d)" : "var(--ink-4)",
+                    }}
+                  >
+                    <span style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: deck.inRotation ? "var(--green-500, #22c55e)" : "var(--ink-5)",
+                      flexShrink: 0,
+                    }} />
+                    {deck.inRotation ? "In rotation" : "Paused"}
+                  </button>
+                )}
+              </div>
             </button>
           ))}
         </div>

@@ -13,10 +13,14 @@ export const PATCH = withHandlerSimple(async (req: NextRequest) => {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
+  const { name, studyMode } = parsed.data
   const org = await prisma.organization.update({
     where: { id: auth.session.user.orgId },
-    data: { name: parsed.data.name },
-    select: { id: true, name: true },
+    data: {
+      ...(name !== undefined ? { name } : {}),
+      ...(studyMode !== undefined ? { studyMode } : {}),
+    },
+    select: { id: true, name: true, studyMode: true },
   })
 
   return NextResponse.json(org)
@@ -31,6 +35,7 @@ export const GET = withHandlerSimple(async () => {
     select: {
       id: true,
       name: true,
+      studyMode: true,
       _count: { select: { users: true, decks: true } },
     },
   })

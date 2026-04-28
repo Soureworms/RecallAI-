@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
-import { initializeCard, getNextReview } from "@/lib/services/scheduler"
+import { getNextReview } from "@/lib/services/scheduler"
+import { assignCardsToUsers } from "@/lib/services/user-card"
 import { withHandlerSimple } from "@/lib/api/handler"
 
 export const GET = withHandlerSimple(async () => {
@@ -11,25 +12,28 @@ export const GET = withHandlerSimple(async () => {
 
   const { id: userId, orgId } = session.user
 
-  const mandatoryCards = await prisma.card.findMany({
-    where: {
-      status: "ACTIVE",
-      deck: { orgId, isMandatory: true, isArchived: false },
-    },
+  // Fetch org study mode
+  const org = await prisma.organization.findUnique({
+    where: { id: orgId },
+    select: { studyMode: true },
+  })
+  const studyMode = org?.studyMode ?? "AUTO_ROTATE"
+
+  // Determine which ACTIVE cards should be visible to this user
+  const deckFilter =
+    studyMode === "AUTO_ROTATE"
+      ? { orgId, isArchived: false }
+      : { orgId, isArchived: false, OR: [{ isMandatory: true }, { inRotation: true }] }
+
+  const eligibleCards = await prisma.card.findMany({
+    where: { status: "ACTIVE", deck: deckFilter },
     select: { id: true },
   })
 
-  if (mandatoryCards.length > 0) {
-    const existing = await prisma.userCard.findMany({
-      where: { userId, cardId: { in: mandatoryCards.map((c) => c.id) } },
-      select: { cardId: true },
-    })
-    const existingIds = new Set(existing.map((uc) => uc.cardId))
-    for (const { id: cardId } of mandatoryCards) {
-      if (!existingIds.has(cardId)) {
-        await initializeCard(userId, cardId)
-      }
-    }
+  if (eligibleCards.length > 0) {
+    const cardIds = eligibleCards.map((c) => c.id)
+    // Bulk-initialize any cards the user hasn't been assigned yet (skipDuplicates is safe)
+    await assignCardsToUsers([userId], cardIds)
   }
 
   const now = new Date()
@@ -54,7 +58,9 @@ export const GET = withHandlerSimple(async () => {
       question: uc.card.question,
       answer: uc.card.answer,
       format: uc.card.format,
+      tags: uc.card.tags,
       deckName: uc.card.deck.name,
+      isNew: uc.reps === 0,
       preview: {
         again: { nextDue: preview.again.nextDue.toISOString(), scheduledDays: preview.again.scheduledDays },
         hard:  { nextDue: preview.hard.nextDue.toISOString(),  scheduledDays: preview.hard.scheduledDays  },

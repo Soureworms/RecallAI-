@@ -509,3 +509,71 @@ export async function getRecentReviews(
     reviewedAt: log.reviewedAt.toISOString(),
   }))
 }
+
+// ─── Per-file (SourceDocument) Performance ───────────────────────────────────
+
+export type DocumentPerformanceItem = {
+  documentId: string
+  filename: string
+  deckName: string
+  totalCards: number
+  avgRetention: number
+  totalReviews: number
+  activeUsers: number
+}
+
+export async function getDocumentPerformance(
+  orgId: string
+): Promise<DocumentPerformanceItem[]> {
+  const docs = await prisma.sourceDocument.findMany({
+    where: { orgId, status: "READY" },
+    select: {
+      id: true,
+      filename: true,
+      deck: { select: { name: true } },
+      cards: {
+        where: { status: "ACTIVE" },
+        select: {
+          id: true,
+          userCards: {
+            select: {
+              userId: true,
+              stability: true,
+              lastReviewDate: true,
+            },
+          },
+          _count: { select: { reviewLogs: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  })
+
+  return docs
+    .filter((doc) => doc.cards.length > 0)
+    .map((doc) => {
+      const allUserCards = doc.cards.flatMap((c) => c.userCards)
+      const activeUsers = new Set(allUserCards.map((uc) => uc.userId)).size
+      const totalReviews = doc.cards.reduce((sum, c) => sum + c._count.reviewLogs, 0)
+
+      const retentions = allUserCards
+        .filter((uc) => uc.lastReviewDate !== null && uc.stability > 0)
+        .map((uc) => retrievability_r(elapsedDays(uc.lastReviewDate!), uc.stability))
+
+      const avgRetention =
+        retentions.length > 0
+          ? pct(retentions.reduce((a, b) => a + b, 0) / retentions.length)
+          : 0
+
+      return {
+        documentId: doc.id,
+        filename: doc.filename,
+        deckName: doc.deck?.name ?? "–",
+        totalCards: doc.cards.length,
+        avgRetention,
+        totalReviews,
+        activeUsers,
+      }
+    })
+    .sort((a, b) => a.avgRetention - b.avgRetention)
+}

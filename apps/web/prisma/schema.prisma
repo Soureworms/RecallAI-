@@ -17,9 +17,15 @@ enum Role {
   SUPER_ADMIN
 }
 
+enum StudyMode {
+  AUTO_ROTATE
+  MANUAL
+}
+
 model Organization {
   id              String           @id @default(uuid())
   name            String
+  studyMode       StudyMode        @default(AUTO_ROTATE)
   createdAt       DateTime         @default(now())
   teams           Team[]
   users           User[]
@@ -89,6 +95,7 @@ model Deck {
   org             Organization     @relation(fields: [orgId], references: [id])
   isArchived      Boolean          @default(false)
   isMandatory     Boolean          @default(false)
+  inRotation      Boolean          @default(true)
   createdById     String
   createdBy       User             @relation(fields: [createdById], references: [id])
   createdAt       DateTime         @default(now())

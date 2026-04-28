@@ -14,8 +14,9 @@ type DueCard = {
   question: string
   answer: string
   format: string
+  tags: string[]
   deckName: string
-  tags?: string[]
+  isNew: boolean
   preview: {
     again: RatingPreview
     hard:  RatingPreview
@@ -38,11 +39,17 @@ const RATINGS: { rating: Rating; label: string; key: string; bg: string; fg: str
   { rating: "EASY",  label: "Easy",  key: "4", bg: "var(--green-50)",  fg: "var(--green-ink)",  bar: "var(--green-500)" },
 ]
 
-function formatDays(days: number): string {
-  if (days < 1) return "<10m"
-  if (days === 1) return "1d"
+function formatInterval(nextDue: string): string {
+  const diffMs = new Date(nextDue).getTime() - Date.now()
+  if (diffMs <= 60_000) return "1m"
+  const mins = Math.round(diffMs / 60_000)
+  if (mins < 60) return `${mins}m`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h`
+  const days = Math.floor(hours / 24)
   if (days < 30) return `${days}d`
-  if (days < 365) return `${Math.round(days / 30)}mo`
+  const months = Math.round(days / 30)
+  if (months < 12) return `${months}mo`
   return `${Math.round(days / 365)}yr`
 }
 
@@ -350,7 +357,16 @@ export default function ReviewPage() {
         padding: "18px 28px", borderBottom: "1px solid var(--ink-6)", flexShrink: 0,
       }}>
         <div>
-          <div style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--ink-1)" }}>{card.deckName}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--ink-1)" }}>{card.deckName}</span>
+            {card.isNew && (
+              <span style={{
+                fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 999,
+                background: "var(--violet-50)", color: "var(--violet-600)",
+                textTransform: "uppercase", letterSpacing: "0.06em",
+              }}>New</span>
+            )}
+          </div>
           <div style={{ fontSize: 12.5, color: "var(--ink-3)", marginTop: 2 }}>
             {idx + 1} of {queue.length} · {remaining} remaining
           </div>
@@ -485,7 +501,7 @@ export default function ReviewPage() {
                     <Kbd>{key}</Kbd>
                   </div>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-3)" }}>
-                    {formatDays(preview?.scheduledDays ?? 0)}
+                    {preview ? formatInterval(preview.nextDue) : "–"}
                   </span>
                   <div style={{ width: "100%", height: 3, background: "var(--paper-sunken)", borderRadius: 999, overflow: "hidden" }}>
                     <div style={{ width: flipped ? "100%" : "0%", height: "100%", background: bar, transition: "width 220ms var(--ease-out)" }} />

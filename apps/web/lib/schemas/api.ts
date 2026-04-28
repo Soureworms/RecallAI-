@@ -23,6 +23,7 @@ export const updateDeckSchema = z.object({
   name:        trimmedString().max(200).optional(),
   description: z.string().trim().max(1000).optional(),
   isMandatory: z.boolean().optional(),
+  inRotation:  z.boolean().optional(),
 })
 
 // ── Card schemas ──────────────────────────────────────────────────────────────
@@ -96,7 +97,8 @@ export const createInviteSchema = z.object({
 // ── Org schemas ───────────────────────────────────────────────────────────────
 
 export const orgSettingsSchema = z.object({
-  name: trimmedString().max(200),
+  name:      trimmedString().max(200).optional(),
+  studyMode: z.enum(["AUTO_ROTATE", "MANUAL"]).optional(),
 })
 
 export const createOrgUserSchema = z.object({

@@ -18,6 +18,7 @@ type OrgUser = {
 type OrgSettings = {
   id: string
   name: string
+  studyMode: "AUTO_ROTATE" | "MANUAL"
   _count: { users: number; decks: number }
 }
 
@@ -198,6 +199,8 @@ export default function OrgPage() {
   const [orgName, setOrgName] = useState("")
   const [savingName, setSavingName] = useState(false)
   const orgNameRef = useRef<HTMLInputElement>(null)
+  const [studyMode, setStudyMode] = useState<"AUTO_ROTATE" | "MANUAL">("AUTO_ROTATE")
+  const [savingMode, setSavingMode] = useState(false)
   const [tab, setTab] = useState<"members" | "settings">("members")
 
   // Guard: redirect if not ADMIN+
@@ -214,9 +217,10 @@ export default function OrgPage() {
         fetch("/api/org/users"),
       ])
       if (orgRes.ok) {
-        const o = await orgRes.json()
+        const o = await orgRes.json() as OrgSettings
         setOrg(o)
         setOrgName(o.name)
+        setStudyMode(o.studyMode ?? "AUTO_ROTATE")
       }
       if (usersRes.ok) setUsers(await usersRes.json())
       setLoading(false)
@@ -261,6 +265,26 @@ export default function OrgPage() {
       toast.error(err instanceof Error ? err.message : "Error")
     } finally {
       setSavingName(false)
+    }
+  }
+
+  async function handleSaveStudyMode(mode: "AUTO_ROTATE" | "MANUAL") {
+    setSavingMode(true)
+    try {
+      const res = await fetch("/api/org/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studyMode: mode }),
+      })
+      const data = await res.json() as { studyMode?: "AUTO_ROTATE" | "MANUAL"; error?: string }
+      if (!res.ok) throw new Error(data.error ?? "Failed to save")
+      setStudyMode(data.studyMode ?? mode)
+      setOrg((prev) => prev ? { ...prev, studyMode: data.studyMode ?? mode } : prev)
+      toast.success("Study mode updated")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error")
+    } finally {
+      setSavingMode(false)
     }
   }
 
@@ -437,6 +461,8 @@ export default function OrgPage() {
       {/* Settings tab */}
       {tab === "settings" && (
         <div className="rounded-xl border border-ink-6 bg-paper-raised p-6 space-y-6">
+
+          {/* Org name */}
           <div>
             <h2 className="text-base font-semibold text-ink-1 mb-4">Organisation settings</h2>
             <form onSubmit={handleSaveOrgName} className="max-w-sm space-y-3">
@@ -458,6 +484,66 @@ export default function OrgPage() {
                 {savingName ? "Saving…" : "Save name"}
               </button>
             </form>
+          </div>
+
+          <hr className="border-ink-6" />
+
+          {/* Study mode */}
+          <div>
+            <h2 className="text-base font-semibold text-ink-1 mb-1">Study mode</h2>
+            <p className="text-sm text-ink-4 mb-4">
+              Control how content is delivered to your team members.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 max-w-2xl">
+              {/* Auto-rotation preset */}
+              <button
+                disabled={savingMode}
+                onClick={() => { if (studyMode !== "AUTO_ROTATE") void handleSaveStudyMode("AUTO_ROTATE") }}
+                className={`rounded-xl border-2 p-4 text-left transition-all ${
+                  studyMode === "AUTO_ROTATE"
+                    ? "border-ink-1 bg-ink-1"
+                    : "border-ink-6 bg-paper-sunken hover:border-ink-4"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-sm font-semibold ${studyMode === "AUTO_ROTATE" ? "text-white" : "text-ink-1"}`}>
+                    Auto-rotation
+                  </span>
+                  {studyMode === "AUTO_ROTATE" && (
+                    <span className="text-xs font-medium bg-white/20 text-white px-2 py-0.5 rounded-full">Active</span>
+                  )}
+                </div>
+                <p className={`text-xs leading-relaxed ${studyMode === "AUTO_ROTATE" ? "text-white/70" : "text-ink-4"}`}>
+                  All approved content automatically rotates into every team member&apos;s study queue. No manual scheduling required.
+                </p>
+              </button>
+
+              {/* Manual scheduling preset */}
+              <button
+                disabled={savingMode}
+                onClick={() => { if (studyMode !== "MANUAL") void handleSaveStudyMode("MANUAL") }}
+                className={`rounded-xl border-2 p-4 text-left transition-all ${
+                  studyMode === "MANUAL"
+                    ? "border-ink-1 bg-ink-1"
+                    : "border-ink-6 bg-paper-sunken hover:border-ink-4"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-sm font-semibold ${studyMode === "MANUAL" ? "text-white" : "text-ink-1"}`}>
+                    Manual scheduling
+                  </span>
+                  {studyMode === "MANUAL" && (
+                    <span className="text-xs font-medium bg-white/20 text-white px-2 py-0.5 rounded-full">Active</span>
+                  )}
+                </div>
+                <p className={`text-xs leading-relaxed ${studyMode === "MANUAL" ? "text-white/70" : "text-ink-4"}`}>
+                  You control which decks are in rotation. Toggle individual decks on or off from the Decks page.
+                </p>
+              </button>
+            </div>
+            {savingMode && (
+              <p className="mt-2 text-xs text-ink-4">Saving…</p>
+            )}
           </div>
 
           <hr className="border-ink-6" />

@@ -10,7 +10,9 @@ const scriptSrc = isDev
 
 const nextConfig = {
   output: "standalone",
-  serverExternalPackages: ["pdf-parse", "@open-spaced-repetition/binding"],
+  experimental: {
+    serverComponentsExternalPackages: ["pdf-parse", "@open-spaced-repetition/binding"],
+  },
 
   async headers() {
     return [

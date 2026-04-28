@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { getNextReview } from "@/lib/services/scheduler"
 import { assignCardsToUsers } from "@/lib/services/user-card"
+import { getUserFSRSConfig } from "@/lib/services/fsrs-optimizer"
 import { withHandlerSimple } from "@/lib/api/handler"
 
 export const GET = withHandlerSimple(async () => {
@@ -12,14 +13,15 @@ export const GET = withHandlerSimple(async () => {
 
   const { id: userId, orgId } = session.user
 
-  // Fetch org study mode
-  const org = await prisma.organization.findUnique({
-    where: { id: orgId },
-    select: { studyMode: true },
-  })
+  const [org, fsrsConfig] = await Promise.all([
+    prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { studyMode: true },
+    }),
+    getUserFSRSConfig(userId),
+  ])
   const studyMode = org?.studyMode ?? "AUTO_ROTATE"
 
-  // Determine which ACTIVE cards should be visible to this user
   const deckFilter =
     studyMode === "AUTO_ROTATE"
       ? { orgId, isArchived: false }
@@ -32,7 +34,6 @@ export const GET = withHandlerSimple(async () => {
 
   if (eligibleCards.length > 0) {
     const cardIds = eligibleCards.map((c) => c.id)
-    // Bulk-initialize any cards the user hasn't been assigned yet (skipDuplicates is safe)
     await assignCardsToUsers([userId], cardIds)
   }
 
@@ -50,8 +51,12 @@ export const GET = withHandlerSimple(async () => {
     take: 20,
   })
 
+  const schedulerConfig = fsrsConfig
+    ? { w: fsrsConfig.w, learningStepsSecs: fsrsConfig.learningStepsSecs, relearningStepsSecs: fsrsConfig.relearningStepsSecs }
+    : undefined
+
   const dueCards = userCards.map((uc) => {
-    const preview = getNextReview(uc)
+    const preview = getNextReview(uc, schedulerConfig)
     return {
       userCardId: uc.id,
       cardId: uc.cardId,

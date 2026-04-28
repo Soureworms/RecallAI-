@@ -1,5 +1,5 @@
 import { fsrs, createEmptyCard, Rating as FSRSRating } from "ts-fsrs"
-import type { Grade, IPreview, RecordLogItem } from "ts-fsrs"
+import type { Grade, IPreview, RecordLogItem, StepUnit } from "ts-fsrs"
 import { Rating as DbRating } from "@prisma/client"
 import type { UserCard } from "@prisma/client"
 import { prisma } from "@/lib/db"
@@ -9,14 +9,41 @@ import {
   userCardToFSRS,
 } from "./fsrs-mapper"
 
-// ── Singleton scheduler ───────────────────────────────────────────────────────
+// ── Scheduler config ──────────────────────────────────────────────────────────
 
-const scheduler = fsrs({
+export type SchedulerConfig = {
+  w?: number[]
+  learningStepsSecs?: number[]
+  relearningStepsSecs?: number[]
+}
+
+const DEFAULT_PARAMS = {
   request_retention: 0.9,
   maximum_interval: 365,
   enable_fuzz: true,
   enable_short_term: true,
-})
+}
+
+function secsToStep(secs: number): StepUnit {
+  if (secs < 3600) return `${Math.max(1, Math.round(secs / 60))}m`
+  if (secs < 86400) return `${Math.max(1, Math.round(secs / 3600))}h`
+  return `${Math.max(1, Math.round(secs / 86400))}d`
+}
+
+function makeScheduler(config?: SchedulerConfig) {
+  return fsrs({
+    ...DEFAULT_PARAMS,
+    ...(config?.w ? { w: config.w } : {}),
+    ...(config?.learningStepsSecs?.length
+      ? { learning_steps: config.learningStepsSecs.map(secsToStep) }
+      : {}),
+    ...(config?.relearningStepsSecs?.length
+      ? { relearning_steps: config.relearningStepsSecs.map(secsToStep) }
+      : {}),
+  })
+}
+
+const defaultScheduler = makeScheduler()
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -49,9 +76,10 @@ export async function initializeCard(
 
 /**
  * Preview what the next due date would be for every rating (Again/Hard/Good/Easy)
- * without persisting anything.
+ * without persisting anything. Uses per-user FSRS parameters if provided.
  */
-export function getNextReview(userCard: UserCard): ReviewPreview {
+export function getNextReview(userCard: UserCard, config?: SchedulerConfig): ReviewPreview {
+  const scheduler = config ? makeScheduler(config) : defaultScheduler
   const card = userCardToFSRS(userCard)
   const record: IPreview = scheduler.repeat(card, new Date())
 
@@ -65,7 +93,7 @@ export function getNextReview(userCard: UserCard): ReviewPreview {
 
 /**
  * Record a completed review:
- * - Applies the rating via ts-fsrs
+ * - Applies the rating via ts-fsrs (with per-user params if provided)
  * - Persists updated scheduling fields on UserCard
  * - Appends a ReviewLog row
  * Returns the updated UserCard.
@@ -73,12 +101,14 @@ export function getNextReview(userCard: UserCard): ReviewPreview {
 export async function submitReview(
   userId: string,
   cardId: string,
-  rating: DbRating
+  rating: DbRating,
+  config?: SchedulerConfig
 ): Promise<UserCard> {
   const userCard = await prisma.userCard.findUniqueOrThrow({
     where: { userId_cardId: { userId, cardId } },
   })
 
+  const scheduler = config ? makeScheduler(config) : defaultScheduler
   const fsrsCard = userCardToFSRS(userCard)
   const fsrsRating = dbRatingToFSRS(rating) as Grade
   const now = new Date()

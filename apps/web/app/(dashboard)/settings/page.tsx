@@ -1,11 +1,25 @@
 "use client"
 
 import { useSession } from "next-auth/react"
-import { useState, useRef, useCallback } from "react"
-import { Camera, User, Mail, Lock, CheckCircle, AlertCircle } from "lucide-react"
+import { useState, useRef, useCallback, useEffect } from "react"
+import { Camera, User, Mail, Lock, CheckCircle, AlertCircle, Brain, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 
 type Status = "idle" | "saving" | "success" | "error"
+
+type FSRSParams = {
+  hasCustomParams: boolean
+  reviewCount: number
+  minReviewsRequired: number
+  params: {
+    logLoss: number | null
+    rmseBins: number | null
+    reviewCount: number
+    lastOptimizedAt: string
+    learningSteps: string[]
+    relearningSteps: string[]
+  } | null
+}
 
 function Avatar({
   src,
@@ -56,8 +70,19 @@ export default function SettingsPage() {
   )
   const [profileStatus, setProfileStatus] = useState<Status>("idle")
   const [resetStatus, setResetStatus] = useState<Status>("idle")
+  const [fsrsData, setFsrsData] = useState<FSRSParams | null>(null)
+  const [optimizing, setOptimizing] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // ── Load FSRS params ────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    fetch("/api/user/fsrs-params")
+      .then((r) => r.json())
+      .then(setFsrsData)
+      .catch(() => null)
+  }, [])
 
   // ── Avatar selection ────────────────────────────────────────────────────────
 
@@ -134,11 +159,31 @@ export default function SettingsPage() {
     }
   }, [])
 
+  // ── Trigger FSRS optimization ───────────────────────────────────────────────
+
+  const runOptimize = useCallback(async () => {
+    setOptimizing(true)
+    try {
+      const res = await fetch("/api/user/optimize", { method: "POST" })
+      const data = await res.json() as { error?: string }
+      if (!res.ok) throw new Error(data.error ?? "Optimization failed")
+      toast.success("FSRS parameters optimized for your study history")
+      const updated = await fetch("/api/user/fsrs-params").then((r) => r.json())
+      setFsrsData(updated)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Optimization failed")
+    } finally {
+      setOptimizing(false)
+    }
+  }, [])
+
   if (!session?.user) return null
 
   const isDirty =
     name !== (session.user.name ?? "") ||
     previewImage !== ((session.user.image as string | null) ?? null)
+
+  const canOptimize = fsrsData && fsrsData.reviewCount >= fsrsData.minReviewsRequired
 
   return (
     <div className="mx-auto max-w-2xl space-y-8 py-2">
@@ -277,6 +322,113 @@ export default function SettingsPage() {
             )}
             {resetStatus === "saving" ? "Sending…" : "Send reset link"}
           </button>
+        )}
+      </section>
+
+      {/* ── FSRS Calibration ─────────────────────────────────────────────── */}
+      <section className="rounded-2xl border border-ink-6 bg-paper-raised p-6 shadow-s1">
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="flex items-center gap-2 text-base font-semibold text-ink-1">
+              <Brain className="h-4 w-4 text-ink-3" />
+              Memory calibration
+            </h2>
+            <p className="mt-1 text-sm text-ink-3">
+              Personalizes your review schedule using the FSRS algorithm trained on your own study history.
+            </p>
+          </div>
+          <button
+            onClick={runOptimize}
+            disabled={!canOptimize || optimizing}
+            title={!canOptimize ? `Complete ${fsrsData?.minReviewsRequired ?? 10} reviews to unlock` : undefined}
+            className="flex shrink-0 items-center gap-2 rounded-xl bg-ink-1 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${optimizing ? "animate-spin" : ""}`} />
+            {optimizing ? "Optimizing…" : "Optimize now"}
+          </button>
+        </div>
+
+        {fsrsData ? (
+          <>
+            {/* Review count progress */}
+            {!fsrsData.hasCustomParams && (
+              <div className="mb-4 rounded-xl bg-paper-sunken p-4">
+                <div className="mb-1.5 flex items-center justify-between text-xs">
+                  <span className="text-ink-3">Reviews completed</span>
+                  <span className="font-medium text-ink-2">
+                    {fsrsData.reviewCount} / {fsrsData.minReviewsRequired}
+                  </span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-ink-6">
+                  <div
+                    className="h-full rounded-full bg-ds-blue-500 transition-all"
+                    style={{ width: `${Math.min(100, (fsrsData.reviewCount / fsrsData.minReviewsRequired) * 100)}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-ink-4">
+                  Using default FSRS parameters until you have enough history.
+                </p>
+              </div>
+            )}
+
+            {/* Current params */}
+            {fsrsData.params && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-paper-sunken p-3">
+                    <p className="text-xs text-ink-4">Log loss</p>
+                    <p className="mt-0.5 text-lg font-semibold text-ink-1">
+                      {fsrsData.params.logLoss !== null
+                        ? fsrsData.params.logLoss.toFixed(4)
+                        : "—"}
+                    </p>
+                    <p className="text-xs text-ink-4">lower is better</p>
+                  </div>
+                  <div className="rounded-xl bg-paper-sunken p-3">
+                    <p className="text-xs text-ink-4">RMSE bins</p>
+                    <p className="mt-0.5 text-lg font-semibold text-ink-1">
+                      {fsrsData.params.rmseBins !== null
+                        ? fsrsData.params.rmseBins.toFixed(4)
+                        : "—"}
+                    </p>
+                    <p className="text-xs text-ink-4">retention accuracy</p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-paper-sunken p-3">
+                  <p className="mb-2 text-xs font-medium text-ink-3">Optimal learning steps</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {fsrsData.params.learningSteps.length > 0
+                      ? fsrsData.params.learningSteps.map((s) => (
+                          <span key={s} className="rounded-md bg-ds-blue-100 px-2 py-0.5 text-xs font-medium text-ds-blue-ink">
+                            {s}
+                          </span>
+                        ))
+                      : <span className="text-xs text-ink-4">Default (1m, 10m)</span>}
+                  </div>
+                  {fsrsData.params.relearningSteps.length > 0 && (
+                    <>
+                      <p className="mb-2 mt-3 text-xs font-medium text-ink-3">Relearning steps</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {fsrsData.params.relearningSteps.map((s) => (
+                          <span key={s} className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <p className="text-right text-xs text-ink-4">
+                  Last optimized: {new Date(fsrsData.params.lastOptimizedAt).toLocaleDateString()} ·{" "}
+                  {fsrsData.params.reviewCount} reviews used
+                </p>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="h-20 animate-pulse rounded-xl bg-paper-sunken" />
         )}
       </section>
     </div>

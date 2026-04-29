@@ -53,13 +53,15 @@ export async function POST(req: NextRequest) {
     })
     await setStatus({ progress: 10 })
 
-    const rawCards = await generateCardsFromText(
+    const generationResult = await generateCardsFromText(
       doc.textContent ?? "",
       async (pct) => {
         await setStatus({ progress: 10 + Math.round(pct * 0.7) })
       }
     )
     await setStatus({ progress: 85 })
+
+    const { cards: rawCards, metadata } = generationResult
 
     if (rawCards.length > 0) {
       await prisma.$transaction(
@@ -85,6 +87,7 @@ export async function POST(req: NextRequest) {
       progress: 100,
       orgId,
       count: rawCards.length,
+      warning: metadata.warning,
     } satisfies JobState)
 
     return NextResponse.json({ ok: true })

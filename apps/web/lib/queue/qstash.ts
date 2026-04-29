@@ -13,6 +13,7 @@ export type JobState = {
   orgId: string   // stored so the jobs endpoint can verify the caller's org
   count?: number
   error?: string
+  warning?: string
 }
 
 // QStash delivers messages to your endpoint — no persistent worker needed.

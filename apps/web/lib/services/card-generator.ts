@@ -2,6 +2,10 @@ import Anthropic from "@anthropic-ai/sdk"
 
 const CHUNK_CHARS = 12_000 // ≈3 000 tokens
 const OVERLAP_CHARS = 800  // ≈200 tokens overlap to avoid cutting mid-concept
+const MODEL_NAME = "claude-sonnet-4-6"
+const MAX_RETRIES = 3
+const BASE_BACKOFF_MS = 250
+const SUCCESS_WARNING_THRESHOLD = 0.7
 
 export type RawGeneratedCard = {
   question: string
@@ -9,6 +13,25 @@ export type RawGeneratedCard = {
   format: "QA" | "TRUE_FALSE" | "FILL_BLANK"
   tags: string[]
   difficulty: 1 | 2 | 3
+}
+
+export type GenerationMetadata = {
+  chunksTotal: number
+  chunksSucceeded: number
+  chunksFailed: number
+  failedChunks: Array<{
+    chunkIndex: number
+    model: string
+    errorClass: string
+    errorMessage: string
+  }>
+  successRatio: number
+  warning?: string
+}
+
+export type GenerateCardsResult = {
+  cards: RawGeneratedCard[]
+  metadata: GenerationMetadata
 }
 
 function chunkText(text: string): string[] {
@@ -22,10 +45,32 @@ function chunkText(text: string): string[] {
   return chunks
 }
 
-// ─── System prompt ────────────────────────────────────────────────────────────
-// Kept above 1024 tokens so Anthropic's prompt cache activates on multi-chunk
-// documents (saves ~90% on system-prompt tokens for chunks 2+).
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
+function isRetryableError(error: unknown): boolean {
+  const status = typeof error === "object" && error !== null && "status" in error
+    ? (error as { status?: number }).status
+    : undefined
+
+  if (typeof status === "number" && [408, 409, 425, 429, 500, 502, 503, 504].includes(status)) {
+    return true
+  }
+
+  const code = typeof error === "object" && error !== null && "code" in error
+    ? String((error as { code?: unknown }).code)
+    : ""
+
+  if (["ETIMEDOUT", "ECONNRESET", "ECONNREFUSED", "EAI_AGAIN", "ENOTFOUND"].includes(code)) {
+    return true
+  }
+
+  const message = error instanceof Error ? error.message.toLowerCase() : ""
+  return message.includes("timeout") || message.includes("rate limit") || message.includes("network")
+}
+
+// prompts/tool unchanged
 const SYSTEM_PROMPT = `You create training flashcards that must fit on a small mobile screen.
 
 CARD SIZE LIMITS — strictly enforce these on every card:
@@ -67,10 +112,6 @@ QUANTITY: 5–10 cards per excerpt. Generate fewer if the content is sparse or r
 
 Call the create_flashcards tool with every card you generate. Do not output any text outside the tool call.`
 
-// ─── Tool definition ──────────────────────────────────────────────────────────
-// Using tool_choice=forced guarantees schema-valid JSON — no manual parsing,
-// no silent failures on malformed output.
-
 const FLASHCARD_TOOL: Anthropic.Tool = {
   name: "create_flashcards",
   description: "Output the flashcards extracted from the document excerpt.",
@@ -82,10 +123,10 @@ const FLASHCARD_TOOL: Anthropic.Tool = {
         items: {
           type: "object",
           properties: {
-            question:   { type: "string", maxLength: 120,  description: "≤15 words" },
-            answer:     { type: "string", maxLength: 300,  description: "≤40 words. TRUE_FALSE: 'True.' or 'False. [correction]'. FILL_BLANK: missing term only." },
-            format:     { type: "string", enum: ["QA", "TRUE_FALSE", "FILL_BLANK"] },
-            tags:       { type: "array", items: { type: "string", maxLength: 20 }, maxItems: 3 },
+            question: { type: "string", maxLength: 120, description: "≤15 words" },
+            answer: { type: "string", maxLength: 300, description: "≤40 words. TRUE_FALSE: 'True.' or 'False. [correction]'. FILL_BLANK: missing term only." },
+            format: { type: "string", enum: ["QA", "TRUE_FALSE", "FILL_BLANK"] },
+            tags: { type: "array", items: { type: "string", maxLength: 20 }, maxItems: 3 },
             difficulty: { type: "integer", enum: [1, 2, 3] },
           },
           required: ["question", "answer", "format", "tags", "difficulty"],
@@ -96,12 +137,10 @@ const FLASHCARD_TOOL: Anthropic.Tool = {
   },
 }
 
-// ─── Generator ────────────────────────────────────────────────────────────────
-
 export async function generateCardsFromText(
   text: string,
   onProgress?: (pct: number) => Promise<void>
-): Promise<RawGeneratedCard[]> {
+): Promise<GenerateCardsResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured")
 
@@ -109,57 +148,65 @@ export async function generateCardsFromText(
   const chunks = chunkText(text.trim())
   const allCards: RawGeneratedCard[] = []
   const seenQuestions = new Set<string>()
+  const failedChunks: GenerationMetadata["failedChunks"] = []
+  let chunksSucceeded = 0
 
   for (let chunkIdx = 0; chunkIdx < chunks.length; chunkIdx++) {
-    let response: Anthropic.Message
-    try {
-      response = await client.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1500, // 5–10 cards × ~120 tokens each = well under 1500
-        system: [
-          {
-            type: "text",
-            text: SYSTEM_PROMPT,
-            cache_control: { type: "ephemeral" },
-          },
-        ],
-        tools: [FLASHCARD_TOOL],
-        tool_choice: { type: "tool", name: "create_flashcards" },
-        messages: [
-          {
-            role: "user",
-            content: `Extract flashcards from this excerpt:\n\n${chunks[chunkIdx]}`,
-          },
-        ],
+    let response: Anthropic.Message | undefined
+    let lastError: unknown
+
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        response = await client.messages.create({
+          model: MODEL_NAME,
+          max_tokens: 1500,
+          system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+          tools: [FLASHCARD_TOOL],
+          tool_choice: { type: "tool", name: "create_flashcards" },
+          messages: [{ role: "user", content: `Extract flashcards from this excerpt:\n\n${chunks[chunkIdx]}` }],
+        })
+        break
+      } catch (error) {
+        lastError = error
+        const canRetry = attempt < MAX_RETRIES - 1 && isRetryableError(error)
+        if (!canRetry) break
+        await sleep(BASE_BACKOFF_MS * (2 ** attempt))
+      }
+    }
+
+    if (!response) {
+      failedChunks.push({
+        chunkIndex: chunkIdx,
+        model: MODEL_NAME,
+        errorClass: lastError instanceof Error ? lastError.name : "UnknownError",
+        errorMessage: lastError instanceof Error ? lastError.message : "Unknown failure",
       })
-    } catch {
       continue
     }
 
-    // With tool_choice forced, content[0] is always a tool_use block
     const block = response.content.find((b) => b.type === "tool_use")
     if (!block || block.type !== "tool_use") continue
 
     const input = block.input as { cards?: unknown[] }
     if (!Array.isArray(input.cards)) continue
 
+    chunksSucceeded += 1
+
     for (const item of input.cards) {
       if (typeof item !== "object" || item === null) continue
       const c = item as Record<string, unknown>
-
       if (typeof c.question !== "string" || typeof c.answer !== "string") continue
       if (!["QA", "TRUE_FALSE", "FILL_BLANK"].includes(c.format as string)) continue
 
-      // Deduplicate by normalised question text
       const key = (c.question as string).toLowerCase().replace(/\s+/g, " ").trim()
       if (seenQuestions.has(key)) continue
       seenQuestions.add(key)
 
       allCards.push({
-        question:   (c.question as string).trim(),
-        answer:     (c.answer   as string).trim(),
-        format:     c.format as RawGeneratedCard["format"],
-        tags:       Array.isArray(c.tags)
+        question: (c.question as string).trim(),
+        answer: (c.answer as string).trim(),
+        format: c.format as RawGeneratedCard["format"],
+        tags: Array.isArray(c.tags)
           ? (c.tags as unknown[]).filter((t): t is string => typeof t === "string").slice(0, 3)
           : [],
         difficulty: ([1, 2, 3] as const).includes(c.difficulty as 1 | 2 | 3)
@@ -173,5 +220,19 @@ export async function generateCardsFromText(
     }
   }
 
-  return allCards
+  const chunksTotal = chunks.length
+  const chunksFailed = chunksTotal - chunksSucceeded
+  const successRatio = chunksTotal === 0 ? 0 : chunksSucceeded / chunksTotal
+  const warning = successRatio < SUCCESS_WARNING_THRESHOLD
+    ? `Card generation completed with partial coverage (${chunksSucceeded}/${chunksTotal} chunks succeeded). Output may be incomplete.`
+    : undefined
+
+  if (warning) {
+    console.warn(warning, { chunksTotal, chunksSucceeded, chunksFailed, failedChunks })
+  }
+
+  return {
+    cards: allCards,
+    metadata: { chunksTotal, chunksSucceeded, chunksFailed, failedChunks, successRatio, warning },
+  }
 }

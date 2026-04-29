@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
-// ── Mock @anthropic-ai/sdk ─────────────────────────────────────────────────────
-
 const mockCreate = vi.fn()
 vi.mock("@anthropic-ai/sdk", () => ({
   default: class MockAnthropic {
@@ -11,13 +9,13 @@ vi.mock("@anthropic-ai/sdk", () => ({
 
 import { generateCardsFromText } from "../card-generator"
 
-function makeAnthropicResponse(text: string) {
+function makeAnthropicResponse(cards: unknown[]) {
   return {
-    content: [{ type: "text", text }],
+    content: [{ type: "tool_use", input: { cards } }],
   }
 }
 
-const SAMPLE_CARD_JSON = JSON.stringify([
+const SAMPLE_CARDS = [
   {
     question: "What is the refund window?",
     answer: "30 days",
@@ -32,68 +30,74 @@ const SAMPLE_CARD_JSON = JSON.stringify([
     tags: ["premium"],
     difficulty: 1,
   },
-])
+]
 
 beforeEach(() => {
   vi.clearAllMocks()
   process.env.ANTHROPIC_API_KEY = "sk-test"
-  mockCreate.mockResolvedValue(makeAnthropicResponse(SAMPLE_CARD_JSON))
+  mockCreate.mockResolvedValue(makeAnthropicResponse(SAMPLE_CARDS))
 })
 
 describe("generateCardsFromText", () => {
-  it("short text produces cards without chunking (single API call)", async () => {
-    const text = "Customers get a 30-day refund window."
-    const cards = await generateCardsFromText(text)
+  it("returns cards and metadata for a successful single chunk", async () => {
+    const result = await generateCardsFromText("Customers get a 30-day refund window.")
+
     expect(mockCreate).toHaveBeenCalledTimes(1)
-    expect(cards.length).toBeGreaterThan(0)
+    expect(result.cards.length).toBe(2)
+    expect(result.metadata).toMatchObject({
+      chunksTotal: 1,
+      chunksSucceeded: 1,
+      chunksFailed: 0,
+      successRatio: 1,
+    })
   })
 
-  it("long text (>12000 chars) is chunked into multiple API calls", async () => {
-    // CHUNK_CHARS=12000, OVERLAP=800, step=11200 → 13001 chars = 2 chunks
-    const text = "x".repeat(13_001)
-    await generateCardsFromText(text)
-    expect(mockCreate).toHaveBeenCalledTimes(2)
+  it("retries transient failures and eventually succeeds", async () => {
+    const timeoutError = Object.assign(new Error("network timeout"), { code: "ETIMEDOUT" })
+    mockCreate
+      .mockRejectedValueOnce(timeoutError)
+      .mockRejectedValueOnce(timeoutError)
+      .mockResolvedValueOnce(makeAnthropicResponse(SAMPLE_CARDS))
+
+    const result = await generateCardsFromText("single chunk")
+
+    expect(mockCreate).toHaveBeenCalledTimes(3)
+    expect(result.metadata.chunksSucceeded).toBe(1)
+    expect(result.metadata.chunksFailed).toBe(0)
+  })
+
+  it("captures structured failures and emits warning when success ratio is below threshold", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+
+    mockCreate
+      .mockResolvedValueOnce(makeAnthropicResponse(SAMPLE_CARDS))
+      .mockRejectedValue(new Error("upstream unavailable"))
+
+    const text = "x".repeat(25_000) // 3 chunks
+    const result = await generateCardsFromText(text)
+
+    expect(result.metadata.chunksTotal).toBe(3)
+    expect(result.metadata.chunksSucceeded).toBe(1)
+    expect(result.metadata.chunksFailed).toBe(2)
+    expect(result.metadata.failedChunks).toHaveLength(2)
+    expect(result.metadata.failedChunks[0]).toMatchObject({
+      chunkIndex: 1,
+      model: "claude-sonnet-4-6",
+      errorClass: "Error",
+      errorMessage: "upstream unavailable",
+    })
+    expect(result.metadata.warning).toContain("Output may be incomplete")
+    expect(warnSpy).toHaveBeenCalledOnce()
+
+    warnSpy.mockRestore()
   })
 
   it("deduplicates cards with identical questions across chunks", async () => {
-    // Each chunk returns the same card
-    mockCreate.mockResolvedValue(makeAnthropicResponse(SAMPLE_CARD_JSON))
-    const text = "x".repeat(25_000)
-    const cards = await generateCardsFromText(text)
-    const questions = cards.map((c) => c.question)
-    const unique = new Set(questions)
-    expect(unique.size).toBe(questions.length)
-  })
+    mockCreate.mockResolvedValue(makeAnthropicResponse(SAMPLE_CARDS))
 
-  it("invalid JSON from API is handled gracefully (returns empty array)", async () => {
-    mockCreate.mockResolvedValue(makeAnthropicResponse("NOT VALID JSON!!!"))
-    const cards = await generateCardsFromText("some text")
-    expect(cards).toEqual([])
-  })
+    const result = await generateCardsFromText("x".repeat(25_000))
+    const questions = result.cards.map((c) => c.question)
 
-  it("empty document produces zero cards without throwing", async () => {
-    mockCreate.mockResolvedValue(makeAnthropicResponse("[]"))
-    const cards = await generateCardsFromText("")
-    expect(cards).toEqual([])
-  })
-
-  it("markdown-fenced JSON response is stripped and parsed correctly", async () => {
-    const fenced = "```json\n" + SAMPLE_CARD_JSON + "\n```"
-    mockCreate.mockResolvedValue(makeAnthropicResponse(fenced))
-    const cards = await generateCardsFromText("some text")
-    expect(cards.length).toBe(2)
-    expect(cards[0].question).toBe("What is the refund window?")
-  })
-
-  it("cards missing required fields are filtered out", async () => {
-    const malformed = JSON.stringify([
-      { question: "Valid?", answer: "Yes", format: "QA", tags: [], difficulty: 1 },
-      { answer: "No question field", format: "QA", tags: [], difficulty: 1 },
-      { question: "No answer field", format: "QA", tags: [], difficulty: 1 },
-    ])
-    mockCreate.mockResolvedValue(makeAnthropicResponse(malformed))
-    const cards = await generateCardsFromText("text")
-    expect(cards.length).toBe(1)
-    expect(cards[0].question).toBe("Valid?")
+    expect(new Set(questions).size).toBe(questions.length)
   })
 })

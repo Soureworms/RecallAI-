@@ -18,10 +18,9 @@ export const GET = withHandler<{ deckId: string }>(async (_req, { params }) => {
   const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
   if (!deck || deck.orgId !== session.user.orgId) return notFound()
 
-  const rows = await prisma.userCard.findMany({
-    where: { card: { deckId: params.deckId, status: "ACTIVE" } },
+  const rows = await prisma.deckAssignment.findMany({
+    where: { deckId: params.deckId },
     select: { userId: true },
-    distinct: ["userId"],
   })
 
   return NextResponse.json({ assignedUserIds: rows.map((r) => r.userId) })
@@ -63,8 +62,41 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
     select: { id: true },
   })
 
-  if (cards.length === 0) return NextResponse.json({ created: 0 })
+  const [cardAssignments, assignmentRows] = await Promise.all([
+    cards.length === 0 ? Promise.resolve(0) : assignCardsToUsers(userIds, cards.map((c) => c.id)),
+    prisma.deckAssignment.createMany({
+      data: userIds.map((userId) => ({ deckId: params.deckId, userId })),
+      skipDuplicates: true,
+    }),
+  ])
 
-  const created = await assignCardsToUsers(userIds, cards.map((c) => c.id))
-  return NextResponse.json({ created })
+  return NextResponse.json({ created: cardAssignments, assignmentRecordsCreated: assignmentRows.count })
+})
+
+export const DELETE = withHandler<{ deckId: string }>(async (req: NextRequest, { params }) => {
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
+  if (!auth.ok) return auth.response
+  const { session } = auth
+
+  const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
+  if (!deck || deck.orgId !== session.user.orgId) return notFound()
+
+  const parsed = assignSchema.safeParse(await req.json())
+  if (!parsed.success || !("userIds" in parsed.data)) {
+    return NextResponse.json({ error: "userIds is required" }, { status: 400 })
+  }
+
+  const users = await prisma.user.findMany({
+    where: { id: { in: parsed.data.userIds }, orgId: session.user.orgId },
+    select: { id: true },
+  })
+  const userIds = users.map((u) => u.id)
+
+  if (userIds.length === 0) return NextResponse.json({ removed: 0 })
+
+  const result = await prisma.deckAssignment.deleteMany({
+    where: { deckId: params.deckId, userId: { in: userIds } },
+  })
+
+  return NextResponse.json({ removed: result.count })
 })

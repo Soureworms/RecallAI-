@@ -58,6 +58,7 @@ model User {
   teams                TeamMember[]
   decks                Deck[]
   userCards            UserCard[]
+  deckAssignments      DeckAssignment[]
   reviewLogs           ReviewLog[]
   sourceDocuments      SourceDocument[]
   invitesCreated       Invite[]
@@ -104,6 +105,19 @@ model Deck {
   updatedAt       DateTime         @updatedAt
   cards           Card[]
   sourceDocuments SourceDocument[]
+  assignments     DeckAssignment[]
+}
+
+model DeckAssignment {
+  id         String   @id @default(uuid())
+  deckId      String
+  userId      String
+  deck        Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedAt  DateTime @default(now())
+
+  @@unique([deckId, userId])
+  @@index([userId])
 }
 
 model Card {

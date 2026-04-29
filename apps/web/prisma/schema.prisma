@@ -122,6 +122,8 @@ model Card {
   updatedAt        DateTime        @updatedAt
   userCards        UserCard[]
   reviewLogs       ReviewLog[]
+
+  @@index([deckId, status])
 }
 
 // ─── Source Documents ─────────────────────────────────────────────────────────
@@ -187,6 +189,8 @@ model UserCard {
   updatedAt      DateTime  @updatedAt
 
   @@unique([userId, cardId])
+  @@index([userId, dueDate])
+  @@index([cardId])
 }
 
 model ReviewLog {
@@ -202,6 +206,22 @@ model ReviewLog {
   stability         Float
   difficulty        Float
   state             CardState
+
+  @@index([userId, reviewedAt])
+  @@index([cardId, reviewedAt])
+  @@index([reviewedAt])
+  @@index([rating])
+}
+
+model UserDailyRetentionRollup {
+  userId    String
+  date      DateTime @db.Date
+  retention Float?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, date])
+  @@index([date])
 }
 
 // ─── Invites ──────────────────────────────────────────────────────────────────

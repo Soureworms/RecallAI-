@@ -13,19 +13,28 @@ export const GET = withHandlerSimple(async () => {
 
   const { id: userId, orgId } = session.user
 
-  const [org, fsrsConfig] = await Promise.all([
+  const [org, fsrsConfig, assignedDecks] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: orgId },
       select: { studyMode: true },
     }),
     getUserFSRSConfig(userId),
+    prisma.deckAssignment.findMany({
+      where: { userId, deck: { orgId, isArchived: false } },
+      select: { deckId: true },
+    }),
   ])
   const studyMode = org?.studyMode ?? "AUTO_ROTATE"
 
+  const assignedDeckIds = assignedDecks.map((d) => d.deckId)
+  if (assignedDeckIds.length === 0) {
+    return NextResponse.json({ dueCards: [], nextDueDate: null })
+  }
+
   const deckFilter =
     studyMode === "AUTO_ROTATE"
-      ? { orgId, isArchived: false }
-      : { orgId, isArchived: false, OR: [{ isMandatory: true }, { inRotation: true }] }
+      ? { id: { in: assignedDeckIds }, orgId, isArchived: false }
+      : { id: { in: assignedDeckIds }, orgId, isArchived: false, OR: [{ isMandatory: true }, { inRotation: true }] }
 
   const eligibleCards = await prisma.card.findMany({
     where: { status: "ACTIVE", deck: deckFilter },
@@ -42,7 +51,7 @@ export const GET = withHandlerSimple(async () => {
     where: {
       userId,
       dueDate: { lte: now },
-      card: { status: "ACTIVE", deck: { orgId, isArchived: false } },
+      card: { status: "ACTIVE", deck: deckFilter },
     },
     include: {
       card: { include: { deck: { select: { name: true } } } },
@@ -68,9 +77,9 @@ export const GET = withHandlerSimple(async () => {
       isNew: uc.reps === 0,
       preview: {
         again: { nextDue: preview.again.nextDue.toISOString(), scheduledDays: preview.again.scheduledDays },
-        hard:  { nextDue: preview.hard.nextDue.toISOString(),  scheduledDays: preview.hard.scheduledDays  },
-        good:  { nextDue: preview.good.nextDue.toISOString(),  scheduledDays: preview.good.scheduledDays  },
-        easy:  { nextDue: preview.easy.nextDue.toISOString(),  scheduledDays: preview.easy.scheduledDays  },
+        hard: { nextDue: preview.hard.nextDue.toISOString(), scheduledDays: preview.hard.scheduledDays },
+        good: { nextDue: preview.good.nextDue.toISOString(), scheduledDays: preview.good.scheduledDays },
+        easy: { nextDue: preview.easy.nextDue.toISOString(), scheduledDays: preview.easy.scheduledDays },
       },
     }
   })
@@ -81,7 +90,7 @@ export const GET = withHandlerSimple(async () => {
       where: {
         userId,
         dueDate: { gt: now },
-        card: { status: "ACTIVE", deck: { orgId, isArchived: false } },
+        card: { status: "ACTIVE", deck: deckFilter },
       },
       orderBy: { dueDate: "asc" },
       select: { dueDate: true },

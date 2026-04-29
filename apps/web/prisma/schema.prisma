@@ -34,13 +34,14 @@ model Organization {
 }
 
 model Team {
-  id        String       @id @default(uuid())
-  name      String
-  orgId     String
-  org       Organization @relation(fields: [orgId], references: [id])
-  members   TeamMember[]
-  invites   Invite[]
-  createdAt DateTime     @default(now())
+  id              String           @id @default(uuid())
+  name            String
+  orgId           String
+  org             Organization     @relation(fields: [orgId], references: [id])
+  members         TeamMember[]
+  invites         Invite[]
+  deckAssignments DeckAssignment[]
+  createdAt       DateTime         @default(now())
 }
 
 model User {
@@ -58,12 +59,14 @@ model User {
   teams                TeamMember[]
   decks                Deck[]
   userCards            UserCard[]
+  deckAssignments      DeckAssignment[]
   reviewLogs           ReviewLog[]
   sourceDocuments      SourceDocument[]
   invitesCreated       Invite[]
   passwordResetTokens  PasswordResetToken[]
   fsrsParameters       UserFSRSParameters?
   dailyRetentionRollups UserDailyRetentionRollup[]
+  deckAssignmentsCreated DeckAssignment[]       @relation("DeckAssignmentAssignedBy")
 }
 
 model TeamMember {
@@ -103,6 +106,7 @@ model Deck {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   cards           Card[]
+  assignments     DeckAssignment[]
   sourceDocuments SourceDocument[]
 }
 
@@ -125,6 +129,26 @@ model Card {
   reviewLogs       ReviewLog[]
 
   @@index([deckId, status])
+}
+
+
+model DeckAssignment {
+  userId       String
+  deckId       String
+  assignedById String?
+  teamId       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user       User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deck       Deck  @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  assignedBy User? @relation("DeckAssignmentAssignedBy", fields: [assignedById], references: [id])
+  team       Team? @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@id([userId, deckId])
+  @@index([deckId])
+  @@index([assignedById])
+  @@index([teamId])
 }
 
 // ─── Source Documents ─────────────────────────────────────────────────────────

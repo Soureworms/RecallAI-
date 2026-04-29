@@ -18,10 +18,9 @@ export const GET = withHandler<{ deckId: string }>(async (_req, { params }) => {
   const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
   if (!deck || deck.orgId !== session.user.orgId) return notFound()
 
-  const rows = await prisma.userCard.findMany({
-    where: { card: { deckId: params.deckId, status: "ACTIVE" } },
+  const rows = await prisma.deckAssignment.findMany({
+    where: { deckId: params.deckId },
     select: { userId: true },
-    distinct: ["userId"],
   })
 
   return NextResponse.json({ assignedUserIds: rows.map((r) => r.userId) })
@@ -41,6 +40,7 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
   }
 
   let userIds: string[]
+  let teamId: string | undefined
   if ("teamId" in parsed.data) {
     const team = await prisma.team.findUnique({
       where: { id: parsed.data.teamId },
@@ -48,6 +48,7 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
     })
     if (!team || team.orgId !== session.user.orgId) return notFound()
     userIds = team.members.map((m) => m.userId)
+    teamId = team.id
   } else {
     const users = await prisma.user.findMany({
       where: { id: { in: parsed.data.userIds }, orgId: session.user.orgId },
@@ -57,6 +58,16 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
   }
 
   if (userIds.length === 0) return NextResponse.json({ created: 0 })
+
+  await prisma.deckAssignment.createMany({
+    data: userIds.map((userId) => ({
+      userId,
+      deckId: params.deckId,
+      assignedById: session.user.id,
+      teamId,
+    })),
+    skipDuplicates: true,
+  })
 
   const cards = await prisma.card.findMany({
     where: { deckId: params.deckId, status: "ACTIVE" },

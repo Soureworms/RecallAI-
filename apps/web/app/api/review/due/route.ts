@@ -27,7 +27,6 @@ export const GET = withHandlerSimple(async () => {
   const studyMode = org?.studyMode ?? "AUTO_ROTATE"
 
   const assignedDeckIds = assignedDecks.map((d) => d.deckId)
-
   if (assignedDeckIds.length === 0) {
     return NextResponse.json({ dueCards: [], nextDueDate: null })
   }
@@ -78,9 +77,9 @@ export const GET = withHandlerSimple(async () => {
       isNew: uc.reps === 0,
       preview: {
         again: { nextDue: preview.again.nextDue.toISOString(), scheduledDays: preview.again.scheduledDays },
-        hard:  { nextDue: preview.hard.nextDue.toISOString(),  scheduledDays: preview.hard.scheduledDays  },
-        good:  { nextDue: preview.good.nextDue.toISOString(),  scheduledDays: preview.good.scheduledDays  },
-        easy:  { nextDue: preview.easy.nextDue.toISOString(),  scheduledDays: preview.easy.scheduledDays  },
+        hard: { nextDue: preview.hard.nextDue.toISOString(), scheduledDays: preview.hard.scheduledDays },
+        good: { nextDue: preview.good.nextDue.toISOString(), scheduledDays: preview.good.scheduledDays },
+        easy: { nextDue: preview.easy.nextDue.toISOString(), scheduledDays: preview.easy.scheduledDays },
       },
     }
   })

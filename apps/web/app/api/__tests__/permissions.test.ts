@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { NextRequest } from "next/server"
+import { assertRole, type Role } from "@/lib/auth/roles"
 
 // ── Auth mock ─────────────────────────────────────────────────────────────────
 
@@ -22,7 +23,7 @@ vi.mock("@/lib/db", () => ({ prisma: mockPrisma }))
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function makeSession(role: string) {
+function makeSession(role: Role) {
   return {
     user: { id: "user-1", role, orgId: "org-1", email: "test@example.com" },
   }
@@ -74,6 +75,14 @@ describe("POST /api/decks — create deck", () => {
     const req = makeRequest({ name: "Test" })
     const res = await POST(req)
     expect(res.status).toBe(401)
+  })
+
+  it("throws for invalid session role values", async () => {
+    mockAuth.mockResolvedValue(makeSession("OWNER" as Role))
+    const { POST } = await import("../decks/route")
+    const req = makeRequest({ name: "My Deck" })
+    const res = await POST(req)
+    expect(res.status).toBe(500)
   })
 })
 
@@ -187,5 +196,29 @@ describe("GET /api/invite/[token] — public endpoint", () => {
     const req = new NextRequest("http://localhost/api/invite/t")
     const res = await GET(req, { params: { token: "t" } })
     expect(res.status).toBe(410)
+  })
+})
+
+
+describe("role helper checks", () => {
+  it("enforces manager-plus hierarchy", async () => {
+    const { isManagerPlus } = await import("@/lib/auth/permissions")
+    expect(isManagerPlus("AGENT")).toBe(false)
+    expect(isManagerPlus("MANAGER")).toBe(true)
+    expect(isManagerPlus("ADMIN")).toBe(true)
+    expect(isManagerPlus("SUPER_ADMIN")).toBe(true)
+  })
+
+  it("enforces admin-only check", async () => {
+    const { isAdmin } = await import("@/lib/auth/permissions")
+    expect(isAdmin("ADMIN")).toBe(true)
+    expect(isAdmin("MANAGER")).toBe(false)
+  })
+})
+
+
+describe("role parsing", () => {
+  it("rejects unknown roles", () => {
+    expect(() => assertRole("OWNER", "test role")).toThrow("Invalid test role: OWNER")
   })
 })

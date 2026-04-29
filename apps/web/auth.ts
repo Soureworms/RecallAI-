@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { authConfig } from "./auth.config"
 import { prisma } from "@/lib/db"
+import { assertRole } from "@/lib/auth/roles"
 
 const REMEMBER_ME_SECS = 30 * 24 * 60 * 60  // 30 days
 const SESSION_SECS     =      24 * 60 * 60   // 24 hours
@@ -47,7 +48,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user, trigger }) {
       if (user) {
         token.id          = user.id as string
-        token.role        = user.role
+        token.role        = assertRole(user.role, "authenticated user role")
         token.orgId       = user.orgId
         token.onboardedAt = user.onboardedAt ?? null
         token.rememberMe  = (user as { rememberMe?: boolean }).rememberMe ?? true
@@ -67,6 +68,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.onboardedAt = fresh.onboardedAt ? fresh.onboardedAt.toISOString() : null
         }
       }
+      token.role = assertRole(token.role ?? "AGENT", "jwt token role")
       return token
     },
   },

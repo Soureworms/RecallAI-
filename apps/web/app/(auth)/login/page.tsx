@@ -135,6 +135,11 @@ export default function LoginPage() {
             </label>
 
             <SubmitButton />
+            <p style={{ textAlign: "right", marginTop: -4 }}>
+              <Link href="/forgot-password" style={{ fontSize: 12, color: "var(--blue-600)", textDecoration: "none" }}>
+                Forgot password?
+              </Link>
+            </p>
           </form>
         </div>
 

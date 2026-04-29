@@ -27,11 +27,39 @@ export type GenerationMetadata = {
   }>
   successRatio: number
   warning?: string
+  quality: GenerationQualitySummary
 }
 
 export type GenerateCardsResult = {
   cards: RawGeneratedCard[]
   metadata: GenerationMetadata
+}
+
+type QualityIssueCode =
+  | "QUESTION_TOO_LONG"
+  | "ANSWER_TOO_LONG"
+  | "EMPTY_TAGS"
+  | "DUPLICATE_SEMANTIC_OVERLAP"
+  | "MALFORMED_TRUE_FALSE"
+  | "MALFORMED_FILL_BLANK"
+
+type QualityIssue = {
+  code: QualityIssueCode
+  detail?: string
+}
+
+type CardQualityResult = {
+  isValid: boolean
+  score: number
+  issues: QualityIssue[]
+}
+
+export type GenerationQualitySummary = {
+  totalGenerated: number
+  validCards: number
+  rejectedCards: number
+  avgQualityScore: number
+  reasons: Record<QualityIssueCode, number>
 }
 
 function chunkText(text: string): string[] {
@@ -47,6 +75,68 @@ function chunkText(text: string): string[] {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function countWords(value: string): number {
+  return value.trim().split(/\s+/).filter(Boolean).length
+}
+
+function normalizeForSemanticCompare(value: string): string {
+  return value.toLowerCase().replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim()
+}
+
+function jaccardSimilarity(a: string, b: string): number {
+  const aSet = new Set(normalizeForSemanticCompare(a).split(" ").filter(Boolean))
+  const bSet = new Set(normalizeForSemanticCompare(b).split(" ").filter(Boolean))
+  if (aSet.size === 0 || bSet.size === 0) return 0
+  const intersection = [...aSet].filter((token) => bSet.has(token)).length
+  const union = new Set([...aSet, ...bSet]).size
+  return union === 0 ? 0 : intersection / union
+}
+
+function validateCardQuality(card: RawGeneratedCard, acceptedCards: RawGeneratedCard[]): CardQualityResult {
+  const issues: QualityIssue[] = []
+  let score = 100
+
+  if (countWords(card.question) > 15) {
+    issues.push({ code: "QUESTION_TOO_LONG" })
+    score -= 20
+  }
+  if (countWords(card.answer) > 40) {
+    issues.push({ code: "ANSWER_TOO_LONG" })
+    score -= 20
+  }
+  if (card.tags.length === 0 || card.tags.some((tag) => !tag.trim())) {
+    issues.push({ code: "EMPTY_TAGS" })
+    score -= 15
+  }
+
+  if (card.format === "TRUE_FALSE") {
+    const isTrue = /^true\.$/i.test(card.answer.trim())
+    const isFalse = /^false\.\s+\S.+/.test(card.answer.trim())
+    if (!isTrue && !isFalse) {
+      issues.push({ code: "MALFORMED_TRUE_FALSE" })
+      score -= 30
+    }
+  }
+
+  if (card.format === "FILL_BLANK") {
+    if (!card.question.includes("___") || /[.!?]/.test(card.answer) || countWords(card.answer) > 8) {
+      issues.push({ code: "MALFORMED_FILL_BLANK" })
+      score -= 30
+    }
+  }
+
+  const hasSemanticOverlap = acceptedCards.some((existing) => (
+    jaccardSimilarity(existing.question, card.question) >= 0.8
+      || jaccardSimilarity(existing.answer, card.answer) >= 0.85
+  ))
+  if (hasSemanticOverlap) {
+    issues.push({ code: "DUPLICATE_SEMANTIC_OVERLAP" })
+    score -= 40
+  }
+
+  return { isValid: issues.length === 0 && score >= 70, score: Math.max(0, score), issues }
 }
 
 function isRetryableError(error: unknown): boolean {
@@ -147,6 +237,16 @@ export async function generateCardsFromText(
   const client = new Anthropic({ apiKey })
   const chunks = chunkText(text.trim())
   const allCards: RawGeneratedCard[] = []
+  const qualityScores: number[] = []
+  const rejectedCards: CardQualityResult[] = []
+  const rejectionReasons: Record<QualityIssueCode, number> = {
+    QUESTION_TOO_LONG: 0,
+    ANSWER_TOO_LONG: 0,
+    EMPTY_TAGS: 0,
+    DUPLICATE_SEMANTIC_OVERLAP: 0,
+    MALFORMED_TRUE_FALSE: 0,
+    MALFORMED_FILL_BLANK: 0,
+  }
   const seenQuestions = new Set<string>()
   const failedChunks: GenerationMetadata["failedChunks"] = []
   let chunksSucceeded = 0
@@ -202,7 +302,7 @@ export async function generateCardsFromText(
       if (seenQuestions.has(key)) continue
       seenQuestions.add(key)
 
-      allCards.push({
+      const nextCard: RawGeneratedCard = {
         question: (c.question as string).trim(),
         answer: (c.answer as string).trim(),
         format: c.format as RawGeneratedCard["format"],
@@ -212,7 +312,17 @@ export async function generateCardsFromText(
         difficulty: ([1, 2, 3] as const).includes(c.difficulty as 1 | 2 | 3)
           ? (c.difficulty as 1 | 2 | 3)
           : 1,
-      })
+      }
+      const quality = validateCardQuality(nextCard, allCards)
+      qualityScores.push(quality.score)
+      if (!quality.isValid) {
+        rejectedCards.push(quality)
+        quality.issues.forEach((issue) => {
+          rejectionReasons[issue.code] += 1
+        })
+        continue
+      }
+      allCards.push(nextCard)
     }
 
     if (onProgress) {
@@ -226,6 +336,10 @@ export async function generateCardsFromText(
   const warning = successRatio < SUCCESS_WARNING_THRESHOLD
     ? `Card generation completed with partial coverage (${chunksSucceeded}/${chunksTotal} chunks succeeded). Output may be incomplete.`
     : undefined
+  const totalGenerated = allCards.length + rejectedCards.length
+  const avgQualityScore = qualityScores.length === 0
+    ? 0
+    : Number((qualityScores.reduce((sum, score) => sum + score, 0) / qualityScores.length).toFixed(1))
 
   if (warning) {
     console.warn(warning, { chunksTotal, chunksSucceeded, chunksFailed, failedChunks })
@@ -233,6 +347,20 @@ export async function generateCardsFromText(
 
   return {
     cards: allCards,
-    metadata: { chunksTotal, chunksSucceeded, chunksFailed, failedChunks, successRatio, warning },
+    metadata: {
+      chunksTotal,
+      chunksSucceeded,
+      chunksFailed,
+      failedChunks,
+      successRatio,
+      warning,
+      quality: {
+        totalGenerated,
+        validCards: allCards.length,
+        rejectedCards: rejectedCards.length,
+        avgQualityScore,
+        reasons: rejectionReasons,
+      },
+    },
   }
 }

@@ -19,6 +19,12 @@ type JobStatus = {
   progress: number
   count?: number
   error?: string
+  summary?: {
+    validCards: number
+    rejectedCards: number
+    avgQualityScore: number
+    reasons: Record<string, number>
+  }
 }
 
 type Props = {
@@ -293,6 +299,11 @@ export function ContentPipeline({ deckId }: Props) {
                 {jobStatus?.count ?? 0} draft card{jobStatus?.count !== 1 ? "s" : ""} created.
                 Review and approve them before they go live.
               </p>
+              {jobStatus?.summary && (
+                <p className="mt-2 text-xs text-ink-4">
+                  Quality summary: {jobStatus.summary.validCards} valid · {jobStatus.summary.rejectedCards} rejected · avg score {jobStatus.summary.avgQualityScore}.
+                </p>
+              )}
             </div>
             <button
               onClick={finish}

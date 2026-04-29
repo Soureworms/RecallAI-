@@ -14,6 +14,12 @@ export type JobState = {
   count?: number
   error?: string
   warning?: string
+  summary?: {
+    validCards: number
+    rejectedCards: number
+    avgQualityScore: number
+    reasons: Record<string, number>
+  }
 }
 
 // QStash delivers messages to your endpoint — no persistent worker needed.

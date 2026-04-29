@@ -88,7 +88,28 @@ export async function POST(req: NextRequest) {
       orgId,
       count: rawCards.length,
       warning: metadata.warning,
+      summary: {
+        validCards: metadata.quality.validCards,
+        rejectedCards: metadata.quality.rejectedCards,
+        avgQualityScore: metadata.quality.avgQualityScore,
+        reasons: metadata.quality.reasons,
+      },
     } satisfies JobState)
+
+    await prisma.sourceDocument.update({
+      where: { id: documentId, orgId },
+      data: {
+        generationQuality: {
+          chunksTotal: metadata.chunksTotal,
+          chunksSucceeded: metadata.chunksSucceeded,
+          chunksFailed: metadata.chunksFailed,
+          successRatio: metadata.successRatio,
+          warning: metadata.warning ?? null,
+          quality: metadata.quality,
+          capturedAt: new Date().toISOString(),
+        },
+      },
+    })
 
     return NextResponse.json({ ok: true })
   } catch (err) {

@@ -190,36 +190,50 @@ export type KnowledgeGapItem = {
 }
 
 export async function getKnowledgeGaps(orgId: string): Promise<KnowledgeGapItem[]> {
-  const userCards = await prisma.userCard.findMany({
-    where: { card: { status: "ACTIVE", deck: { orgId, isArchived: false } } },
-    select: {
-      userId: true,
-      cardId: true,
-      stability: true,
-      lastReviewDate: true,
-      card: { select: { tags: true } },
-    },
-    take: 10_000,
-  })
-
-  type TagEntry = { scores: number[]; cards: Set<string>; users: Set<string> }
+  type TagEntry = { scoreSum: number; scoreCount: number; cards: Set<string>; users: Set<string> }
   const byTag = new Map<string, TagEntry>()
 
-  for (const uc of userCards) {
-    const r = retrievability(uc)
-    if (r === null) continue
-    for (const tag of uc.card.tags) {
-      if (!byTag.has(tag)) byTag.set(tag, { scores: [], cards: new Set(), users: new Set() })
-      const entry = byTag.get(tag)!
-      entry.scores.push(r)
-      entry.cards.add(uc.cardId)
-      entry.users.add(uc.userId)
+  const batchSize = 2_000
+  let cursor: string | undefined
+  while (true) {
+    const userCards = await prisma.userCard.findMany({
+      where: { card: { status: "ACTIVE", deck: { orgId, isArchived: false } } },
+      select: {
+        id: true,
+        userId: true,
+        cardId: true,
+        stability: true,
+        lastReviewDate: true,
+        card: { select: { tags: true } },
+      },
+      orderBy: { id: "asc" },
+      take: batchSize,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    })
+
+    if (userCards.length === 0) break
+
+    for (const uc of userCards) {
+      const r = retrievability(uc)
+      if (r === null) continue
+      for (const tag of uc.card.tags) {
+        if (!byTag.has(tag)) {
+          byTag.set(tag, { scoreSum: 0, scoreCount: 0, cards: new Set(), users: new Set() })
+        }
+        const entry = byTag.get(tag)!
+        entry.scoreSum += r
+        entry.scoreCount++
+        entry.cards.add(uc.cardId)
+        entry.users.add(uc.userId)
+      }
     }
+
+    cursor = userCards[userCards.length - 1]?.id
   }
 
   const gaps: KnowledgeGapItem[] = []
   for (const [tag, entry] of Array.from(byTag.entries())) {
-    const avg = pct(entry.scores.reduce((a, b) => a + b, 0) / entry.scores.length)
+    const avg = pct(entry.scoreSum / entry.scoreCount)
     if (avg < 80) {
       gaps.push({
         tag,
@@ -292,18 +306,35 @@ export type CardEffectivenessItem = {
 }
 
 export async function getCardEffectiveness(deckId: string): Promise<CardEffectivenessItem[]> {
-  const cards = await prisma.card.findMany({
-    where: { deckId, status: "ACTIVE" },
-    include: {
-      reviewLogs: { select: { rating: true } },
-      deck: { select: { name: true } },
-    },
-  })
+  const [cards, ratingGroups] = await Promise.all([
+    prisma.card.findMany({
+      where: { deckId, status: "ACTIVE" },
+      select: {
+        id: true,
+        question: true,
+        deck: { select: { name: true } },
+      },
+    }),
+    prisma.reviewLog.groupBy({
+      by: ["cardId", "rating"],
+      where: { card: { deckId, status: "ACTIVE" } },
+      _count: { _all: true },
+    }),
+  ])
+
+  const statsByCard = new Map<string, { total: number; again: number }>()
+  for (const row of ratingGroups) {
+    if (!statsByCard.has(row.cardId)) statsByCard.set(row.cardId, { total: 0, again: 0 })
+    const stats = statsByCard.get(row.cardId)!
+    stats.total += row._count._all
+    if (row.rating === "AGAIN") stats.again += row._count._all
+  }
 
   return cards
     .map((c) => {
-      const total = c.reviewLogs.length
-      const again = c.reviewLogs.filter((r) => r.rating === "AGAIN").length
+      const stats = statsByCard.get(c.id) ?? { total: 0, again: 0 }
+      const total = stats.total
+      const again = stats.again
       return {
         cardId: c.id,
         question: c.question,
@@ -326,37 +357,62 @@ export async function getRetentionTimeline(
   userId: string,
   days = 30
 ): Promise<TimelinePoint[]> {
+  // Prefer fast path from rollup snapshot table if present.
+  type RollupRow = { date: Date; retention: number | null }
+  try {
+    const rollup = await prisma.$queryRaw<RollupRow[]>`
+      SELECT date, retention
+      FROM "UserDailyRetentionRollup"
+      WHERE "userId" = ${userId}
+        AND date >= CURRENT_DATE - (${days - 1} * INTERVAL '1 day')
+      ORDER BY date ASC
+    `
+    if (rollup.length > 0) {
+      const byDay = new Map(rollup.map((r) => [r.date.toISOString().split("T")[0], r.retention]))
+      const now = new Date()
+      const result: TimelinePoint[] = []
+      for (let i = days - 1; i >= 0; i--) {
+        const dayEnd = new Date(now)
+        dayEnd.setDate(dayEnd.getDate() - i)
+        const key = dayEnd.toISOString().split("T")[0]
+        const retention = byDay.get(key)
+        result.push({ date: key, retention: retention == null ? null : Math.round(retention) })
+      }
+      return result
+    }
+  } catch {
+    // Rollup table is optional while migration is rolling out.
+  }
+
   const logs = await prisma.reviewLog.findMany({
     where: { userId },
     select: { cardId: true, reviewedAt: true, stability: true },
     orderBy: { reviewedAt: "asc" },
   })
 
-  const byCard = new Map<string, Array<{ reviewedAt: Date; stability: number }>>()
-  for (const log of logs) {
-    if (!byCard.has(log.cardId)) byCard.set(log.cardId, [])
-    byCard.get(log.cardId)!.push({ reviewedAt: log.reviewedAt, stability: log.stability })
-  }
-
   const now = new Date()
   const timeline: TimelinePoint[] = []
+
+  let logIndex = 0
+  const latestByCard = new Map<string, { reviewedAt: Date; stability: number }>()
 
   for (let i = days - 1; i >= 0; i--) {
     const dayEnd = new Date(now)
     dayEnd.setDate(dayEnd.getDate() - i)
     dayEnd.setHours(23, 59, 59, 999)
 
+    while (logIndex < logs.length && logs[logIndex].reviewedAt <= dayEnd) {
+      const log = logs[logIndex]!
+      latestByCard.set(log.cardId, { reviewedAt: log.reviewedAt, stability: log.stability })
+      logIndex++
+    }
+
     let sum = 0
     let count = 0
 
-    for (const cardLogs of Array.from(byCard.values())) {
-      let last: { reviewedAt: Date; stability: number } | null = null
-      for (const entry of cardLogs) {
-        if (entry.reviewedAt <= dayEnd) last = entry
-        else break
-      }
-      if (last && last.stability > 0) {
-        sum += retrievability_r(elapsedDays(last.reviewedAt, dayEnd), last.stability)
+    for (const latest of latestByCard.values()) {
+      if (latest.stability > 0) {
+        sum += retrievability_r(elapsedDays(latest.reviewedAt, dayEnd), latest.stability)
         count++
       }
     }

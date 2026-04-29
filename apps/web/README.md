@@ -1,11 +1,11 @@
 # RecallAI
 
-AI-powered spaced repetition for CX teams. Upload your knowledge base, let Claude generate flashcards, and keep your entire team sharp with science-backed review scheduling.
+AI-powered spaced repetition for CX teams. Upload your knowledge base, let OpenAI generate flashcards, and keep your entire team sharp with science-backed review scheduling.
 
 ## Features
 
 - **FSRS scheduling** — ts-fsrs algorithm adapts to each agent's memory
-- **AI card generation** — upload PDFs or DOCX files; Claude writes the flashcards
+- **AI card generation** — upload PDFs or DOCX files; OpenAI writes the flashcards
 - **Team analytics** — retention heatmaps, knowledge gaps, new-hire ramp tracking
 - **Role-based access** — ADMIN / MANAGER / AGENT with enforced permissions
 - **Invite system** — share a link to onboard new team members
@@ -28,7 +28,7 @@ pnpm install
 
 # 2. Copy environment variables
 cp .env.example .env
-# Fill in DATABASE_URL, NEXTAUTH_SECRET, ANTHROPIC_API_KEY
+# Fill in DATABASE_URL, NEXTAUTH_SECRET, OPENAI_API_KEY
 
 # 3. Run database migrations
 pnpm db:migrate
@@ -46,7 +46,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```bash
 # From apps/web/
-ANTHROPIC_API_KEY=sk-ant-... docker compose up
+OPENAI_API_KEY=sk-ant-... docker compose up
 ```
 
 The app and a fresh PostgreSQL database start together. Migrations run automatically.
@@ -111,7 +111,7 @@ apps/web/
 | Database | PostgreSQL + Prisma | Type-safe queries, easy migrations |
 | Auth | NextAuth v5 (beta) | JWT sessions, Credentials provider |
 | Scheduling | ts-fsrs | Production-grade FSRS implementation |
-| AI | Anthropic Claude | Best-in-class instruction following for card generation |
+| AI | OpenAI OpenAI | Best-in-class instruction following for card generation |
 | Charts | Recharts | Lightweight, composable |
 | Styling | Tailwind CSS | Utility-first, mobile-first |
 

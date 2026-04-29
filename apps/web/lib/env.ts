@@ -5,7 +5,7 @@ export const env = {
   NEXTAUTH_URL: opt("NEXTAUTH_URL", "http://localhost:3000"),
 
   // AI
-  ANTHROPIC_API_KEY: opt("ANTHROPIC_API_KEY"),
+  OPENAI_API_KEY: opt("OPENAI_API_KEY"),
 
   // Queue (Upstash QStash)
   QSTASH_TOKEN:               opt("QSTASH_TOKEN"),

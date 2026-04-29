@@ -32,9 +32,9 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
     )
   }
 
-  if (!env.ANTHROPIC_API_KEY) {
+  if (!env.OPENAI_API_KEY) {
     return NextResponse.json(
-      { error: "AI generation is not configured. Set ANTHROPIC_API_KEY." },
+      { error: "AI generation is not configured. Set OPENAI_API_KEY." },
       { status: 503 }
     )
   }

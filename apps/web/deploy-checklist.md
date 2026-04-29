@@ -7,7 +7,7 @@
 | `DATABASE_URL` | PostgreSQL connection string — `postgresql://user:pass@host:5432/db` | Yes |
 | `NEXTAUTH_SECRET` | Random secret for session signing — generate with `openssl rand -base64 32` | Yes |
 | `NEXTAUTH_URL` | Full public URL of your deployment — e.g. `https://recallai.example.com` | Yes |
-| `ANTHROPIC_API_KEY` | API key from console.anthropic.com — needed for AI card generation | Yes |
+| `OPENAI_API_KEY` | API key from console.openai.com — needed for AI card generation | Yes |
 
 ---
 

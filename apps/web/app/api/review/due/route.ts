@@ -22,10 +22,20 @@ export const GET = withHandlerSimple(async () => {
   ])
   const studyMode = org?.studyMode ?? "AUTO_ROTATE"
 
+  const assignedDecks = await prisma.deckAssignment.findMany({
+    where: { userId, deck: { orgId, isArchived: false } },
+    select: { deckId: true },
+  })
+  const assignedDeckIds = assignedDecks.map((d) => d.deckId)
+
+  if (studyMode !== "AUTO_ROTATE" && assignedDeckIds.length === 0) {
+    return NextResponse.json({ dueCards: [], nextDueDate: null })
+  }
+
   const deckFilter =
     studyMode === "AUTO_ROTATE"
       ? { orgId, isArchived: false }
-      : { orgId, isArchived: false, OR: [{ isMandatory: true }, { inRotation: true }] }
+      : { orgId, isArchived: false, id: { in: assignedDeckIds } }
 
   const eligibleCards = await prisma.card.findMany({
     where: { status: "ACTIVE", deck: deckFilter },
@@ -42,7 +52,7 @@ export const GET = withHandlerSimple(async () => {
     where: {
       userId,
       dueDate: { lte: now },
-      card: { status: "ACTIVE", deck: { orgId, isArchived: false } },
+      card: { status: "ACTIVE", deck: deckFilter },
     },
     include: {
       card: { include: { deck: { select: { name: true } } } },
@@ -81,7 +91,7 @@ export const GET = withHandlerSimple(async () => {
       where: {
         userId,
         dueDate: { gt: now },
-        card: { status: "ACTIVE", deck: { orgId, isArchived: false } },
+        card: { status: "ACTIVE", deck: deckFilter },
       },
       orderBy: { dueDate: "asc" },
       select: { dueDate: true },

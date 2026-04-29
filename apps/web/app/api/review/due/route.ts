@@ -28,14 +28,14 @@ export const GET = withHandlerSimple(async () => {
   })
   const assignedDeckIds = assignedDecks.map((d) => d.deckId)
 
-  if (studyMode !== "AUTO_ROTATE" && assignedDeckIds.length === 0) {
+  if (assignedDeckIds.length === 0) {
     return NextResponse.json({ dueCards: [], nextDueDate: null })
   }
 
   const deckFilter =
     studyMode === "AUTO_ROTATE"
-      ? { orgId, isArchived: false }
-      : { orgId, isArchived: false, id: { in: assignedDeckIds } }
+      ? { id: { in: assignedDeckIds }, orgId, isArchived: false }
+      : { id: { in: assignedDeckIds }, orgId, isArchived: false, OR: [{ isMandatory: true }, { inRotation: true }] }
 
   const eligibleCards = await prisma.card.findMany({
     where: { status: "ACTIVE", deck: deckFilter },

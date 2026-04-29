@@ -410,7 +410,7 @@ export async function getRetentionTimeline(
     let sum = 0
     let count = 0
 
-    for (const latest of latestByCard.values()) {
+    for (const latest of Array.from(latestByCard.values())) {
       if (latest.stability > 0) {
         sum += retrievability_r(elapsedDays(latest.reviewedAt, dayEnd), latest.stability)
         count++

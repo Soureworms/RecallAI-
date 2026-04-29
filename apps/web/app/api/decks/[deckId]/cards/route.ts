@@ -15,7 +15,7 @@ async function ownedDeck(deckId: string, orgId: string) {
 }
 
 export const GET = withHandler<{ deckId: string }>(async (req, { params }) => {
-  const auth = await requireRole("AGENT")
+  const auth = await requireRole("AGENT", { limiterKey: "api:agent", routeClass: "read" })
   if (!auth.ok) return auth.response
   const { session } = auth
 
@@ -47,7 +47,7 @@ export const GET = withHandler<{ deckId: string }>(async (req, { params }) => {
 
 // Shared workspace: any MANAGER in the org can add cards to any deck.
 export const POST = withHandler<{ deckId: string }>(async (req, { params }) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 

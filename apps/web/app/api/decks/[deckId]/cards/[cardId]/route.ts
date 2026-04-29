@@ -31,7 +31,7 @@ async function autoAssignCard(cardId: string, deckId: string) {
 // Shared workspace: any MANAGER in the org can edit, approve, or archive
 // any card in any deck. Deck access is org-wide, not per-creator.
 export const PUT = withHandler<{ deckId: string; cardId: string }>(async (req, { params }) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 
@@ -59,7 +59,7 @@ export const PUT = withHandler<{ deckId: string; cardId: string }>(async (req, {
 
 // PATCH: approve a draft card (with optional inline edits)
 export const PATCH = withHandler<{ deckId: string; cardId: string }>(async (req, { params }) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 
@@ -92,7 +92,7 @@ export const PATCH = withHandler<{ deckId: string; cardId: string }>(async (req,
 
 // DELETE: permanently delete DRAFT cards; archive ACTIVE cards
 export const DELETE = withHandler<{ deckId: string; cardId: string }>(async (_req, { params }) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 

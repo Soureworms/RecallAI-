@@ -8,7 +8,7 @@ import { sendWelcomeEmail } from "@/lib/emails/invite"
 
 // GET /api/org/users — list all users in the caller's org (ADMIN+)
 export const GET = withHandlerSimple(async () => {
-  const auth = await requireRole("ADMIN")
+  const auth = await requireRole("ADMIN", { limiterKey: "api:admin", routeClass: "write" })
   if (!auth.ok) return auth.response
 
   const users = await prisma.user.findMany({
@@ -25,7 +25,7 @@ export const GET = withHandlerSimple(async () => {
 
 // POST /api/org/users — invite a new user into the caller's org (ADMIN+)
 export const POST = withHandlerSimple(async (req: NextRequest) => {
-  const auth = await requireRole("ADMIN")
+  const auth = await requireRole("ADMIN", { limiterKey: "api:admin", routeClass: "write" })
   if (!auth.ok) return auth.response
 
   const parsed = createOrgUserSchema.safeParse(await req.json())

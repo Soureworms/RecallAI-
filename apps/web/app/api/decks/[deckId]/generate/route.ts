@@ -8,7 +8,7 @@ import { generateCardsSchema } from "@/lib/schemas/api"
 import { env } from "@/lib/env"
 
 export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { params }) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 

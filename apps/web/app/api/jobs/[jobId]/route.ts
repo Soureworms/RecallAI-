@@ -5,7 +5,7 @@ import type { JobState } from "@/lib/queue/qstash"
 import { withHandler } from "@/lib/api/handler"
 
 export const GET = withHandler<{ jobId: string }>(async (_req, { params }) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 

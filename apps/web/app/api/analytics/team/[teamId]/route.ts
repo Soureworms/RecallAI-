@@ -10,7 +10,7 @@ import {
 import { withHandler } from "@/lib/api/handler"
 
 export const GET = withHandler<{ teamId: string }>(async (_req, { params }) => {
-  const authResult = await requireRole("MANAGER")
+  const authResult = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!authResult.ok) return authResult.response
   const { session } = authResult
 

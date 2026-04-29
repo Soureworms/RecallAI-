@@ -12,7 +12,7 @@ import {
 import { withHandler } from "@/lib/api/handler"
 
 export const GET = withHandler<{ userId: string }>(async (_req, { params }) => {
-  const authResult = await requireRole("AGENT")
+  const authResult = await requireRole("AGENT", { limiterKey: "api:agent", routeClass: "read" })
   if (!authResult.ok) return authResult.response
   const { session } = authResult
 

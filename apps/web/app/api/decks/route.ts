@@ -5,7 +5,7 @@ import { withHandlerSimple } from "@/lib/api/handler"
 import { createDeckSchema } from "@/lib/schemas/api"
 
 export const GET = withHandlerSimple(async () => {
-  const auth = await requireRole("AGENT")
+  const auth = await requireRole("AGENT", { limiterKey: "api:agent", routeClass: "read" })
   if (!auth.ok) return auth.response
   const { session } = auth
 
@@ -21,7 +21,7 @@ export const GET = withHandlerSimple(async () => {
 })
 
 export const POST = withHandlerSimple(async (req: NextRequest) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 

@@ -10,7 +10,7 @@ function notFound() {
 }
 
 export const GET = withHandler<{ deckId: string }>(async (_req, { params }) => {
-  const auth = await requireRole("AGENT")
+  const auth = await requireRole("AGENT", { limiterKey: "api:agent", routeClass: "read" })
   if (!auth.ok) return auth.response
   const { session } = auth
 
@@ -28,7 +28,7 @@ export const GET = withHandler<{ deckId: string }>(async (_req, { params }) => {
 // Shared workspace: any MANAGER in the org can edit or archive any deck.
 // This is intentional — deck access is org-wide, not per-creator.
 export const PUT = withHandler<{ deckId: string }>(async (req: NextRequest, { params }) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 
@@ -79,7 +79,7 @@ export const PUT = withHandler<{ deckId: string }>(async (req: NextRequest, { pa
 })
 
 export const DELETE = withHandler<{ deckId: string }>(async (_req, { params }) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 

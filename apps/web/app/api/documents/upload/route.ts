@@ -36,7 +36,7 @@ async function extractText(buffer: Buffer, ext: string): Promise<string> {
 
 export const POST = withHandlerSimple(async (req) => {
   // ── Auth & role ───────────────────────────────────────────────────────────
-  const authResult = await requireRole("MANAGER")
+  const authResult = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!authResult.ok) return authResult.response
   const { session } = authResult
 

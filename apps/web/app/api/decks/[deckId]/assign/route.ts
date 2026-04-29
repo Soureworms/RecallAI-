@@ -11,7 +11,7 @@ function notFound() {
 
 // Shared workspace: any MANAGER in the org can view/manage assignments for any deck.
 export const GET = withHandler<{ deckId: string }>(async (_req, { params }) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 
@@ -28,7 +28,7 @@ export const GET = withHandler<{ deckId: string }>(async (_req, { params }) => {
 })
 
 export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { params }) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 

@@ -22,13 +22,13 @@ export const GET = withHandlerSimple(async () => {
   ])
   const studyMode = org?.studyMode ?? "AUTO_ROTATE"
 
-  const normalizedDeckFilter =
+  const deckFilter =
     studyMode === "AUTO_ROTATE"
       ? { orgId, isArchived: false }
       : { orgId, isArchived: false, OR: [{ isMandatory: true }, { inRotation: true }] }
 
   const eligibleCards = await prisma.card.findMany({
-    where: { status: "ACTIVE", deck: normalizedDeckFilter },
+    where: { status: "ACTIVE", deck: deckFilter },
     select: { id: true },
   })
 
@@ -42,7 +42,7 @@ export const GET = withHandlerSimple(async () => {
     where: {
       userId,
       dueDate: { lte: now },
-      card: { status: "ACTIVE", deck: normalizedDeckFilter },
+      card: { status: "ACTIVE", deck: deckFilter },
     },
     include: {
       card: { include: { deck: { select: { name: true } } } },
@@ -81,7 +81,7 @@ export const GET = withHandlerSimple(async () => {
       where: {
         userId,
         dueDate: { gt: now },
-        card: { status: "ACTIVE", deck: normalizedDeckFilter },
+        card: { status: "ACTIVE", deck: deckFilter },
       },
       orderBy: { dueDate: "asc" },
       select: { dueDate: true },

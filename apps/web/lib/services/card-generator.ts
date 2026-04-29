@@ -1,3 +1,5 @@
+import { recordOpenAIUsage } from "@/lib/services/ai-usage"
+
 const CHUNK_CHARS = 12_000 // ≈3 000 tokens
 const OVERLAP_CHARS = 800  // ≈200 tokens overlap to avoid cutting mid-concept
 const MODEL_NAME = process.env.OPENAI_MODEL || "gpt-4.1-mini"
@@ -128,7 +130,7 @@ function isRetryableError(error: unknown): boolean {
 
 const SYSTEM_PROMPT = `You create training flashcards that must fit on a small mobile screen. Return only JSON matching schema.`
 
-async function requestOpenAI(apiKey: string, chunk: string): Promise<{ cards?: unknown[] }> {
+async function requestOpenAI(apiKey: string, chunk: string): Promise<{ cards?: unknown[]; usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }; requestId?: string }> {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -178,10 +180,14 @@ async function requestOpenAI(apiKey: string, chunk: string): Promise<{ cards?: u
     throw err
   }
 
-  const data = await res.json() as { choices?: Array<{ message?: { content?: string } }> }
+  const data = await res.json() as {
+    id?: string
+    usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }
+    choices?: Array<{ message?: { content?: string } }>
+  }
   const content = data.choices?.[0]?.message?.content
   if (!content) return {}
-  return JSON.parse(content) as { cards?: unknown[] }
+  return { ...(JSON.parse(content) as { cards?: unknown[] }), usage: data.usage, requestId: data.id }
 }
 
 export async function generateCardsFromText(text: string, onProgress?: (pct: number) => Promise<void>): Promise<GenerateCardsResult> {
@@ -212,6 +218,15 @@ export async function generateCardsFromText(text: string, onProgress?: (pct: num
       continue
     }
     if (!Array.isArray(input.cards)) continue
+    await recordOpenAIUsage({
+      model: MODEL_NAME,
+      operation: "card_generation",
+      promptTokens: input.usage?.prompt_tokens ?? 0,
+      completionTokens: input.usage?.completion_tokens ?? 0,
+      totalTokens: input.usage?.total_tokens ?? 0,
+      requestId: input.requestId,
+      metadata: { chunkIndex: chunkIdx, chunkCount: chunks.length },
+    })
     chunksSucceeded += 1
     for (const item of input.cards) {
       if (typeof item !== "object" || item === null) continue

@@ -28,7 +28,7 @@ function calculateStreak(reviewDates: Date[]): number {
 }
 
 export const GET = withHandlerSimple(async () => {
-  const authResult = await requireRole("AGENT")
+  const authResult = await requireRole("AGENT", { limiterKey: "api:agent", routeClass: "read" })
   if (!authResult.ok) return authResult.response
   const { session } = authResult
 

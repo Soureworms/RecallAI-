@@ -7,7 +7,7 @@ import { assignCardsToUsers } from "@/lib/services/user-card"
 
 // Shared workspace: any MANAGER in the org can bulk-approve cards in any deck.
 export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { params }) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 

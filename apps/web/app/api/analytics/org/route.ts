@@ -11,7 +11,7 @@ function retrievability(stability: number, lastReviewDate: Date): number {
 }
 
 export const GET = withHandlerSimple(async () => {
-  const authResult = await requireRole("ADMIN")
+  const authResult = await requireRole("ADMIN", { limiterKey: "api:admin", routeClass: "write" })
   if (!authResult.ok) return authResult.response
   const { session } = authResult
 

@@ -7,7 +7,7 @@ import { withHandlerSimple } from "@/lib/api/handler"
 import { env } from "@/lib/env"
 
 export const POST = withHandlerSimple(async () => {
-  const authResult = await requireRole("AGENT")
+  const authResult = await requireRole("AGENT", { limiterKey: "api:agent", routeClass: "read" })
   if (!authResult.ok) return authResult.response
   const { session } = authResult
 

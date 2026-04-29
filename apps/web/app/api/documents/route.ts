@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db"
 import { withHandlerSimple } from "@/lib/api/handler"
 
 export const GET = withHandlerSimple(async (req: NextRequest) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 

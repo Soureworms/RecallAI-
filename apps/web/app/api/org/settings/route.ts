@@ -5,7 +5,7 @@ import { withHandlerSimple } from "@/lib/api/handler"
 import { orgSettingsSchema } from "@/lib/schemas/api"
 
 export const PATCH = withHandlerSimple(async (req: NextRequest) => {
-  const auth = await requireRole("ADMIN")
+  const auth = await requireRole("ADMIN", { limiterKey: "api:admin", routeClass: "write" })
   if (!auth.ok) return auth.response
 
   const parsed = orgSettingsSchema.safeParse(await req.json())
@@ -27,7 +27,7 @@ export const PATCH = withHandlerSimple(async (req: NextRequest) => {
 })
 
 export const GET = withHandlerSimple(async () => {
-  const auth = await requireRole("ADMIN")
+  const auth = await requireRole("ADMIN", { limiterKey: "api:admin", routeClass: "write" })
   if (!auth.ok) return auth.response
 
   const org = await prisma.organization.findUnique({

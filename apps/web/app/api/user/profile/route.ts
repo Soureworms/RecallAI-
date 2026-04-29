@@ -7,7 +7,7 @@ import { updateProfileSchema } from "@/lib/schemas/api"
 const MAX_IMAGE_BYTES = 200 * 1024
 
 export const PATCH = withHandlerSimple(async (req: NextRequest) => {
-  const authResult = await requireRole("AGENT")
+  const authResult = await requireRole("AGENT", { limiterKey: "api:agent", routeClass: "read" })
   if (!authResult.ok) return authResult.response
   const { session } = authResult
 

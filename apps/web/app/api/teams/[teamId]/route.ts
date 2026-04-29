@@ -5,7 +5,7 @@ import { withHandler } from "@/lib/api/handler"
 import { updateTeamSchema } from "@/lib/schemas/api"
 
 export const PUT = withHandler<{ teamId: string }>(async (req: NextRequest, { params }) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 
@@ -40,7 +40,7 @@ export const PUT = withHandler<{ teamId: string }>(async (req: NextRequest, { pa
 })
 
 export const DELETE = withHandler<{ teamId: string }>(async (_req, { params }) => {
-  const auth = await requireRole("ADMIN")
+  const auth = await requireRole("ADMIN", { limiterKey: "api:admin", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 

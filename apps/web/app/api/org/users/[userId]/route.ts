@@ -5,7 +5,7 @@ import { withHandler } from "@/lib/api/handler"
 import type { Role } from "@prisma/client"
 
 export const PATCH = withHandler<{ userId: string }>(async (req: NextRequest, { params }) => {
-  const auth = await requireRole("ADMIN")
+  const auth = await requireRole("ADMIN", { limiterKey: "api:admin", routeClass: "write" })
   if (!auth.ok) return auth.response
 
   const target = await prisma.user.findUnique({ where: { id: params.userId } })
@@ -37,7 +37,7 @@ export const PATCH = withHandler<{ userId: string }>(async (req: NextRequest, { 
 })
 
 export const DELETE = withHandler<{ userId: string }>(async (_req, { params }) => {
-  const auth = await requireRole("ADMIN")
+  const auth = await requireRole("ADMIN", { limiterKey: "api:admin", routeClass: "write" })
   if (!auth.ok) return auth.response
 
   const target = await prisma.user.findUnique({ where: { id: params.userId } })

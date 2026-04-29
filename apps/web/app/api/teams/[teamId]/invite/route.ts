@@ -7,7 +7,7 @@ import { createInviteSchema } from "@/lib/schemas/api"
 import { env } from "@/lib/env"
 
 export const GET = withHandler<{ teamId: string }>(async (_req, { params }) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 
@@ -25,7 +25,7 @@ export const GET = withHandler<{ teamId: string }>(async (_req, { params }) => {
 })
 
 export const POST = withHandler<{ teamId: string }>(async (req: NextRequest, { params }) => {
-  const auth = await requireRole("MANAGER")
+  const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
 

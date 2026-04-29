@@ -89,8 +89,10 @@ function jaccardSimilarity(a: string, b: string): number {
   const aSet = new Set(normalizeForSemanticCompare(a).split(" ").filter(Boolean))
   const bSet = new Set(normalizeForSemanticCompare(b).split(" ").filter(Boolean))
   if (aSet.size === 0 || bSet.size === 0) return 0
-  const intersection = [...aSet].filter((token) => bSet.has(token)).length
-  const union = new Set([...aSet, ...bSet]).size
+  const aTokens = Array.from(aSet)
+  const bTokens = Array.from(bSet)
+  const intersection = aTokens.filter((token) => bSet.has(token)).length
+  const union = new Set([...aTokens, ...bTokens]).size
   return union === 0 ? 0 : intersection / union
 }
 

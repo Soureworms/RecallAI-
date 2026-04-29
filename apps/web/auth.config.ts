@@ -1,12 +1,5 @@
 import type { NextAuthConfig } from "next-auth"
-import type { Role } from "@prisma/client"
-
-const ROLE_RANK: Record<string, number> = {
-  AGENT: 0,
-  MANAGER: 1,
-  ADMIN: 2,
-  SUPER_ADMIN: 3,
-}
+import { ROLE_RANK, assertRole } from "@/lib/auth/roles"
 
 export const authConfig = {
   pages: {
@@ -18,7 +11,7 @@ export const authConfig = {
     // and client-side useSession() both see role / orgId / onboardedAt.
     session({ session, token }) {
       session.user.id = (token.id as string | undefined) ?? (token.sub ?? "")
-      session.user.role = ((token.role as string | undefined) ?? "AGENT") as Role
+      session.user.role = assertRole(token.role ?? "AGENT", "session token role")
       session.user.orgId = (token.orgId as string | undefined) ?? ""
       session.user.onboardedAt = (token.onboardedAt as string | null | undefined) ?? null
       return session
@@ -26,8 +19,8 @@ export const authConfig = {
 
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
-      const role = auth?.user?.role ?? "AGENT"
-      const rank = ROLE_RANK[role] ?? 0
+      const role = assertRole(auth?.user?.role ?? "AGENT", "authorized user role")
+      const rank = ROLE_RANK[role]
       const isOnboarded = !!auth?.user?.onboardedAt
       const isSuperAdmin = role === "SUPER_ADMIN"
 

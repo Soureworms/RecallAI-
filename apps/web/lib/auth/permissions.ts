@@ -7,12 +7,7 @@ import {
   type RouteClass,
 } from "@/lib/rate-limit"
 
-const ROLE_RANK: Record<string, number> = {
-  AGENT: 0,
-  MANAGER: 1,
-  ADMIN: 2,
-  SUPER_ADMIN: 3,
-}
+import { ROLE_RANK, assertRole, type Role } from "@/lib/auth/roles"
 
 export async function requireSuperAdmin(): Promise<PermResult> {
   const session = await auth()
@@ -25,10 +20,10 @@ export async function requireSuperAdmin(): Promise<PermResult> {
   return { ok: true, session: session as AuthSession }
 }
 
-export type MinRole = "AGENT" | "MANAGER" | "ADMIN"
+export type MinRole = Exclude<Role, "SUPER_ADMIN">
 
 export type AuthSession = {
-  user: { id: string; role: string; orgId: string; email: string; name?: string | null }
+  user: { id: string; role: Role; orgId: string; email: string; name?: string | null }
 }
 
 type PermOk = { ok: true; session: AuthSession }
@@ -60,7 +55,8 @@ export async function requireRole(minRole: MinRole, options: RequireRoleOptions)
     }
   }
 
-  const userRank = ROLE_RANK[session.user.role] ?? 0
+  const role = assertRole(session.user.role, "session user role")
+  const userRank = ROLE_RANK[role]
   const minRank = ROLE_RANK[minRole]
   if (userRank < minRank) {
     return { ok: false, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) }
@@ -92,10 +88,10 @@ export async function requireOrgAccess(session: AuthSession, targetUserId: strin
   return { ok: true, session }
 }
 
-export function isManagerPlus(role: string): boolean {
-  return (ROLE_RANK[role] ?? 0) >= ROLE_RANK.MANAGER
+export function isManagerPlus(role: Role): boolean {
+  return ROLE_RANK[role] >= ROLE_RANK.MANAGER
 }
 
-export function isAdmin(role: string): boolean {
+export function isAdmin(role: Role): boolean {
   return role === "ADMIN"
 }

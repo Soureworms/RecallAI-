@@ -82,6 +82,7 @@ export default function DeckDetailPage() {
   const [assignedUserIds, setAssignedUserIds] = useState<Set<string>>(new Set())
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set())
   const [assigning, setAssigning] = useState(false)
+  const [unassigningUserId, setUnassigningUserId] = useState<string | null>(null)
   const [assignError, setAssignError] = useState<string | null>(null)
 
   // Regenerate state
@@ -231,6 +232,32 @@ export default function DeckDetailPage() {
     }
     setShowAssign(false)
     void fetchAll()
+  }
+
+  async function handleUnassign(userId: string) {
+    setUnassigningUserId(userId)
+    setAssignError(null)
+    const res = await fetch(`/api/decks/${deckId}/assign`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userIds: [userId] }),
+    })
+    setUnassigningUserId(null)
+    if (!res.ok) {
+      const d = (await res.json()) as { error?: string }
+      setAssignError(d.error ?? "Unassign failed")
+      return
+    }
+    setAssignedUserIds((prev) => {
+      const next = new Set(prev)
+      next.delete(userId)
+      return next
+    })
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev)
+      next.delete(userId)
+      return next
+    })
   }
 
   // ── Regenerate ──────────────────────────────────────────────────────────────
@@ -625,7 +652,20 @@ export default function DeckDetailPage() {
                             )}
                           </div>
                           {alreadyAssigned && (
-                            <span className="ml-auto text-xs text-ink-4">Assigned</span>
+                            <div className="ml-auto flex items-center gap-3">
+                              <span className="text-xs text-ink-4">Assigned</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  void handleUnassign(userId)
+                                }}
+                                disabled={unassigningUserId === userId}
+                                className="text-xs text-ds-red-600 hover:underline disabled:opacity-50"
+                              >
+                                {unassigningUserId === userId ? "Removing…" : "Remove"}
+                              </button>
+                            </div>
                           )}
                         </label>
                       )

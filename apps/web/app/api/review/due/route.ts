@@ -13,19 +13,19 @@ export const GET = withHandlerSimple(async () => {
 
   const { id: userId, orgId } = session.user
 
-  const [org, fsrsConfig] = await Promise.all([
+  const [org, fsrsConfig, assignedDecks] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: orgId },
       select: { studyMode: true },
     }),
     getUserFSRSConfig(userId),
+    prisma.deckAssignment.findMany({
+      where: { userId, deck: { orgId, isArchived: false } },
+      select: { deckId: true },
+    }),
   ])
   const studyMode = org?.studyMode ?? "AUTO_ROTATE"
 
-  const assignedDecks = await prisma.deckAssignment.findMany({
-    where: { userId, deck: { orgId, isArchived: false } },
-    select: { deckId: true },
-  })
   const assignedDeckIds = assignedDecks.map((d) => d.deckId)
 
   if (assignedDeckIds.length === 0) {

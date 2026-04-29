@@ -25,7 +25,7 @@ const SAMPLE_CARDS = [
   },
   {
     question: "Premium plans include priority support.",
-    answer: "True",
+    answer: "True.",
     format: "TRUE_FALSE",
     tags: ["premium"],
     difficulty: 1,
@@ -49,6 +49,11 @@ describe("generateCardsFromText", () => {
       chunksSucceeded: 1,
       chunksFailed: 0,
       successRatio: 1,
+      quality: {
+        totalGenerated: 2,
+        validCards: 2,
+        rejectedCards: 0,
+      },
     })
   })
 
@@ -99,5 +104,31 @@ describe("generateCardsFromText", () => {
     const questions = result.cards.map((c) => c.question)
 
     expect(new Set(questions).size).toBe(questions.length)
+  })
+
+  it("rejects malformed TRUE_FALSE and FILL_BLANK cards", async () => {
+    mockCreate.mockResolvedValue(makeAnthropicResponse([
+      { question: "All free plans have SSO access.", answer: "maybe", format: "TRUE_FALSE", tags: ["plans"], difficulty: 1 },
+      { question: "The SLA target is ___", answer: "The SLA target is 4 hours.", format: "FILL_BLANK", tags: ["sla"], difficulty: 1 },
+    ]))
+
+    const result = await generateCardsFromText("single chunk")
+    expect(result.cards).toHaveLength(0)
+    expect(result.metadata.quality.rejectedCards).toBe(2)
+    expect(result.metadata.quality.reasons.MALFORMED_TRUE_FALSE).toBe(1)
+    expect(result.metadata.quality.reasons.MALFORMED_FILL_BLANK).toBe(1)
+  })
+
+  it("rejects duplicate-heavy outputs based on semantic overlap", async () => {
+    mockCreate.mockResolvedValue(makeAnthropicResponse([
+      { question: "What is the refund window?", answer: "30 days", format: "QA", tags: ["refund"], difficulty: 1 },
+      { question: "What is refund window", answer: "30 day period", format: "QA", tags: ["refund"], difficulty: 1 },
+      { question: "How long is the refund window?", answer: "30 days", format: "QA", tags: ["refund"], difficulty: 1 },
+    ]))
+
+    const result = await generateCardsFromText("single chunk")
+    expect(result.cards).toHaveLength(1)
+    expect(result.metadata.quality.rejectedCards).toBe(2)
+    expect(result.metadata.quality.reasons.DUPLICATE_SEMANTIC_OVERLAP).toBeGreaterThanOrEqual(1)
   })
 })

@@ -150,6 +150,7 @@ model SourceDocument {
   deck         Deck?                @relation(fields: [deckId], references: [id])
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
+  generationQuality Json?
   cards        Card[]
 }
 

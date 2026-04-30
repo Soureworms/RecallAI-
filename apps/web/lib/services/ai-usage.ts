@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db"
+import type { Prisma } from "@prisma/client"
 
 type UsageInput = {
   model: string
@@ -11,7 +12,7 @@ type UsageInput = {
   deckId?: string
   sourceDocumentId?: string
   requestId?: string
-  metadata?: Record<string, unknown>
+  metadata?: Prisma.InputJsonValue
 }
 
 const PRICE_PER_1M_TOKENS: Record<string, { input: number; output: number }> = {

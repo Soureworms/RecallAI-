@@ -83,15 +83,24 @@ export default function HomePage() {
               recall<span style={{ color: "var(--ink-3)" }}>ai</span>
             </span>
           </div>
-          <Link href="/login" style={{
-            display: "inline-flex", alignItems: "center",
-            padding: "7px 14px", borderRadius: 10,
-            background: "var(--ink-1)", color: "var(--paper)",
-            fontSize: 13, fontWeight: 500, textDecoration: "none",
-            border: "1px solid transparent",
-          }}>
-            Sign in
-          </Link>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <a href="mailto:hello@recallai.app?subject=Trust%20Center%20Request" style={{
+              fontSize: 12, fontWeight: 500, color: "var(--ink-3)",
+              textDecoration: "none", borderBottom: "1px solid var(--ink-6)",
+              paddingBottom: 1,
+            }}>
+              Trust Center
+            </a>
+            <Link href="/login" style={{
+              display: "inline-flex", alignItems: "center",
+              padding: "7px 14px", borderRadius: 10,
+              background: "var(--ink-1)", color: "var(--paper)",
+              fontSize: 13, fontWeight: 500, textDecoration: "none",
+              border: "1px solid transparent",
+            }}>
+              Sign in
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -530,7 +539,15 @@ export default function HomePage() {
           <span style={{ fontSize: 12, color: "var(--ink-4)" }}>
             © {new Date().getFullYear()} RecallAI. All rights reserved.
           </span>
-          <Link href="/login" style={{ fontSize: 12, color: "var(--ink-4)", textDecoration: "none" }}>Sign in</Link>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <a href="mailto:hello@recallai.app?subject=Trust%20Center%20Request" style={{ fontSize: 12, color: "var(--ink-3)", textDecoration: "none" }}>Trust Center</a>
+            <a href="/security" style={{ fontSize: 12, color: "var(--ink-4)", textDecoration: "none" }}>Security</a>
+            <a href="/privacy" style={{ fontSize: 12, color: "var(--ink-4)", textDecoration: "none" }}>Privacy Policy</a>
+            <a href="/terms" style={{ fontSize: 12, color: "var(--ink-4)", textDecoration: "none" }}>Terms</a>
+            <a href="/dpa" style={{ fontSize: 12, color: "var(--ink-4)", textDecoration: "none" }}>Data Processing Addendum</a>
+            <a href="/subprocessors" style={{ fontSize: 12, color: "var(--ink-4)", textDecoration: "none" }}>Subprocessors</a>
+            <Link href="/login" style={{ fontSize: 12, color: "var(--ink-4)", textDecoration: "none" }}>Sign in</Link>
+          </div>
         </div>
       </div>
 

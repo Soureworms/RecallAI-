@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/db"
-import type { Prisma } from "@prisma/client"
 
 type UsageInput = {
   model: string
@@ -12,7 +11,7 @@ type UsageInput = {
   deckId?: string
   sourceDocumentId?: string
   requestId?: string
-  metadata?: Prisma.InputJsonValue
+  metadata?: Record<string, unknown>
 }
 
 const PRICE_PER_1M_TOKENS: Record<string, { input: number; output: number }> = {
@@ -58,7 +57,7 @@ export async function recordOpenAIUsage(input: UsageInput) {
       inputCostUsd: costs.inputCostUsd,
       outputCostUsd: costs.outputCostUsd,
       totalCostUsd: costs.totalCostUsd,
-      metadata: input.metadata,
+      metadata: input.metadata as any,
     },
   })
 }

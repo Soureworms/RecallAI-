@@ -130,7 +130,10 @@ function isRetryableError(error: unknown): boolean {
 
 const SYSTEM_PROMPT = `You create training flashcards that must fit on a small mobile screen. Return only JSON matching schema.`
 
-async function requestOpenAI(apiKey: string, chunk: string): Promise<{ cards?: unknown[]; usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }; requestId?: string }> {
+type OpenAIUsage = { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }
+type OpenAIChunkResult = { cards?: unknown[]; usage?: OpenAIUsage; requestId?: string }
+
+async function requestOpenAI(apiKey: string, chunk: string): Promise<OpenAIChunkResult> {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -203,7 +206,7 @@ export async function generateCardsFromText(text: string, onProgress?: (pct: num
   let chunksSucceeded = 0
 
   for (let chunkIdx = 0; chunkIdx < chunks.length; chunkIdx++) {
-    let input: { cards?: unknown[] } | undefined
+    let input: OpenAIChunkResult | undefined
     let lastError: unknown
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try { input = await requestOpenAI(apiKey, chunks[chunkIdx]); break } catch (error) {

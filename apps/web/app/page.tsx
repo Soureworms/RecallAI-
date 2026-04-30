@@ -399,6 +399,101 @@ export default function HomePage() {
       {/* Divider */}
       <div style={{ borderTop: "1px solid var(--ink-6)", maxWidth: 960, margin: "0 auto" }} />
 
+      {/* Enterprise operations fit */}
+      <section style={{ maxWidth: 960, margin: "0 auto", padding: "64px 28px" }}>
+        <div style={{ textAlign: "center", marginBottom: 40 }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 12 }}>
+            Enterprise readiness
+          </div>
+          <h2 className="hp-section-title" style={{ fontSize: 28, fontWeight: 500, letterSpacing: "-0.02em", color: "var(--ink-1)", margin: "0 0 14px" }}>
+            Built for enterprise operations
+          </h2>
+          <p style={{ fontSize: 15, color: "var(--ink-3)", margin: "0 auto", maxWidth: 620, lineHeight: 1.6 }}>
+            Align rollout, governance, and identity with your existing operating model—while making current capabilities and roadmap items explicit.
+          </p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
+          {[
+            {
+              title: "Identity and access",
+              points: [
+                "SSO authentication for managed enterprise sign-in [Roadmap].",
+                "SAML and OIDC identity provider integration [Roadmap].",
+                "Role provisioning and deprovisioning workflows for admins and managers [Available].",
+              ],
+            },
+            {
+              title: "Data flow and lifecycle",
+              points: [
+                "Ingests documents you upload (PDF, Word, plain text) and parses them into reviewable card content [Available].",
+                "Stores extracted knowledge, card history, and review telemetry scoped by organisation [Available].",
+                "Retention and deletion controls for content lifecycle and account closure workflows [Roadmap].",
+              ],
+            },
+            {
+              title: "Admin controls",
+              points: [
+                "Hard organisation isolation on data access paths to prevent cross-tenant exposure [Available].",
+                "Role-based permissions for Agent, Manager, Admin, and Super Admin actions [Available].",
+                "Admin-facing audit trails for content changes, role updates, and policy-sensitive actions [Roadmap].",
+              ],
+            },
+            {
+              title: "Rollout model",
+              points: [
+                "Pilot: start with one team and a bounded set of SOP decks [Available].",
+                "Team rollout: expand to adjacent teams with manager-level oversight and required decks [Available].",
+                "Org expansion: scale with formal governance, identity integration, and security review [Available + Roadmap].",
+              ],
+            },
+          ].map((item) => (
+            <div key={item.title} style={{
+              background: "var(--paper-raised)", border: "1px solid var(--ink-6)",
+              borderRadius: 16, padding: "20px 20px 18px",
+            }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 10 }}>
+                {item.title}
+              </div>
+              <ul style={{ margin: "0 0 0 18px", padding: 0, display: "grid", gap: 8 }}>
+                {item.points.map((point) => (
+                  <li key={point} style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.55 }}>{point}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div style={{
+          marginTop: 24,
+          border: "1px solid var(--ink-6)",
+          borderRadius: 14,
+          padding: "16px 18px",
+          background: "var(--paper-sunken)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+        }}>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6 }}>
+            Need a deeper architecture walkthrough or help mapping controls to your procurement checklist?
+          </p>
+          <a href="mailto:hello@recallai.app?subject=Security%20and%20Sales%20Engineering%20Discussion" style={{
+            display: "inline-flex", alignItems: "center",
+            padding: "9px 14px", borderRadius: 10,
+            border: "1px solid var(--ink-6)",
+            color: "var(--ink-2)", textDecoration: "none",
+            fontSize: 12, fontWeight: 500, background: "var(--paper-raised)",
+          }}>
+            Talk to security/sales engineering
+          </a>
+        </div>
+      </section>
+
+      {/* Divider */}
+      <div style={{ borderTop: "1px solid var(--ink-6)", maxWidth: 960, margin: "0 auto" }} />
+
       {/* Security section */}
       <section style={{ maxWidth: 960, margin: "0 auto", padding: "64px 28px" }}>
         <div style={{ textAlign: "center", marginBottom: 48 }}>

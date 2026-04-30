@@ -108,10 +108,10 @@ export default function HomePage() {
         </div>
 
         <h1 className="hp-hero-title" style={{ fontSize: 42, fontWeight: 500, letterSpacing: "-0.03em", lineHeight: 1.1, color: "var(--ink-1)", margin: "0 0 20px" }}>
-          Knowledge that actually sticks
+          Reduce ramp time and compliance risk across support, operations, clinical, and field teams.
         </h1>
-        <p style={{ fontSize: 17, lineHeight: 1.6, color: "var(--ink-3)", margin: "0 0 36px", maxWidth: 540, marginLeft: "auto", marginRight: "auto" }}>
-          RecallAI turns your documents, SOPs, and training materials into a daily 5-minute review habit, using AI to generate flashcards and FSRS to ensure your team retains them.
+        <p style={{ fontSize: 17, lineHeight: 1.6, color: "var(--ink-3)", margin: "0 0 36px", maxWidth: 620, marginLeft: "auto", marginRight: "auto" }}>
+          RecallAI turns your SOPs and training docs into AI-generated flashcards with FSRS-powered review so people retain critical procedures and improve 30-day recall (proof source to be added below).
         </p>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
@@ -121,7 +121,7 @@ export default function HomePage() {
             background: "var(--ink-1)", color: "var(--paper)",
             fontSize: 14, fontWeight: 500, textDecoration: "none",
           }}>
-            Request a demo
+            Book enterprise demo
           </a>
           <Link href="/login" style={{
             display: "inline-flex", alignItems: "center", gap: 8,
@@ -130,7 +130,7 @@ export default function HomePage() {
             border: "1px solid var(--ink-6)",
             fontSize: 14, fontWeight: 500, textDecoration: "none",
           }}>
-            Sign in to your workspace
+            View platform
           </Link>
         </div>
       </section>

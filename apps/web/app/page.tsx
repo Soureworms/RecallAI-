@@ -190,7 +190,7 @@ export default function HomePage() {
         <div className="hp-stats-grid" style={{ maxWidth: 960, margin: "0 auto", padding: "32px 28px" }}>
           {[
             { value: "5–10 min", label: "Daily review time" },
-            { value: "90%+",     label: "Retention at 30 days" },
+            { value: "~80–90%",  label: "30-day retention (pilot cohort, n<50; preliminary)" },
             { value: "FSRS 5",   label: "Adaptive scheduling algorithm" },
             { value: "Any doc",  label: "PDF, Word, or plain text" },
           ].map((s) => (
@@ -199,6 +199,12 @@ export default function HomePage() {
               <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>{s.label}</div>
             </div>
           ))}
+        </div>
+        <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 28px 20px" }}>
+          <p style={{ fontSize: 11, color: "var(--ink-4)", margin: 0, textAlign: "center" }}>
+            How measured: Early indicators based on internal pilot usage and product telemetry; methodology and sample details will be published at
+            {" "}<a href="/methodology" style={{ color: "var(--ink-3)", textDecoration: "underline" }}>Methodology</a>.
+          </p>
         </div>
       </div>
 
@@ -216,12 +222,12 @@ export default function HomePage() {
               Without reinforcement, people forget up to 70% of new information within 24 hours. Workshops, slide decks, and one-off sessions create the illusion of learning without producing lasting results.
             </p>
             <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, marginBottom: 28 }}>
-              FSRS (Free Spaced Repetition Scheduler) is an open-source memory algorithm built on decades of cognitive science research. It tracks retention at the individual level (for each card, for each person) and schedules the next review at the precise moment before forgetting occurs.
+              FSRS (Free Spaced Repetition Scheduler) is an open-source memory algorithm built on decades of cognitive science research. It tracks retention at the individual level (for each card, for each person) and estimates the next review window before predicted forgetting occurs.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {[
                 { title: "Adapts to each person", desc: "Review intervals adjust to individual memory curves, not a fixed schedule." },
-                { title: "Perfectly timed reviews", desc: "You only see a card when you need to: never too early, never too late." },
+                { title: "Timing-aware reviews", desc: "Reviews are scheduled based on recall probability estimates, not a fixed interval." },
                 { title: "Knowledge that compounds", desc: "Each review strengthens the memory trace. Retention improves over time, not in spite of it." },
               ].map((item) => (
                 <div key={item.title} style={{ display: "flex", gap: 10 }}>
@@ -244,7 +250,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Retention comparison visual */}
+          {/* Retention comparison visual (illustrative) */}
           <div style={{
             background: "var(--paper-raised)", border: "1px solid var(--ink-6)",
             borderRadius: 16, padding: 24, boxShadow: "var(--shadow-2)",
@@ -276,7 +282,8 @@ export default function HomePage() {
 
             <div style={{ borderTop: "1px solid var(--ink-6)", paddingTop: 20 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-2)", marginBottom: 2 }}>With FSRS</div>
-              <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 16 }}>Timely reviews keep retention consistently high</div>
+              <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 6 }}>Illustrative trajectory (not a production benchmark)</div>
+              <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 16 }}>Timely reviews can support stronger retention over time when review compliance is high.</div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
                 {[
                   { pct: 100, label: "Day 0" },

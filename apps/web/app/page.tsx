@@ -123,24 +123,29 @@ export default function HomePage() {
           RecallAI turns your SOPs and training docs into AI-generated flashcards with FSRS-powered review so people retain critical procedures and improve 30-day recall (proof source to be added below).
         </p>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
-          <a href="mailto:hello@recallai.app" style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            padding: "11px 20px", borderRadius: 12,
-            background: "var(--ink-1)", color: "var(--paper)",
-            fontSize: 14, fontWeight: 500, textDecoration: "none",
-          }}>
-            Book enterprise demo
-          </a>
-          <Link href="/login" style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            padding: "11px 20px", borderRadius: 12,
-            background: "transparent", color: "var(--ink-2)",
-            border: "1px solid var(--ink-6)",
-            fontSize: 14, fontWeight: 500, textDecoration: "none",
-          }}>
-            View platform
-          </Link>
+        <div style={{ display: "grid", gap: 14, justifyContent: "center" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
+            <a href="mailto:hello@recallai.app?subject=Book%20demo" style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "11px 20px", borderRadius: 12,
+              background: "var(--ink-1)", color: "var(--paper)",
+              fontSize: 14, fontWeight: 500, textDecoration: "none",
+            }}>
+              Book demo
+            </a>
+            <a href="mailto:hello@recallai.app?subject=Platform%20Overview" style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "11px 20px", borderRadius: 12,
+              background: "transparent", color: "var(--ink-2)",
+              border: "1px solid var(--ink-6)",
+              fontSize: 14, fontWeight: 500, textDecoration: "none",
+            }}>
+              See platform overview
+            </a>
+          </div>
+          <p style={{ fontSize: 12, color: "var(--ink-4)", margin: 0 }}>
+            Next step: 30-minute walkthrough tailored to your workflows. Response within 1 business day.
+          </p>
         </div>
       </section>
 
@@ -315,6 +320,20 @@ export default function HomePage() {
               </div>
             </div>
           </div>
+        </div>
+        <div style={{ marginTop: 28, textAlign: "center" }}>
+          <a href="mailto:hello@recallai.app?subject=Pricing%20and%20Rollout" style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            padding: "10px 18px", borderRadius: 12,
+            border: "1px solid var(--ink-6)",
+            background: "var(--paper-raised)", color: "var(--ink-2)",
+            textDecoration: "none", fontSize: 13, fontWeight: 500,
+          }}>
+            Talk pricing and rollout
+          </a>
+          <p style={{ fontSize: 12, color: "var(--ink-4)", margin: "10px 0 0" }}>
+            Next step: budget + rollout planning call with your stakeholder group. Reply in under 24 hours.
+          </p>
         </div>
       </section>
 
@@ -501,9 +520,12 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-          <a href="mailto:hello@recallai.app?subject=Trust%20Center%20Request" style={{ display: "inline-flex", alignItems: "center", padding: "9px 14px", borderRadius: 10, border: "1px solid var(--ink-6)", color: "var(--ink-2)", textDecoration: "none", fontSize: 12, fontWeight: 500 }}>
-            Request Trust Center access
+          <a href="mailto:hello@recallai.app?subject=Security%20Review%20Request" style={{ display: "inline-flex", alignItems: "center", padding: "9px 14px", borderRadius: 10, border: "1px solid var(--ink-6)", color: "var(--ink-2)", textDecoration: "none", fontSize: 12, fontWeight: 500 }}>
+            Review security
           </a>
+          <p style={{ fontSize: 12, color: "var(--ink-4)", margin: "10px 0 0" }}>
+            Next step: we share trust docs and schedule a security Q&A. Initial response same business day.
+          </p>
         </div>
       </section>
 
@@ -522,7 +544,7 @@ export default function HomePage() {
             background: "var(--ink-1)", color: "var(--paper)",
             fontSize: 14, fontWeight: 500, textDecoration: "none",
           }}>
-            Request a demo
+            Book demo
           </a>
         </div>
       </div>

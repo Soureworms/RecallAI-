@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db"
+import type { Prisma } from "@prisma/client"
 
 type UsageInput = {
   model: string
@@ -57,7 +58,7 @@ export async function recordOpenAIUsage(input: UsageInput) {
       inputCostUsd: costs.inputCostUsd,
       outputCostUsd: costs.outputCostUsd,
       totalCostUsd: costs.totalCostUsd,
-      metadata: input.metadata as any,
+      metadata: input.metadata as Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue | undefined,
     },
   })
 }

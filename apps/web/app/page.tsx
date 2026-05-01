@@ -19,7 +19,7 @@ export default function HomePage() {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 48px;
-          align-items: start;
+          align-items: center;
         }
         .hp-stats-grid {
           display: grid;
@@ -32,10 +32,25 @@ export default function HomePage() {
           grid-template-columns: repeat(3, 1fr);
           gap: 16px;
         }
+        .hp-shell {
+          max-width: 960px;
+          margin: 0 auto;
+          padding-left: 28px;
+          padding-right: 28px;
+        }
+        .hp-section {
+          padding-top: 64px;
+          padding-bottom: 64px;
+        }
         @media (max-width: 680px) {
+          .hp-shell {
+            padding-left: 18px;
+            padding-right: 18px;
+          }
           .hp-two-col {
             grid-template-columns: 1fr;
             gap: 28px;
+            align-items: start;
           }
           .hp-two-col-reverse > *:first-child {
             order: 2;
@@ -58,6 +73,10 @@ export default function HomePage() {
           .hp-section-h2 {
             font-size: 20px !important;
           }
+          .hp-mobile-center {
+            justify-content: center !important;
+            text-align: center;
+          }
         }
       `}</style>
 
@@ -66,10 +85,9 @@ export default function HomePage() {
         position: "sticky", top: 0, zIndex: 50,
         borderBottom: "1px solid var(--ink-6)", background: "var(--paper)",
       }}>
-        <div style={{
-          maxWidth: 960, margin: "0 auto",
+        <div className="hp-shell" style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "14px 28px",
+          paddingTop: 14, paddingBottom: 14,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{
@@ -178,7 +196,7 @@ export default function HomePage() {
       <div style={{ borderTop: "1px solid var(--ink-6)", maxWidth: 960, margin: "0 auto" }} />
 
       {/* How it works */}
-      <section style={{ maxWidth: 960, margin: "0 auto", padding: "64px 28px" }}>
+      <section className="hp-shell hp-section">
         <div style={{ textAlign: "center", marginBottom: 48 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 12 }}>
             How it works
@@ -226,7 +244,7 @@ export default function HomePage() {
 
       {/* Stats strip */}
       <div style={{ borderTop: "1px solid var(--ink-6)", borderBottom: "1px solid var(--ink-6)", background: "var(--paper-sunken)" }}>
-        <div className="hp-stats-grid" style={{ maxWidth: 960, margin: "0 auto", padding: "32px 28px" }}>
+        <div className="hp-shell hp-stats-grid" style={{ paddingTop: 32, paddingBottom: 32 }}>
           {[
             { value: "5–10 min", label: "Daily review time" },
             { value: "~80–90%",  label: "30-day retention (pilot cohort, n<50; preliminary)" },
@@ -239,7 +257,7 @@ export default function HomePage() {
             </div>
           ))}
         </div>
-        <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 28px 20px" }}>
+        <div className="hp-shell" style={{ paddingTop: 0, paddingBottom: 20 }}>
           <p style={{ fontSize: 11, color: "var(--ink-4)", margin: 0, textAlign: "center" }}>
             How measured: Early indicators based on internal pilot usage and product telemetry; methodology and sample details will be published at
             {" "}<a href="/methodology" style={{ color: "var(--ink-3)", textDecoration: "underline" }}>Methodology</a>.
@@ -248,7 +266,7 @@ export default function HomePage() {
       </div>
 
       {/* FSRS section */}
-      <section style={{ maxWidth: 960, margin: "0 auto", padding: "64px 28px" }}>
+      <section className="hp-shell hp-section">
         <div className="hp-two-col">
           <div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 12 }}>
@@ -366,7 +384,7 @@ export default function HomePage() {
       <div style={{ borderTop: "1px solid var(--ink-6)", maxWidth: 960, margin: "0 auto" }} />
 
       {/* Team management features */}
-      <section style={{ maxWidth: 960, margin: "0 auto", padding: "64px 28px" }}>
+      <section className="hp-shell hp-section">
         <div className="hp-two-col hp-two-col-reverse">
           <div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 12 }}>
@@ -444,7 +462,7 @@ export default function HomePage() {
       <div style={{ borderTop: "1px solid var(--ink-6)", maxWidth: 960, margin: "0 auto" }} />
 
       {/* Enterprise operations fit */}
-      <section style={{ maxWidth: 960, margin: "0 auto", padding: "64px 28px" }}>
+      <section className="hp-shell hp-section">
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 12 }}>
             Enterprise readiness
@@ -539,7 +557,7 @@ export default function HomePage() {
       <div style={{ borderTop: "1px solid var(--ink-6)", maxWidth: 960, margin: "0 auto" }} />
 
       {/* Security section */}
-      <section style={{ maxWidth: 960, margin: "0 auto", padding: "64px 28px" }}>
+      <section className="hp-shell hp-section">
         <div style={{ textAlign: "center", marginBottom: 48 }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 12 }}>
             Security &amp; privacy
@@ -670,9 +688,8 @@ export default function HomePage() {
       </div>
 
       {/* Footer */}
-      <div style={{ borderTop: "1px solid var(--ink-6)", padding: "20px 28px" }}>
-        <div style={{
-          maxWidth: 960, margin: "0 auto",
+      <div style={{ borderTop: "1px solid var(--ink-6)", padding: "20px 0" }}>
+        <div className="hp-shell" style={{
           display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10,
         }}>
           <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-3)", letterSpacing: "-0.01em" }}>
@@ -681,7 +698,7 @@ export default function HomePage() {
           <span style={{ fontSize: 12, color: "var(--ink-4)" }}>
             © {new Date().getFullYear()} RecallAI. All rights reserved.
           </span>
-          <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <div className="hp-mobile-center" style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", justifyContent: "flex-end" }}>
             <a href="mailto:hello@recallai.app?subject=Trust%20Center%20Request" style={{ fontSize: 12, color: "var(--ink-3)", textDecoration: "none" }}>Trust Center</a>
             <a href="/security" style={{ fontSize: 12, color: "var(--ink-4)", textDecoration: "none" }}>Security</a>
             <a href="/privacy" style={{ fontSize: 12, color: "var(--ink-4)", textDecoration: "none" }}>Privacy Policy</a>

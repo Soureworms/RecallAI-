@@ -3,5 +3,12 @@
     "app/api/queue/generate/route.ts": {
       "maxDuration": 300
     }
+  },
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "preview": false,
+      "work": false
+    }
   }
 }

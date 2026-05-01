@@ -138,10 +138,10 @@ export default function HomePage() {
           </div>
           <ul style={{ margin: "0 0 0 18px", padding: 0, display: "grid", gap: 6 }}>
             <li style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6 }}>
-              <a href="https://github.com/open-spaced-repetition/srs-benchmark" target="_blank" rel="noreferrer" style={{ color: "var(--ink-2)" }}>Open Spaced Repetition benchmark</a> reports FSRS variants beating SM-2-family baselines across 10,000 collections and 519M+ evaluation reviews.
+              <a href="https://github.com/open-spaced-repetition/srs-benchmark" target="_blank" rel="noreferrer" style={{ color: "var(--ink-2)" }}>Open Spaced Repetition benchmark</a> reports FSRS variants beating SM-2-family baselines across 10,000 collections and 519M+ evaluation reviews (including same-day reviews).
             </li>
             <li style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6 }}>
-              <a href="https://github.com/open-spaced-repetition/fsrs4anki/wiki" target="_blank" rel="noreferrer" style={{ color: "var(--ink-2)" }}>FSRS4Anki wiki</a> explains the algorithm and parameter fitting workflow used in modern FSRS implementations.
+              <a href="https://github.com/open-spaced-repetition/fsrs4anki/wiki" target="_blank" rel="noreferrer" style={{ color: "var(--ink-2)" }}>FSRS4Anki wiki</a> documents the algorithm and optimization workflow used in modern FSRS implementations.
             </li>
             <li style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6 }}>
               The <a href="https://docs.ankiweb.net/deck-options.html#fsrs" target="_blank" rel="noreferrer" style={{ color: "var(--ink-2)" }}>Anki manual</a> explains how FSRS schedules by predicted recall probability (retrievability) and desired retention, replacing older manual interval tuning.

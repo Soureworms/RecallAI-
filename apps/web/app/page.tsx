@@ -278,29 +278,6 @@ export default function HomePage() {
             <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, marginBottom: 28 }}>
               FSRS (Free Spaced Repetition Scheduler) is an open-source memory algorithm built on decades of cognitive science research. It tracks retention at the individual level (for each card, for each person) and estimates the next review window before predicted forgetting occurs.
             </p>
-
-            <div style={{ marginBottom: 18, padding: 12, border: "1px solid var(--ink-6)", borderRadius: 12, background: "var(--paper-sunken)" }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)", marginBottom: 8 }}>Big-picture retention over 14 days (conceptual view)</div>
-              <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 10 }}>Manual study (no spaced review) usually decays fast; spaced systems preserve more recall by prompting timely reviews. SM-2 is the classic spaced-repetition algorithm used in older Anki scheduling (and historically in SuperMemo-style systems), while FSRS is a newer model that adapts timing more precisely.</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                {[
-                  { name: "Manual only", color: "#9ca3af", points: [100, 58, 33, 19, 11] },
-                  { name: "SM-2 spaced", color: "#6b7280", points: [100, 86, 74, 62, 53] },
-                  { name: "FSRS spaced", color: "#22c55e", points: [100, 91, 93, 88, 92] },
-                ].map((series) => (
-                  <div key={series.name} style={{ display: "grid", gridTemplateColumns: "92px 1fr", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 11, color: "var(--ink-3)" }}>{series.name}</span>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4 }}>
-                      {series.points.map((p, i) => (
-                        <div key={`${series.name}-${i}`} style={{ height: 8, borderRadius: 999, background: series.color, opacity: 0.35 + (p / 100) * 0.65 }} title={`Day ${[0,1,3,7,14][i]}: ${p}%`} />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginTop: 8, fontSize: 10, color: "var(--ink-4)", fontFamily: "var(--font-mono)" }}>Day 0 · Day 1 · Day 3 · Day 7 · Day 14</div>
-            </div>
-
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {[
                 { title: "Adapts to each person", desc: "Review intervals adjust to individual memory curves, not a fixed schedule." },
@@ -375,20 +352,8 @@ export default function HomePage() {
                     }} />
                     <span style={{ fontSize: 9, color: "var(--ink-4)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>{label}</span>
                   </div>
-                  <div style={{ display: "grid", gap: 6 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "72px 1fr 62px", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 11, color: "var(--ink-4)" }}>Old (SM-2)</span>
-                      <div style={{ height: 10, background: "var(--ink-6)", borderRadius: 999, width: "100%" }} />
-                      <span style={{ fontSize: 11, color: "var(--ink-4)", fontFamily: "var(--font-mono)", textAlign: "right" }}>{row.sm2.toFixed(4)}</span>
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "72px 1fr 62px", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 11, color: "var(--ink-4)" }}>FSRS v4</span>
-                      <div style={{ height: 10, background: "var(--green-500, #22c55e)", borderRadius: 999, width: `${(row.fsrs / row.sm2) * 100}%`, minWidth: 8, opacity: 0.9 }} />
-                      <span style={{ fontSize: 11, color: "var(--ink-4)", fontFamily: "var(--font-mono)", textAlign: "right" }}>{row.fsrs.toFixed(4)}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>

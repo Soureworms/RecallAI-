@@ -124,33 +124,6 @@ export default function HomePage() {
         </p>
 
 
-        <div style={{
-          margin: "0 auto 34px",
-          maxWidth: 700,
-          textAlign: "left",
-          background: "var(--paper-sunken)",
-          border: "1px solid var(--ink-6)",
-          borderRadius: 12,
-          padding: "14px 16px",
-        }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-4)", marginBottom: 8 }}>
-            Evidence behind FSRS
-          </div>
-          <ul style={{ margin: "0 0 0 18px", padding: 0, display: "grid", gap: 6 }}>
-            <li style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6 }}>
-              <a href="https://github.com/open-spaced-repetition/srs-benchmark" target="_blank" rel="noreferrer" style={{ color: "var(--ink-2)" }}>Open Spaced Repetition benchmark</a> reports FSRS variants beating SM-2-family baselines across 10,000 collections and 519M+ evaluation reviews (including same-day reviews).
-            </li>
-            <li style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6 }}>
-              <a href="https://github.com/open-spaced-repetition/fsrs4anki/wiki" target="_blank" rel="noreferrer" style={{ color: "var(--ink-2)" }}>FSRS4Anki wiki</a> documents the algorithm and optimization workflow used in modern FSRS implementations.
-            </li>
-            <li style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6 }}>
-              The <a href="https://docs.ankiweb.net/deck-options.html#fsrs" target="_blank" rel="noreferrer" style={{ color: "var(--ink-2)" }}>Anki manual</a> explains how FSRS schedules by predicted recall probability (retrievability) and desired retention, replacing older manual interval tuning.
-            </li>
-            <li style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6 }}>
-              Broader spaced-repetition evidence includes <a href="https://doi.org/10.1073/pnas.1815156116" target="_blank" rel="noreferrer" style={{ color: "var(--ink-2)" }}>Sense et al. (2019, PNAS)</a>, which shows adaptive review scheduling can substantially improve long-term retention outcomes.
-            </li>
-          </ul>
-        </div>
         <div style={{ display: "grid", gap: 14, justifyContent: "center" }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
             <a href="mailto:hello@recallai.app?subject=Book%20demo" style={{

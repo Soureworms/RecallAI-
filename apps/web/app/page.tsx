@@ -186,9 +186,6 @@ export default function HomePage() {
               See platform overview
             </a>
           </div>
-          <p style={{ fontSize: 12, color: "var(--ink-4)", margin: 0 }}>
-            Next step: 30-minute walkthrough tailored to your workflows. Response within 1 business day.
-          </p>
         </div>
       </section>
 
@@ -374,9 +371,6 @@ export default function HomePage() {
           }}>
             Talk pricing and rollout
           </a>
-          <p style={{ fontSize: 12, color: "var(--ink-4)", margin: "10px 0 0" }}>
-            Next step: budget + rollout planning call with your stakeholder group. Reply in under 24 hours.
-          </p>
         </div>
       </section>
 
@@ -471,7 +465,7 @@ export default function HomePage() {
             Built for enterprise operations
           </h2>
           <p style={{ fontSize: 15, color: "var(--ink-3)", margin: "0 auto", maxWidth: 620, lineHeight: 1.6 }}>
-            Align rollout, governance, and identity with your existing operating model—while making current capabilities and roadmap items explicit.
+            Align rollout, governance, and identity with your existing operating model.
           </p>
         </div>
 
@@ -480,33 +474,33 @@ export default function HomePage() {
             {
               title: "Identity and access",
               points: [
-                "SSO authentication for managed enterprise sign-in [Roadmap].",
-                "SAML and OIDC identity provider integration [Roadmap].",
-                "Role provisioning and deprovisioning workflows for admins and managers [Available].",
+                "SSO authentication for managed enterprise sign-in.",
+                "SAML and OIDC identity provider integration.",
+                "Role provisioning and deprovisioning workflows for admins and managers.",
               ],
             },
             {
               title: "Data flow and lifecycle",
               points: [
-                "Ingests documents you upload (PDF, Word, plain text) and parses them into reviewable card content [Available].",
-                "Stores extracted knowledge, card history, and review telemetry scoped by organisation [Available].",
-                "Retention and deletion controls for content lifecycle and account closure workflows [Roadmap].",
+                "Ingests documents you upload (PDF, Word, plain text) and parses them into reviewable card content.",
+                "Stores extracted knowledge, card history, and review telemetry scoped by organisation.",
+                "Retention and deletion controls for content lifecycle and account closure workflows.",
               ],
             },
             {
               title: "Admin controls",
               points: [
-                "Hard organisation isolation on data access paths to prevent cross-tenant exposure [Available].",
-                "Role-based permissions for Agent, Manager, Admin, and Super Admin actions [Available].",
-                "Admin-facing audit trails for content changes, role updates, and policy-sensitive actions [Roadmap].",
+                "Hard organisation isolation on data access paths to prevent cross-tenant exposure.",
+                "Role-based permissions for Agent, Manager, Admin, and Super Admin actions.",
+                "Admin-facing audit trails for content changes, role updates, and policy-sensitive actions.",
               ],
             },
             {
               title: "Rollout model",
               points: [
-                "Pilot: start with one team and a bounded set of SOP decks [Available].",
-                "Team rollout: expand to adjacent teams with manager-level oversight and required decks [Available].",
-                "Org expansion: scale with formal governance, identity integration, and security review [Available + Roadmap].",
+                "Pilot: start with one team and a bounded set of SOP decks.",
+                "Team rollout: expand to adjacent teams with manager-level oversight and required decks.",
+                "Org expansion: scale with formal governance, identity integration, and security review.",
               ],
             },
           ].map((item) => (
@@ -661,9 +655,6 @@ export default function HomePage() {
           <a href="mailto:hello@recallai.app?subject=Security%20Review%20Request" style={{ display: "inline-flex", alignItems: "center", padding: "9px 14px", borderRadius: 10, border: "1px solid var(--ink-6)", color: "var(--ink-2)", textDecoration: "none", fontSize: 12, fontWeight: 500 }}>
             Review security
           </a>
-          <p style={{ fontSize: 12, color: "var(--ink-4)", margin: "10px 0 0" }}>
-            Next step: we share trust docs and schedule a security Q&A. Initial response same business day.
-          </p>
         </div>
       </section>
 

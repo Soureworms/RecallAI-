@@ -278,6 +278,29 @@ export default function HomePage() {
             <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, marginBottom: 28 }}>
               FSRS (Free Spaced Repetition Scheduler) is an open-source memory algorithm built on decades of cognitive science research. It tracks retention at the individual level (for each card, for each person) and estimates the next review window before predicted forgetting occurs.
             </p>
+
+            <div style={{ marginBottom: 18, padding: 12, border: "1px solid var(--ink-6)", borderRadius: 12, background: "var(--paper-sunken)" }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)", marginBottom: 8 }}>Big-picture retention over 14 days (conceptual view)</div>
+              <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 10 }}>Manual study (no spaced review) usually decays fast; spaced systems preserve more recall by prompting timely reviews. SM-2 is the classic spaced-repetition algorithm used in older Anki scheduling (and historically in SuperMemo-style systems), while FSRS is a newer model that adapts timing more precisely.</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                {[
+                  { name: "Manual only", color: "#9ca3af", points: [100, 58, 33, 19, 11] },
+                  { name: "SM-2 spaced", color: "#6b7280", points: [100, 86, 74, 62, 53] },
+                  { name: "FSRS spaced", color: "#22c55e", points: [100, 91, 93, 88, 92] },
+                ].map((series) => (
+                  <div key={series.name} style={{ display: "grid", gridTemplateColumns: "92px 1fr", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 11, color: "var(--ink-3)" }}>{series.name}</span>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4 }}>
+                      {series.points.map((p, i) => (
+                        <div key={`${series.name}-${i}`} style={{ height: 8, borderRadius: 999, background: series.color, opacity: 0.35 + (p / 100) * 0.65 }} title={`Day ${[0,1,3,7,14][i]}: ${p}%`} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 8, fontSize: 10, color: "var(--ink-4)", fontFamily: "var(--font-mono)" }}>Day 0 · Day 1 · Day 3 · Day 7 · Day 14</div>
+            </div>
+
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {[
                 { title: "Adapts to each person", desc: "Review intervals adjust to individual memory curves, not a fixed schedule." },
@@ -304,60 +327,41 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Retention comparison visual (illustrative) */}
+          {/* FSRS benchmark snapshot (ankitects/fsrs-benchmark) */}
           <div style={{
             background: "var(--paper-raised)", border: "1px solid var(--ink-6)",
             borderRadius: 16, padding: 24, boxShadow: "var(--shadow-2)",
           }}>
-            {/* Without FSRS */}
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-2)", marginBottom: 2 }}>Without spaced repetition</div>
-              <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 16 }}>Retention fades within days of training</div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
-                {[
-                  { pct: 100, label: "Day 0" },
-                  { pct: 58,  label: "Day 1" },
-                  { pct: 33,  label: "Day 3" },
-                  { pct: 19,  label: "Day 7" },
-                  { pct: 11,  label: "Day 14" },
-                ].map(({ pct, label }) => (
-                  <div key={label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ink-3)", fontWeight: 500 }}>{pct}%</span>
-                    <div style={{
-                      width: "100%", height: `${pct * 0.6}px`,
-                      background: pct === 100 ? "var(--ink-2)" : "var(--ink-6)",
-                      borderRadius: "3px 3px 0 0",
-                    }} />
-                    <span style={{ fontSize: 9, color: "var(--ink-4)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>{label}</span>
-                  </div>
-                ))}
-              </div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-2)", marginBottom: 6 }}>How much better is FSRS in real benchmark data?</div>
+            <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 16 }}>
+              Based on ankitects/fsrs-benchmark (71 users, 4,632,965 held-out reviews). Bigger green bars mean less prediction error vs SM-2, the legacy Anki scheduler many learners recognize.
             </div>
 
-            <div style={{ borderTop: "1px solid var(--ink-6)", paddingTop: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-2)", marginBottom: 2 }}>With FSRS</div>
-              <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 6 }}>Illustrative trajectory (not a production benchmark)</div>
-              <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 16 }}>Timely reviews can support stronger retention over time when review compliance is high.</div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
-                {[
-                  { pct: 100, label: "Day 0" },
-                  { pct: 91,  label: "Day 1" },
-                  { pct: 93,  label: "Day 3" },
-                  { pct: 88,  label: "Day 7" },
-                  { pct: 92,  label: "Day 14" },
-                ].map(({ pct, label }) => (
-                  <div key={label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--green-700, #15803d)", fontWeight: 500 }}>{pct}%</span>
-                    <div style={{
-                      width: "100%", height: `${pct * 0.6}px`,
-                      background: "var(--green-500, #22c55e)",
-                      borderRadius: "3px 3px 0 0",
-                      opacity: 0.85,
-                    }} />
-                    <span style={{ fontSize: 9, color: "var(--ink-4)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>{label}</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {[
+                { metric: "Recall prediction error (Log Loss)", sm2: 0.7317, fsrs: 0.3874, improvement: 47 },
+                { metric: "Overall probability error (RMSE)", sm2: 0.4066, fsrs: 0.3347, improvement: 18 },
+                { metric: "Calibration error across bins", sm2: 0.2079, fsrs: 0.0459, improvement: 78 },
+              ].map((row) => (
+                <div key={row.metric}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, color: "var(--ink-2)", fontWeight: 600 }}>{row.metric}</span>
+                    <span style={{ fontSize: 12, color: "var(--green-700, #15803d)", fontWeight: 700 }}>{row.improvement}% lower error</span>
                   </div>
-                ))}
-              </div>
+                  <div style={{ display: "grid", gap: 6 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "72px 1fr 62px", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 11, color: "var(--ink-4)" }}>Old (SM-2)</span>
+                      <div style={{ height: 10, background: "var(--ink-6)", borderRadius: 999, width: "100%" }} />
+                      <span style={{ fontSize: 11, color: "var(--ink-4)", fontFamily: "var(--font-mono)", textAlign: "right" }}>{row.sm2.toFixed(4)}</span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "72px 1fr 62px", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 11, color: "var(--ink-4)" }}>FSRS v4</span>
+                      <div style={{ height: 10, background: "var(--green-500, #22c55e)", borderRadius: 999, width: `${(row.fsrs / row.sm2) * 100}%`, minWidth: 8, opacity: 0.9 }} />
+                      <span style={{ fontSize: 11, color: "var(--ink-4)", fontFamily: "var(--font-mono)", textAlign: "right" }}>{row.fsrs.toFixed(4)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

@@ -120,7 +120,7 @@ export default function HomePage() {
           Reduce ramp time and compliance risk across support, operations, clinical, and field teams.
         </h1>
         <p style={{ fontSize: 17, lineHeight: 1.6, color: "var(--ink-3)", margin: "0 0 36px", maxWidth: 620, marginLeft: "auto", marginRight: "auto" }}>
-          RecallAI turns your SOPs and training docs into AI-generated flashcards with FSRS-powered review so people retain critical procedures and improve 30-day recall. FSRS has been benchmarked on hundreds of millions of real review events and consistently outperforms classic SM-2 style scheduling on predictive recall accuracy.
+          RecallAI turns your SOPs and training docs into AI-generated flashcards with FSRS-powered review so people retain critical procedures and improve 30-day recall.
         </p>
 
 

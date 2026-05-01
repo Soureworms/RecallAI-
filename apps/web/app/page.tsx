@@ -332,21 +332,48 @@ export default function HomePage() {
             background: "var(--paper-raised)", border: "1px solid var(--ink-6)",
             borderRadius: 16, padding: 24, boxShadow: "var(--shadow-2)",
           }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-2)", marginBottom: 6 }}>How much better is FSRS in real benchmark data?</div>
-            <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 16 }}>
-              Based on ankitects/fsrs-benchmark (71 users, 4,632,965 held-out reviews). Bigger green bars mean less prediction error vs SM-2, the legacy Anki scheduler many learners recognize.
+            {/* Without FSRS */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-2)", marginBottom: 2 }}>SM-2 baseline (Anki legacy scheduler)</div>
+              <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 16 }}>Benchmark metrics on 4,632,965 held-out reviews (lower is better)</div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
+                {[
+                  { pct: 26, label: "Log Loss 0.7317" },
+                  { pct: 41, label: "RMSE 0.4066" },
+                  { pct: 21, label: "RMSE(bins) 0.2079" },
+                ].map(({ pct, label }) => (
+                  <div key={label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ink-3)", fontWeight: 500 }}>{pct}%</span>
+                    <div style={{
+                      width: "100%", height: `${pct * 0.6}px`,
+                      background: pct === 100 ? "var(--ink-2)" : "var(--ink-6)",
+                      borderRadius: "3px 3px 0 0",
+                    }} />
+                    <span style={{ fontSize: 9, color: "var(--ink-4)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>{label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {[
-                { metric: "Recall prediction error (Log Loss)", sm2: 0.7317, fsrs: 0.3874, improvement: 47 },
-                { metric: "Overall probability error (RMSE)", sm2: 0.4066, fsrs: 0.3347, improvement: 18 },
-                { metric: "Calibration error across bins", sm2: 0.2079, fsrs: 0.0459, improvement: 78 },
-              ].map((row) => (
-                <div key={row.metric}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                    <span style={{ fontSize: 12, color: "var(--ink-2)", fontWeight: 600 }}>{row.metric}</span>
-                    <span style={{ fontSize: 12, color: "var(--green-700, #15803d)", fontWeight: 700 }}>{row.improvement}% lower error</span>
+            <div style={{ borderTop: "1px solid var(--ink-6)", paddingTop: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-2)", marginBottom: 2 }}>FSRS v4 (best in benchmark)</div>
+              <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 6 }}>Measured benchmark results from ankitects/fsrs-benchmark</div>
+              <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 16 }}>Dataset: 71 users, 4,632,965 evaluation reviews. Lower bars indicate better calibration and recall prediction error.</div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
+                {[
+                  { pct: 61, label: "Log Loss 0.3874" },
+                  { pct: 67, label: "RMSE 0.3347" },
+                  { pct: 95, label: "RMSE(bins) 0.0459" },
+                ].map(({ pct, label }) => (
+                  <div key={label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--green-700, #15803d)", fontWeight: 500 }}>{pct}%</span>
+                    <div style={{
+                      width: "100%", height: `${pct * 0.6}px`,
+                      background: "var(--green-500, #22c55e)",
+                      borderRadius: "3px 3px 0 0",
+                      opacity: 0.85,
+                    }} />
+                    <span style={{ fontSize: 9, color: "var(--ink-4)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>{label}</span>
                   </div>
                   <div style={{ display: "grid", gap: 6 }}>
                     <div style={{ display: "grid", gridTemplateColumns: "72px 1fr 62px", alignItems: "center", gap: 8 }}>

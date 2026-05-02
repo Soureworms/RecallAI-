@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Receiver } from "@upstash/qstash"
 import { Redis } from "@upstash/redis"
-import { generateCardsFromText } from "@/lib/services/card-generator"
-import { prisma } from "@/lib/db"
 import type { GenerateJobData, JobState } from "@/lib/queue/qstash"
 import { env } from "@/lib/env"
+import { runGenerateJob } from "@/lib/services/generate-job"
 
 // QStash calls this endpoint when a job is ready to process.
 // Signature verification ensures only QStash can trigger generation.
@@ -47,69 +46,24 @@ export async function POST(req: NextRequest) {
   try {
     await setStatus({ state: "active", progress: 5 })
 
-    const doc = await prisma.sourceDocument.findUniqueOrThrow({
-      where: { id: documentId, orgId },
-      select: { textContent: true },
-    })
-    await setStatus({ progress: 10 })
-
-    const generationResult = await generateCardsFromText(
-      doc.textContent ?? "",
-      async (pct) => {
+    const result = await runGenerateJob({
+      deckId,
+      documentId,
+      orgId,
+      onProgress: async (pct) => {
         await setStatus({ progress: 10 + Math.round(pct * 0.7) })
-      }
-    )
+      },
+    })
     await setStatus({ progress: 85 })
-
-    const { cards: rawCards, metadata } = generationResult
-
-    if (rawCards.length > 0) {
-      await prisma.$transaction(
-        rawCards.map((c) =>
-          prisma.card.create({
-            data: {
-              deckId,
-              sourceDocumentId: documentId,
-              question: c.question,
-              answer: c.answer,
-              format: c.format,
-              tags: c.tags,
-              difficulty: c.difficulty,
-              status: "DRAFT",
-            },
-          })
-        )
-      )
-    }
 
     await redis.setex(`job:${jobId}`, 3600, {
       state: "completed",
       progress: 100,
       orgId,
-      count: rawCards.length,
-      warning: metadata.warning,
-      summary: {
-        validCards: metadata.quality.validCards,
-        rejectedCards: metadata.quality.rejectedCards,
-        avgQualityScore: metadata.quality.avgQualityScore,
-        reasons: metadata.quality.reasons,
-      },
+      count: result.count,
+      warning: result.warning,
+      summary: result.summary,
     } satisfies JobState)
-
-    await prisma.sourceDocument.update({
-      where: { id: documentId, orgId },
-      data: {
-        generationQuality: {
-          chunksTotal: metadata.chunksTotal,
-          chunksSucceeded: metadata.chunksSucceeded,
-          chunksFailed: metadata.chunksFailed,
-          successRatio: metadata.successRatio,
-          warning: metadata.warning ?? null,
-          quality: metadata.quality,
-          capturedAt: new Date().toISOString(),
-        },
-      },
-    })
 
     return NextResponse.json({ ok: true })
   } catch (err) {

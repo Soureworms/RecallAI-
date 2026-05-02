@@ -6,6 +6,11 @@ import { publishGenerateJob, type JobState } from "@/lib/queue/qstash"
 import { withHandler } from "@/lib/api/handler"
 import { generateCardsSchema } from "@/lib/schemas/api"
 import { env } from "@/lib/env"
+import { runGenerateJob } from "@/lib/services/generate-job"
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : "Generation failed"
+}
 
 export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { params }) => {
   const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
@@ -57,12 +62,67 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
     } satisfies JobState)
   }
 
-  await publishGenerateJob({
-    jobId,
-    deckId: params.deckId,
-    documentId: doc.id,
-    orgId: session.user.orgId,
-  })
+  try {
+    await publishGenerateJob({
+      jobId,
+      deckId: params.deckId,
+      documentId: doc.id,
+      orgId: session.user.orgId,
+    })
+  } catch (err) {
+    console.error("[generate] QStash enqueue failed; running inline fallback", err)
+
+    if (!redis) {
+      return NextResponse.json(
+        { error: "AI generation queue failed and job status storage is not configured." },
+        { status: 503 }
+      )
+    }
+
+    try {
+      await redis.setex(`job:${jobId}`, 3600, {
+        state: "active",
+        progress: 5,
+        orgId: session.user.orgId,
+      } satisfies JobState)
+
+      const result = await runGenerateJob({
+        deckId: params.deckId,
+        documentId: doc.id,
+        orgId: session.user.orgId,
+        onProgress: async (pct) => {
+          await redis.setex(`job:${jobId}`, 3600, {
+            state: "active",
+            progress: 10 + Math.round(pct * 0.8),
+            orgId: session.user.orgId,
+          } satisfies JobState)
+        },
+      })
+
+      await redis.setex(`job:${jobId}`, 3600, {
+        state: "completed",
+        progress: 100,
+        orgId: session.user.orgId,
+        count: result.count,
+        warning: result.warning,
+        summary: result.summary,
+      } satisfies JobState)
+
+      return NextResponse.json(
+        { jobId, status: "completed", count: result.count },
+        { status: 200 }
+      )
+    } catch (fallbackErr) {
+      const message = errorMessage(fallbackErr)
+      await redis.setex(`job:${jobId}`, 3600, {
+        state: "failed",
+        progress: 0,
+        orgId: session.user.orgId,
+        error: message,
+      } satisfies JobState)
+      return NextResponse.json({ error: message }, { status: 500 })
+    }
+  }
 
   return NextResponse.json({ jobId, status: "queued" }, { status: 202 })
 })

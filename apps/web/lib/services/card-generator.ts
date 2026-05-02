@@ -35,6 +35,16 @@ export type GenerateCardsResult = {
   metadata: GenerationMetadata
 }
 
+export class CardGenerationError extends Error {
+  metadata: GenerationMetadata
+
+  constructor(message: string, metadata: GenerationMetadata) {
+    super(message)
+    this.name = "CardGenerationError"
+    this.metadata = metadata
+  }
+}
+
 type QualityIssueCode =
   | "QUESTION_TOO_LONG"
   | "ANSWER_TOO_LONG"
@@ -165,10 +175,12 @@ async function requestOpenAI(apiKey: string, chunk: string): Promise<OpenAIChunk
                     difficulty: { type: "integer", enum: [1, 2, 3] },
                   },
                   required: ["question", "answer", "format", "tags", "difficulty"],
+                  additionalProperties: false,
                 },
               },
             },
             required: ["cards"],
+            additionalProperties: false,
           },
           strict: true,
         },
@@ -255,5 +267,10 @@ export async function generateCardsFromText(text: string, onProgress?: (pct: num
   const totalGenerated = allCards.length + rejectedCards.length
   const avgQualityScore = qualityScores.length === 0 ? 0 : Number((qualityScores.reduce((sum, score) => sum + score, 0) / qualityScores.length).toFixed(1))
   if (warning) console.warn(warning, { chunksTotal, chunksSucceeded, chunksFailed, failedChunks })
-  return { cards: allCards, metadata: { chunksTotal, chunksSucceeded, chunksFailed, failedChunks, successRatio, warning, quality: { totalGenerated, validCards: allCards.length, rejectedCards: rejectedCards.length, avgQualityScore, reasons: rejectionReasons } } }
+  const metadata = { chunksTotal, chunksSucceeded, chunksFailed, failedChunks, successRatio, warning, quality: { totalGenerated, validCards: allCards.length, rejectedCards: rejectedCards.length, avgQualityScore, reasons: rejectionReasons } }
+  if (chunksSucceeded === 0) {
+    const firstError = failedChunks[0]?.errorMessage ? ` First error: ${failedChunks[0].errorMessage}` : ""
+    throw new CardGenerationError(`Card generation failed for every document chunk.${firstError}`, metadata)
+  }
+  return { cards: allCards, metadata }
 }

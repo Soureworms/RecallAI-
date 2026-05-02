@@ -62,6 +62,16 @@ describe("generateCardsFromText", () => {
     })
   })
 
+  it("uses a strict OpenAI JSON schema with additionalProperties disabled", async () => {
+    await generateCardsFromText("Customers get a 30-day refund window.")
+
+    const request = JSON.parse(mockFetch.mock.calls[0][1].body as string)
+    const schema = request.response_format.json_schema.schema
+
+    expect(schema.additionalProperties).toBe(false)
+    expect(schema.properties.cards.items.additionalProperties).toBe(false)
+  })
+
   it("retries transient failures and eventually succeeds", async () => {
     const timeoutError = Object.assign(new Error("network timeout"), { code: "ETIMEDOUT" })
     mockFetch
@@ -100,6 +110,16 @@ describe("generateCardsFromText", () => {
     expect(warnSpy).toHaveBeenCalledOnce()
 
     warnSpy.mockRestore()
+  })
+
+  it("throws when every chunk fails to generate cards", async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: async () => "invalid schema",
+    })
+
+    await expect(generateCardsFromText("single chunk")).rejects.toThrow("Card generation failed for every document chunk")
   })
 
   it("deduplicates cards with identical questions across chunks", async () => {

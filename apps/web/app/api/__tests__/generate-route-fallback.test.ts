@@ -152,4 +152,50 @@ describe("POST /api/decks/[deckId]/generate", () => {
     })
     expect(mockPublishGenerateJob).toHaveBeenCalledOnce()
   })
+
+  it("fails inline generation when AI returns no usable cards", async () => {
+    mockPublishGenerateJob.mockRejectedValue(new Error("QStash unauthorized"))
+    mockGenerateCardsFromText.mockResolvedValue({
+      cards: [],
+      metadata: {
+        ...metadata(),
+        quality: {
+          totalGenerated: 2,
+          validCards: 0,
+          rejectedCards: 2,
+          avgQualityScore: 40,
+          reasons: { MALFORMED_TRUE_FALSE: 1, MALFORMED_FILL_BLANK: 1 },
+        },
+      },
+    })
+
+    const { POST } = await import("../decks/[deckId]/generate/route")
+    const res = await POST(
+      new NextRequest("http://localhost/api/decks/deck-1/generate", {
+        method: "POST",
+        body: JSON.stringify({ sourceDocumentId: "doc-1" }),
+        headers: { "Content-Type": "application/json" },
+      }),
+      { params: { deckId: "deck-1" } }
+    )
+
+    expect(res.status).toBe(500)
+    await expect(res.json()).resolves.toMatchObject({
+      error: expect.stringContaining("none passed quality checks"),
+    })
+    expect(mockPrisma.card.create).not.toHaveBeenCalled()
+    expect(mockPrisma.sourceDocument.update).toHaveBeenCalledWith({
+      where: { id: "doc-1", orgId: "org-1" },
+      data: expect.objectContaining({
+        generationQuality: expect.objectContaining({
+          quality: expect.objectContaining({ rejectedCards: 2, validCards: 0 }),
+        }),
+      }),
+    })
+    expect(mockRedis.setex).toHaveBeenLastCalledWith(
+      expect.stringMatching(/^job:/),
+      3600,
+      expect.objectContaining({ state: "failed", error: expect.stringContaining("none passed quality checks") })
+    )
+  })
 })

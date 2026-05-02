@@ -367,36 +367,30 @@ export default function HomePage() {
               <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-2)", marginBottom: 2 }}>FSRS v4 (best in benchmark)</div>
               <div style={{ fontSize: 12, color: "var(--ink-4)", marginBottom: 6 }}>Measured benchmark results from ankitects/fsrs-benchmark</div>
               <div style={{ fontSize: 11, color: "var(--ink-4)", marginBottom: 16 }}>Dataset: 71 users, 4,632,965 evaluation reviews. Lower bars indicate better calibration and recall prediction error.</div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
-                {[
-                  { pct: 61, label: "Log Loss 0.3874" },
-                  { pct: 67, label: "RMSE 0.3347" },
-                  { pct: 95, label: "RMSE(bins) 0.0459" },
-                ].map(({ pct, label }) => (
-                  <div key={label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--green-700, #15803d)", fontWeight: 500 }}>{pct}%</span>
-                    <div style={{
-                      width: "100%", height: `${pct * 0.6}px`,
-                      background: "var(--green-500, #22c55e)",
-                      borderRadius: "3px 3px 0 0",
-                      opacity: 0.85,
-                    }} />
-                    <span style={{ fontSize: 9, color: "var(--ink-4)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>{label}</span>
-                  </div>
-                  <div style={{ display: "grid", gap: 6 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "72px 1fr 62px", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 11, color: "var(--ink-4)" }}>Old (SM-2)</span>
-                      <div style={{ height: 10, background: "var(--ink-6)", borderRadius: 999, width: "100%" }} />
-                      <span style={{ fontSize: 11, color: "var(--ink-4)", fontFamily: "var(--font-mono)", textAlign: "right" }}>{row.sm2.toFixed(4)}</span>
+              <div style={{ display: "grid", gap: 14 }}>
+                {benchmarkRows.map((row) => (
+                  <div key={row.metric}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)" }}>{row.metric}</span>
+                      <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--green-700, #15803d)" }}>
+                        {row.improvement}% better
+                      </span>
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "72px 1fr 62px", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 11, color: "var(--ink-4)" }}>FSRS v4</span>
-                      <div style={{ height: 10, background: "var(--green-500, #22c55e)", borderRadius: 999, width: `${(row.fsrs / row.sm2) * 100}%`, minWidth: 8, opacity: 0.9 }} />
-                      <span style={{ fontSize: 11, color: "var(--ink-4)", fontFamily: "var(--font-mono)", textAlign: "right" }}>{row.fsrs.toFixed(4)}</span>
+                    <div style={{ display: "grid", gap: 6 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "72px 1fr 62px", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 11, color: "var(--ink-4)" }}>SM-2</span>
+                        <div style={{ height: 10, background: "var(--ink-6)", borderRadius: 999, width: "100%" }} />
+                        <span style={{ fontSize: 11, color: "var(--ink-4)", fontFamily: "var(--font-mono)", textAlign: "right" }}>{row.sm2.toFixed(4)}</span>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "72px 1fr 62px", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 11, color: "var(--ink-4)" }}>FSRS v4</span>
+                        <div style={{ height: 10, background: "var(--green-500, #22c55e)", borderRadius: 999, width: `${(row.fsrs / row.sm2) * 100}%`, minWidth: 8, opacity: 0.9 }} />
+                        <span style={{ fontSize: 11, color: "var(--ink-4)", fontFamily: "var(--font-mono)", textAlign: "right" }}>{row.fsrs.toFixed(4)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>

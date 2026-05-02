@@ -17,6 +17,10 @@ type DeckWithCount = {
   _count: { cards: number }
 }
 
+function unwrapDecksResponse(data: DeckWithCount[] | { decks?: DeckWithCount[] }): DeckWithCount[] {
+  return Array.isArray(data) ? data : data.decks ?? []
+}
+
 export default function DecksPage() {
   const router = useRouter()
   const { canManageContent: isManager } = usePermissions()
@@ -34,7 +38,7 @@ export default function DecksPage() {
       fetch("/api/decks"),
       fetch("/api/org/settings"),
     ])
-    if (decksRes.ok) setDecks(await decksRes.json() as DeckWithCount[])
+    if (decksRes.ok) setDecks(unwrapDecksResponse(await decksRes.json() as DeckWithCount[] | { decks?: DeckWithCount[] }))
     if (settingsRes.ok) {
       const s = await settingsRes.json() as { studyMode?: "AUTO_ROTATE" | "MANUAL" }
       setStudyMode(s.studyMode ?? "AUTO_ROTATE")

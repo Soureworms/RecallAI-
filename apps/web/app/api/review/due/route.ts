@@ -3,8 +3,47 @@ import { requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { getNextReview } from "@/lib/services/scheduler"
 import { assignCardsToUsers } from "@/lib/services/user-card"
-import { getUserFSRSConfig } from "@/lib/services/fsrs-optimizer"
+import { getUserFSRSConfig, type UserFSRSConfig } from "@/lib/services/fsrs-optimizer"
 import { withHandlerSimple } from "@/lib/api/handler"
+
+async function getStudyMode(orgId: string) {
+  try {
+    const org = await prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { studyMode: true },
+    })
+    return org?.studyMode ?? "AUTO_ROTATE"
+  } catch (err) {
+    console.error("[review/due] Falling back to AUTO_ROTATE study mode", err)
+    return "AUTO_ROTATE"
+  }
+}
+
+async function getAssignedDeckIds(userId: string, orgId: string): Promise<string[]> {
+  try {
+    const assignedDecks = await prisma.deckAssignment.findMany({
+      where: { userId, deck: { orgId, isArchived: false } },
+      select: { deckId: true },
+    })
+    return assignedDecks.map((d) => d.deckId)
+  } catch (err) {
+    console.error("[review/due] Falling back to org decks after assignment lookup failed", err)
+    const decks = await prisma.deck.findMany({
+      where: { orgId, isArchived: false },
+      select: { id: true },
+    })
+    return decks.map((d) => d.id)
+  }
+}
+
+async function getSafeFSRSConfig(userId: string): Promise<UserFSRSConfig | null> {
+  try {
+    return await getUserFSRSConfig(userId)
+  } catch (err) {
+    console.error("[review/due] Falling back to default FSRS config", err)
+    return null
+  }
+}
 
 export const GET = withHandlerSimple(async () => {
   const authResult = await requireRole("AGENT", { limiterKey: "api:agent", routeClass: "read" })
@@ -13,20 +52,12 @@ export const GET = withHandlerSimple(async () => {
 
   const { id: userId, orgId } = session.user
 
-  const [org, fsrsConfig, assignedDecks] = await Promise.all([
-    prisma.organization.findUnique({
-      where: { id: orgId },
-      select: { studyMode: true },
-    }),
-    getUserFSRSConfig(userId),
-    prisma.deckAssignment.findMany({
-      where: { userId, deck: { orgId, isArchived: false } },
-      select: { deckId: true },
-    }),
+  const [studyMode, fsrsConfig, assignedDeckIds] = await Promise.all([
+    getStudyMode(orgId),
+    getSafeFSRSConfig(userId),
+    getAssignedDeckIds(userId, orgId),
   ])
-  const studyMode = org?.studyMode ?? "AUTO_ROTATE"
 
-  const assignedDeckIds = assignedDecks.map((d) => d.deckId)
   if (assignedDeckIds.length === 0) {
     return NextResponse.json({ dueCards: [], nextDueDate: null })
   }
@@ -43,7 +74,11 @@ export const GET = withHandlerSimple(async () => {
 
   if (eligibleCards.length > 0) {
     const cardIds = eligibleCards.map((c) => c.id)
-    await assignCardsToUsers([userId], cardIds)
+    try {
+      await assignCardsToUsers([userId], cardIds)
+    } catch (err) {
+      console.error("[review/due] Auto-assignment failed; continuing with existing due cards", err)
+    }
   }
 
   const now = new Date()

@@ -12,12 +12,12 @@ export const GET = withHandlerSimple(async () => {
   const decks = await prisma.deck.findMany({
     where: { orgId: session.user.orgId, isArchived: false },
     include: {
-      _count: { select: { cards: { where: { status: { not: "ARCHIVED" } } } } },
+      _count: { select: { cards: true } },
     },
     orderBy: { createdAt: "desc" },
   })
 
-  return NextResponse.json(decks)
+  return NextResponse.json({ decks })
 })
 
 export const POST = withHandlerSimple(async (req: NextRequest) => {

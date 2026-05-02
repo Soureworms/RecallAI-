@@ -245,6 +245,7 @@ async function main() {
     { id: "seed-user-admin",   email: "admin@test.com",   name: "Alice Admin",   role: Role.ADMIN },
     { id: "seed-user-manager", email: "manager@test.com", name: "Marcus Manager", role: Role.MANAGER },
     { id: "seed-user-agent",   email: "agent@test.com",   name: "Amy Agent",     role: Role.AGENT },
+    { id: "seed-user-generic", email: "user@test.com",    name: "Test User",     role: Role.AGENT },
   ];
 
   for (const u of seedUsers) {
@@ -268,7 +269,7 @@ async function main() {
     });
   }
 
-  console.log("✓ Test users: admin / manager / agent @test.com (password: password123)");
+  console.log("✓ Test users: admin / manager / agent / user @test.com (password: password123)");
 
   // ── SOP Decks & Cards (all ACTIVE, inRotation: true) ────────────────────
   let totalCards = 0;

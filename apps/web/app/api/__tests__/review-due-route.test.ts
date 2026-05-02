@@ -25,6 +25,7 @@ vi.mock("@/lib/api/handler", () => ({ withHandlerSimple: (handler: () => unknown
 
 const mockPrisma = {
   organization: { findUnique: vi.fn() },
+  deckAssignment: { findMany: vi.fn() },
   card: { findMany: vi.fn() },
   userCard: { findMany: vi.fn(), findFirst: vi.fn() },
 }
@@ -35,6 +36,7 @@ describe("GET /api/review/due", () => {
     vi.clearAllMocks()
     mockRequireRole.mockResolvedValue({ ok: true, session: { user: { id: "user-1", orgId: "org-1" } } })
     mockGetUserFSRSConfig.mockResolvedValue(null)
+    mockPrisma.deckAssignment.findMany.mockResolvedValue([{ deckId: "deck-1" }])
     mockPrisma.card.findMany.mockResolvedValue([])
     mockPrisma.userCard.findMany.mockResolvedValue([])
     mockPrisma.userCard.findFirst.mockResolvedValue(null)
@@ -49,7 +51,12 @@ describe("GET /api/review/due", () => {
     const payload = await response.json()
 
     expect(payload.dueCards).toEqual([])
-    const manualDeckFilter = { orgId: "org-1", isArchived: false, OR: [{ isMandatory: true }, { inRotation: true }] }
+    const manualDeckFilter = {
+      id: { in: ["deck-1"] },
+      orgId: "org-1",
+      isArchived: false,
+      OR: [{ isMandatory: true }, { inRotation: true }],
+    }
 
     expect(mockPrisma.card.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { status: "ACTIVE", deck: manualDeckFilter } }),
@@ -76,7 +83,7 @@ describe("GET /api/review/due", () => {
     const { GET } = await import("../review/due/route")
     await GET()
 
-    const autoRotateDeckFilter = { orgId: "org-1", isArchived: false }
+    const autoRotateDeckFilter = { id: { in: ["deck-1"] }, orgId: "org-1", isArchived: false }
 
     expect(mockPrisma.card.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { status: "ACTIVE", deck: autoRotateDeckFilter } }),

@@ -22,6 +22,11 @@ type DeckSummary = {
   lastReview: string | null
 }
 
+function unwrapDecksResponse(data: DeckSummary[] | { decks?: DeckSummary[] } | null): DeckSummary[] {
+  if (!data) return []
+  return Array.isArray(data) ? data : data.decks ?? []
+}
+
 function formatTimeUntil(isoDate: string): string {
   const diff = new Date(isoDate).getTime() - Date.now()
   if (diff <= 0) return "now"
@@ -141,8 +146,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     void fetch("/api/review/stats").then((r) => r.ok ? r.json() : null).then((d) => { if (d) setStats(d) })
-    void fetch("/api/decks").then((r) => r.ok ? r.json() : null).then((data: {decks?: DeckSummary[]} | null) => {
-      if (data?.decks) setDecks(data.decks)
+    void fetch("/api/decks").then((r) => r.ok ? r.json() : null).then((data: DeckSummary[] | {decks?: DeckSummary[]} | null) => {
+      setDecks(unwrapDecksResponse(data))
     })
   }, [])
 

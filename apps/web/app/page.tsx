@@ -392,6 +392,32 @@ export default function HomePage() {
                 ))}
               </div>
             </div>
+
+            <div style={{ borderTop: "1px solid var(--ink-6)", paddingTop: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-2)", marginBottom: 8 }}>Simple comparison: what this means in practice</div>
+              <div style={{ display: "grid", gap: 8 }}>
+                {[
+                  { method: "FSRS adaptive", score: 92, reviews: "Review timing personalized by recall probability", outcome: "Best long-term retention with least wasted reviews" },
+                  { method: "Fixed interval (SM-2 style)", score: 64, reviews: "Same schedule template for most learners", outcome: "Better than one-off training, but over/under-reviews are common" },
+                  { method: "Manual training only", score: 27, reviews: "Workshops, slide decks, ad-hoc refreshers", outcome: "Fast initial learning, steep forgetting without system reminders" },
+                ].map((row) => (
+                  <div key={row.method} style={{ border: "1px solid var(--ink-6)", borderRadius: 10, padding: 10, background: "var(--paper)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 6 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)" }}>{row.method}</div>
+                      <div style={{ fontSize: 11, color: "var(--ink-4)", fontFamily: "var(--font-mono)" }}>Retention support score</div>
+                    </div>
+                    <div style={{ width: "100%", height: 8, background: "var(--ink-6)", borderRadius: 999, overflow: "hidden", marginBottom: 6 }}>
+                      <div style={{ width: `${row.score}%`, height: "100%", background: row.score > 80 ? "var(--green-500, #22c55e)" : row.score > 50 ? "#94a3b8" : "#cbd5e1" }} />
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--ink-3)", lineHeight: 1.5 }}><strong>How it runs:</strong> {row.reviews}</div>
+                    <div style={{ fontSize: 11, color: "var(--ink-3)", lineHeight: 1.5 }}><strong>Expected outcome:</strong> {row.outcome}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 10, color: "var(--ink-4)", marginTop: 10, lineHeight: 1.5 }}>
+                Scores are an explanatory visualization combining benchmarked FSRS vs SM-2 error gaps with established forgetting-curve behavior for one-off/manual training.
+              </div>
+            </div>
           </div>
         </div>
         <div style={{ marginTop: 28, textAlign: "center" }}>

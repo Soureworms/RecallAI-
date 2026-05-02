@@ -11,6 +11,7 @@
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
     "build": "turbo run build",
+    "db:deploy": "pnpm --filter web db:deploy",
     "docs": "turbo run docs --filter=ts-fsrs",
     "changeset": "changeset",
     "//note:naming": "Use single colon (:) instead of double colon (::) in script names. Turbo fails to parse glob expressions for cache log files when task names contain '::' (see https://github.com/vercel/turborepo/issues/6136).",

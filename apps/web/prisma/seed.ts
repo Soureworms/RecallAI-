@@ -246,6 +246,9 @@ async function main() {
     { id: "seed-user-manager", email: "manager@test.com", name: "Marcus Manager", role: Role.MANAGER },
     { id: "seed-user-agent",   email: "agent@test.com",   name: "Amy Agent",     role: Role.AGENT },
     { id: "seed-user-generic", email: "user@test.com",    name: "Test User",     role: Role.AGENT },
+    { id: "e2e-customer-admin", email: "customer-admin@test.com", name: "E2E Customer Admin", role: Role.ADMIN },
+    { id: "e2e-manager", email: "customer-manager@test.com", name: "E2E Manager", role: Role.MANAGER },
+    { id: "e2e-agent", email: "customer-agent@test.com", name: "E2E Agent", role: Role.AGENT },
   ];
 
   for (const u of seedUsers) {
@@ -295,6 +298,19 @@ async function main() {
         isArchived: false,
       },
     });
+
+    for (const u of seedUsers) {
+      await prisma.deckAssignment.upsert({
+        where: { userId_deckId: { userId: u.id, deckId: deckDef.id } },
+        update: { assignedById: "seed-user-admin", teamId: team.id },
+        create: {
+          userId: u.id,
+          deckId: deckDef.id,
+          assignedById: "seed-user-admin",
+          teamId: team.id,
+        },
+      });
+    }
 
     for (let i = 0; i < deckDef.cards.length; i++) {
       const c = deckDef.cards[i];

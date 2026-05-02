@@ -22,6 +22,15 @@ export const GET = withHandler<{ deckId: string }>(async (_req, { params }) => {
   })
 
   if (!deck || deck.orgId !== session.user.orgId) return notFound()
+
+  if (session.user.role === "AGENT") {
+    const assignment = await prisma.deckAssignment.findUnique({
+      where: { userId_deckId: { userId: session.user.id, deckId: params.deckId } },
+      select: { deckId: true },
+    })
+    if (!assignment) return notFound()
+  }
+
   return NextResponse.json(deck)
 })
 

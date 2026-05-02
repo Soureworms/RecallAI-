@@ -14,6 +14,14 @@ async function ownedDeck(deckId: string, orgId: string) {
   return deck
 }
 
+async function agentCanReadDeck(userId: string, deckId: string) {
+  const assignment = await prisma.deckAssignment.findUnique({
+    where: { userId_deckId: { userId, deckId } },
+    select: { deckId: true },
+  })
+  return Boolean(assignment)
+}
+
 export const GET = withHandler<{ deckId: string }>(async (req, { params }) => {
   const auth = await requireRole("AGENT", { limiterKey: "api:agent", routeClass: "read" })
   if (!auth.ok) return auth.response
@@ -23,6 +31,8 @@ export const GET = withHandler<{ deckId: string }>(async (req, { params }) => {
   if (!deck) return notFound()
 
   const isAgent = session.user.role === "AGENT"
+  if (isAgent && !(await agentCanReadDeck(session.user.id, params.deckId))) return notFound()
+
   const statusParam = req.nextUrl.searchParams.get("status")
 
   // Agents always see only ACTIVE cards — never drafts or archived

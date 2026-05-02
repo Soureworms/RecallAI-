@@ -37,12 +37,17 @@ export const GET = withHandlerSimple(async () => {
   const todayStart = new Date(now)
   todayStart.setHours(0, 0, 0, 0)
 
+  const deckAccess =
+    session.user.role === "AGENT"
+      ? { orgId, isArchived: false, assignments: { some: { userId } } }
+      : { orgId, isArchived: false }
+
   const [dueCount, todayCount, streakLogs, nextDue] = await Promise.all([
     prisma.userCard.count({
       where: {
         userId,
         dueDate: { lte: now },
-        card: { status: "ACTIVE", deck: { orgId, isArchived: false } },
+        card: { status: "ACTIVE", deck: deckAccess },
       },
     }),
     prisma.reviewLog.count({
@@ -58,7 +63,7 @@ export const GET = withHandlerSimple(async () => {
       where: {
         userId,
         dueDate: { gt: now },
-        card: { status: "ACTIVE", deck: { orgId, isArchived: false } },
+        card: { status: "ACTIVE", deck: deckAccess },
       },
       orderBy: { dueDate: "asc" },
       select: { dueDate: true },

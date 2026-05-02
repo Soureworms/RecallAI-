@@ -12,6 +12,12 @@ AI-powered spaced repetition for CX teams. Upload your knowledge base, let OpenA
 
 ---
 
+## Product Logic Docs
+
+- [Customer organization, team, and SOP access flow](docs/customer-org-team-sop-flow.md)
+
+---
+
 ## Local Development
 
 ### Prerequisites

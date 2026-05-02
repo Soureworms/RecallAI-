@@ -9,8 +9,13 @@ export const GET = withHandlerSimple(async () => {
   if (!auth.ok) return auth.response
   const { session } = auth
 
+  const agentAccess =
+    session.user.role === "AGENT"
+      ? { assignments: { some: { userId: session.user.id } } }
+      : {}
+
   const decks = await prisma.deck.findMany({
-    where: { orgId: session.user.orgId, isArchived: false },
+    where: { orgId: session.user.orgId, isArchived: false, ...agentAccess },
     include: {
       _count: { select: { cards: true } },
     },

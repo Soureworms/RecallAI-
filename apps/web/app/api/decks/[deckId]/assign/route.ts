@@ -59,7 +59,7 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
 
   if (userIds.length === 0) return NextResponse.json({ created: 0 })
 
-  await prisma.deckAssignment.createMany({
+  const assignmentRows = await prisma.deckAssignment.createMany({
     data: userIds.map((userId) => ({
       userId,
       deckId: params.deckId,
@@ -74,13 +74,8 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
     select: { id: true },
   })
 
-  const [cardAssignments, assignmentRows] = await Promise.all([
-    cards.length === 0 ? Promise.resolve(0) : assignCardsToUsers(userIds, cards.map((c) => c.id)),
-    prisma.deckAssignment.createMany({
-      data: userIds.map((userId) => ({ deckId: params.deckId, userId })),
-      skipDuplicates: true,
-    }),
-  ])
+  const cardAssignments =
+    cards.length === 0 ? 0 : await assignCardsToUsers(userIds, cards.map((c) => c.id))
 
   return NextResponse.json({ created: cardAssignments, assignmentRecordsCreated: assignmentRows.count })
 })

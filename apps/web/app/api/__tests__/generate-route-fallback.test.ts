@@ -81,6 +81,7 @@ beforeEach(() => {
   mockPrisma.sourceDocument.update.mockResolvedValue({})
   mockPrisma.card.create.mockImplementation(({ data }) => ({ data }))
   mockPrisma.$transaction.mockResolvedValue([])
+  mockPublishGenerateJob.mockResolvedValue(undefined)
   mockRedis.setex.mockResolvedValue("OK")
   mockGenerateCardsFromText.mockResolvedValue({
     cards: [
@@ -129,5 +130,26 @@ describe("POST /api/decks/[deckId]/generate", () => {
       3600,
       expect.objectContaining({ state: "completed", count: 1 })
     )
+  })
+
+  it("does not fail generation when the initial Redis status write fails", async () => {
+    mockRedis.setex.mockRejectedValueOnce(new Error("Redis unauthorized")).mockResolvedValue("OK")
+
+    const { POST } = await import("../decks/[deckId]/generate/route")
+    const res = await POST(
+      new NextRequest("http://localhost/api/decks/deck-1/generate", {
+        method: "POST",
+        body: JSON.stringify({ sourceDocumentId: "doc-1" }),
+        headers: { "Content-Type": "application/json" },
+      }),
+      { params: { deckId: "deck-1" } }
+    )
+
+    expect(res.status).toBe(202)
+    await expect(res.json()).resolves.toMatchObject({
+      jobId: expect.any(String),
+      status: "queued",
+    })
+    expect(mockPublishGenerateJob).toHaveBeenCalledOnce()
   })
 })

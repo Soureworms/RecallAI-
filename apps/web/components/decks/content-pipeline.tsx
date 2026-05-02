@@ -143,7 +143,24 @@ export function ContentPipeline({ deckId }: Props) {
       return
     }
 
-    const data = (await res.json()) as { jobId: string }
+    const data = (await res.json()) as {
+      jobId: string
+      status?: "queued" | "completed"
+      count?: number
+      warning?: string
+      summary?: JobStatus["summary"]
+    }
+    if (data.status === "completed") {
+      setJobStatus({
+        jobId: data.jobId,
+        state: "completed",
+        progress: 100,
+        count: data.count,
+        summary: data.summary,
+      })
+      setStep(3)
+      return
+    }
     startPolling(data.jobId)
   }
 

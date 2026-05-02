@@ -12,6 +12,21 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : "Generation failed"
 }
 
+async function setJobStatus(
+  redis: ReturnType<typeof getRedis>,
+  jobId: string,
+  status: JobState
+): Promise<boolean> {
+  if (!redis) return false
+  try {
+    await redis.setex(`job:${jobId}`, 3600, status)
+    return true
+  } catch (err) {
+    console.error("[generate] Failed to write job status", err)
+    return false
+  }
+}
+
 export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { params }) => {
   const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
@@ -54,13 +69,11 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
   const jobId = crypto.randomUUID()
 
   const redis = getRedis()
-  if (redis) {
-    await redis.setex(`job:${jobId}`, 3600, {
-      state: "queued",
-      progress: 0,
-      orgId: session.user.orgId,
-    } satisfies JobState)
-  }
+  await setJobStatus(redis, jobId, {
+    state: "queued",
+    progress: 0,
+    orgId: session.user.orgId,
+  } satisfies JobState)
 
   try {
     await publishGenerateJob({
@@ -80,7 +93,7 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
     }
 
     try {
-      await redis.setex(`job:${jobId}`, 3600, {
+      await setJobStatus(redis, jobId, {
         state: "active",
         progress: 5,
         orgId: session.user.orgId,
@@ -91,7 +104,7 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
         documentId: doc.id,
         orgId: session.user.orgId,
         onProgress: async (pct) => {
-          await redis.setex(`job:${jobId}`, 3600, {
+          await setJobStatus(redis, jobId, {
             state: "active",
             progress: 10 + Math.round(pct * 0.8),
             orgId: session.user.orgId,
@@ -99,7 +112,7 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
         },
       })
 
-      await redis.setex(`job:${jobId}`, 3600, {
+      await setJobStatus(redis, jobId, {
         state: "completed",
         progress: 100,
         orgId: session.user.orgId,
@@ -114,7 +127,7 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
       )
     } catch (fallbackErr) {
       const message = errorMessage(fallbackErr)
-      await redis.setex(`job:${jobId}`, 3600, {
+      await setJobStatus(redis, jobId, {
         state: "failed",
         progress: 0,
         orgId: session.user.orgId,

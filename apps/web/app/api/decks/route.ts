@@ -4,6 +4,13 @@ import { prisma } from "@/lib/db"
 import { withHandlerSimple } from "@/lib/api/handler"
 import { createDeckSchema } from "@/lib/schemas/api"
 
+async function withCardCounts<T extends { id: string }>(decks: T[]) {
+  const counts = await Promise.all(
+    decks.map((deck) => prisma.card.count({ where: { deckId: deck.id } }))
+  )
+  return decks.map((deck, index) => ({ ...deck, _count: { cards: counts[index] } }))
+}
+
 export const GET = withHandlerSimple(async () => {
   const auth = await requireRole("AGENT", { limiterKey: "api:agent", routeClass: "read" })
   if (!auth.ok) return auth.response
@@ -16,13 +23,10 @@ export const GET = withHandlerSimple(async () => {
 
   const decks = await prisma.deck.findMany({
     where: { orgId: session.user.orgId, isArchived: false, ...agentAccess },
-    include: {
-      _count: { select: { cards: true } },
-    },
     orderBy: { createdAt: "desc" },
   })
 
-  return NextResponse.json({ decks })
+  return NextResponse.json({ decks: await withCardCounts(decks) })
 })
 
 export const POST = withHandlerSimple(async (req: NextRequest) => {
@@ -44,8 +48,7 @@ export const POST = withHandlerSimple(async (req: NextRequest) => {
       orgId: session.user.orgId,
       createdById: session.user.id,
     },
-    include: { _count: { select: { cards: true } } },
   })
 
-  return NextResponse.json(deck, { status: 201 })
+  return NextResponse.json({ ...deck, _count: { cards: 0 } }, { status: 201 })
 })

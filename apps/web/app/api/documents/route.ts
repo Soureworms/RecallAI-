@@ -16,11 +16,16 @@ export const GET = withHandlerSimple(async (req: NextRequest) => {
       ...(deckId ? { deckId } : {}),
     },
     include: {
-      _count: { select: { cards: true } },
       uploadedBy: { select: { name: true, email: true } },
     },
     orderBy: { createdAt: "desc" },
   })
 
-  return NextResponse.json(docs)
+  const counts = await Promise.all(
+    docs.map((doc) => prisma.card.count({ where: { sourceDocumentId: doc.id } }))
+  )
+
+  return NextResponse.json(
+    docs.map((doc, index) => ({ ...doc, _count: { cards: counts[index] } }))
+  )
 })

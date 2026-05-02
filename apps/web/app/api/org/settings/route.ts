@@ -36,10 +36,14 @@ export const GET = withHandlerSimple(async () => {
       id: true,
       name: true,
       studyMode: true,
-      _count: { select: { users: true, decks: true } },
     },
   })
 
   if (!org) return NextResponse.json({ error: "Not found" }, { status: 404 })
-  return NextResponse.json(org)
+  const [users, decks] = await Promise.all([
+    prisma.user.count({ where: { orgId: org.id } }),
+    prisma.deck.count({ where: { orgId: org.id } }),
+  ])
+
+  return NextResponse.json({ ...org, _count: { users, decks } })
 })

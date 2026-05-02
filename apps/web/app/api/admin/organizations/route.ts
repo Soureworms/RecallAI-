@@ -4,18 +4,23 @@ import { prisma } from "@/lib/db"
 import { withHandlerSimple } from "@/lib/api/handler"
 import { createOrgSchema } from "@/lib/schemas/api"
 
+async function withOrgCounts<T extends { id: string }>(org: T) {
+  const [users, decks] = await Promise.all([
+    prisma.user.count({ where: { orgId: org.id } }),
+    prisma.deck.count({ where: { orgId: org.id } }),
+  ])
+  return { ...org, _count: { users, decks } }
+}
+
 export const GET = withHandlerSimple(async () => {
   const auth = await requireSuperAdmin()
   if (!auth.ok) return auth.response
 
   const orgs = await prisma.organization.findMany({
     orderBy: { createdAt: "asc" },
-    include: {
-      _count: { select: { users: true, decks: true } },
-    },
   })
 
-  return NextResponse.json(orgs)
+  return NextResponse.json(await Promise.all(orgs.map(withOrgCounts)))
 })
 
 export const POST = withHandlerSimple(async (req: NextRequest) => {
@@ -29,8 +34,7 @@ export const POST = withHandlerSimple(async (req: NextRequest) => {
 
   const org = await prisma.organization.create({
     data: { name: parsed.data.name },
-    include: { _count: { select: { users: true, decks: true } } },
   })
 
-  return NextResponse.json(org, { status: 201 })
+  return NextResponse.json(await withOrgCounts(org), { status: 201 })
 })

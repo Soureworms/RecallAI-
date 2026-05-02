@@ -4,6 +4,14 @@ import { prisma } from "@/lib/db"
 import { withHandler } from "@/lib/api/handler"
 import { orgSettingsSchema } from "@/lib/schemas/api"
 
+async function withOrgCounts<T extends { id: string }>(org: T) {
+  const [users, decks] = await Promise.all([
+    prisma.user.count({ where: { orgId: org.id } }),
+    prisma.deck.count({ where: { orgId: org.id } }),
+  ])
+  return { ...org, _count: { users, decks } }
+}
+
 export const PATCH = withHandler<{ orgId: string }>(async (req: NextRequest, { params }) => {
   const auth = await requireSuperAdmin()
   if (!auth.ok) return auth.response
@@ -16,10 +24,9 @@ export const PATCH = withHandler<{ orgId: string }>(async (req: NextRequest, { p
   const org = await prisma.organization.update({
     where: { id: params.orgId },
     data: { name: parsed.data.name },
-    include: { _count: { select: { users: true, decks: true } } },
   })
 
-  return NextResponse.json(org)
+  return NextResponse.json(await withOrgCounts(org))
 })
 
 export const DELETE = withHandler<{ orgId: string }>(async (_req, { params }) => {

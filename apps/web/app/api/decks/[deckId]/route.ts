@@ -9,17 +9,18 @@ function notFound() {
   return NextResponse.json({ error: "Not found" }, { status: 404 })
 }
 
+async function activeCardCount(deckId: string) {
+  return prisma.card.count({
+    where: { deckId, status: { not: "ARCHIVED" } },
+  })
+}
+
 export const GET = withHandler<{ deckId: string }>(async (_req, { params }) => {
   const auth = await requireRole("AGENT", { limiterKey: "api:agent", routeClass: "read" })
   if (!auth.ok) return auth.response
   const { session } = auth
 
-  const deck = await prisma.deck.findUnique({
-    where: { id: params.deckId },
-    include: {
-      _count: { select: { cards: { where: { status: { not: "ARCHIVED" } } } } },
-    },
-  })
+  const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
 
   if (!deck || deck.orgId !== session.user.orgId) return notFound()
 
@@ -31,7 +32,8 @@ export const GET = withHandler<{ deckId: string }>(async (_req, { params }) => {
     if (!assignment) return notFound()
   }
 
-  return NextResponse.json(deck)
+  const cards = await activeCardCount(params.deckId)
+  return NextResponse.json({ ...deck, _count: { cards } })
 })
 
 // Shared workspace: any MANAGER in the org can edit or archive any deck.
@@ -63,9 +65,6 @@ export const PUT = withHandler<{ deckId: string }>(async (req: NextRequest, { pa
         isMandatory: isMandatory ?? deck.isMandatory,
         inRotation:  inRotation  ?? deck.inRotation,
       },
-      include: {
-        _count: { select: { cards: { where: { status: { not: "ARCHIVED" } } } } },
-      },
     })
 
     if (turningMandatory) {
@@ -81,7 +80,10 @@ export const PUT = withHandler<{ deckId: string }>(async (req: NextRequest, { pa
       }
     }
 
-    return updatedDeck
+    const cards = await tx.card.count({
+      where: { deckId: params.deckId, status: { not: "ARCHIVED" } },
+    })
+    return { ...updatedDeck, _count: { cards } }
   })
 
   return NextResponse.json(updated)

@@ -16,7 +16,7 @@ const mockPrisma = {
   deck: { findMany: vi.fn() },
   organization: { findUnique: vi.fn() },
   deckAssignment: { findMany: vi.fn() },
-  card: { findMany: vi.fn() },
+  card: { count: vi.fn(), findMany: vi.fn() },
   userCard: { findMany: vi.fn(), findFirst: vi.fn() },
 }
 vi.mock("@/lib/db", () => ({ prisma: mockPrisma }))
@@ -51,6 +51,7 @@ beforeEach(() => {
   mockPrisma.deck.findMany.mockResolvedValue([])
   mockPrisma.organization.findUnique.mockResolvedValue({ studyMode: "AUTO_ROTATE" })
   mockPrisma.deckAssignment.findMany.mockResolvedValue([{ deckId: "deck-1" }])
+  mockPrisma.card.count.mockResolvedValue(0)
   mockPrisma.card.findMany.mockResolvedValue([])
   mockPrisma.userCard.findMany.mockResolvedValue([])
   mockPrisma.userCard.findFirst.mockResolvedValue(null)
@@ -62,15 +63,16 @@ describe("production e2e regressions", () => {
     const deck = {
       id: "deck-1",
       name: "Escalation Procedures",
-      _count: { cards: 8 },
     }
     mockPrisma.deck.findMany.mockResolvedValue([deck])
+    mockPrisma.card.count.mockResolvedValue(8)
 
     const { GET } = await import("../decks/route")
     const res = await GET(new NextRequest("http://localhost/api/decks"))
 
     expect(res.status).toBe(200)
-    await expect(res.json()).resolves.toEqual({ decks: [deck] })
+    await expect(res.json()).resolves.toEqual({ decks: [{ ...deck, _count: { cards: 8 } }] })
+    expect(mockPrisma.card.count).toHaveBeenCalledWith({ where: { deckId: "deck-1" } })
   })
 
   it("GET /api/review/due does not fail the review flow when auto-assignment fails", async () => {

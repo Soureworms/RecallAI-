@@ -24,7 +24,14 @@ const mockPrisma = {
     update: vi.fn(),
     updateMany: vi.fn(),
   },
-  sourceDocument: { findMany: vi.fn(), findUnique: vi.fn() },
+  sourceDocument: {
+    create: vi.fn(),
+    delete: vi.fn(),
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    update: vi.fn(),
+  },
   team: { findUnique: vi.fn() },
   user: { findMany: vi.fn() },
   userCard: { count: vi.fn(), findFirst: vi.fn() },
@@ -80,6 +87,20 @@ beforeEach(() => {
     deckId: "deck-1",
     status: "READY",
   })
+  mockPrisma.sourceDocument.create.mockResolvedValue({
+    id: "doc-1",
+    orgId: "org-1",
+    filename: "support-sop.txt",
+    status: "PROCESSING",
+  })
+  mockPrisma.sourceDocument.findFirst.mockResolvedValue(null)
+  mockPrisma.sourceDocument.update.mockResolvedValue({
+    id: "doc-1",
+    orgId: "org-1",
+    filename: "support-sop.txt",
+    status: "READY",
+  })
+  mockPrisma.sourceDocument.delete.mockResolvedValue({ id: "doc-1" })
   mockPrisma.team.findUnique.mockResolvedValue({
     id: "team-support",
     orgId: "org-1",
@@ -439,5 +460,24 @@ describe("team-scoped SOP access", () => {
 
     expect(res.status).toBe(404)
     expect(mockPrisma.card.updateMany).not.toHaveBeenCalled()
+  })
+
+  it("does not let a manager upload a document to a deck outside their team scope", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.deck.findFirst.mockResolvedValue(null)
+    const formData = new FormData()
+    formData.set("deckId", "deck-1")
+    formData.set("file", new File(["Escalate priority-one incidents within 15 minutes."], "support-sop.txt"))
+
+    const { POST } = await import("../documents/upload/route")
+    const res = await POST(
+      new NextRequest("http://localhost/api/documents/upload", {
+        method: "POST",
+        body: formData,
+      })
+    )
+
+    expect(res.status).toBe(404)
+    expect(mockPrisma.sourceDocument.create).not.toHaveBeenCalled()
   })
 })

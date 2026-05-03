@@ -12,7 +12,7 @@ vi.mock("@/auth", () => ({ auth: mockAuth }))
 const mockPrisma = {
   deck: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn() },
   team: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn() },
-  teamMember: { findUnique: vi.fn(), findMany: vi.fn() },
+  teamMember: { findFirst: vi.fn(), findUnique: vi.fn(), findMany: vi.fn() },
   user: { findUnique: vi.fn(), findMany: vi.fn() },
   userCard: { findMany: vi.fn() },
   reviewLog: { findMany: vi.fn() },
@@ -46,6 +46,7 @@ beforeEach(() => {
   mockPrisma.team.findUnique.mockResolvedValue({ id: "team-1", orgId: "org-1" })
   mockPrisma.team.create.mockResolvedValue({ id: "team-1", name: "New Team", members: [] })
   mockPrisma.teamMember.findUnique.mockResolvedValue({ userId: "user-1", teamId: "team-1" })
+  mockPrisma.teamMember.findFirst.mockResolvedValue({ userId: "other-user", teamId: "team-1" })
   mockPrisma.invite.findMany.mockResolvedValue([])
   mockPrisma.invite.findFirst.mockResolvedValue(null)
   mockPrisma.invite.create.mockResolvedValue({
@@ -145,6 +146,24 @@ describe("GET /api/analytics/user/[userId]", () => {
     const req = new NextRequest("http://localhost/api/analytics/user/user-1")
     const res = await GET(req, { params: { userId: "user-1" } })
     expect(res.status).toBe(401)
+  })
+
+  it("returns 403 when manager views a user outside their shared teams", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.user.findUnique.mockResolvedValue({ id: "success-agent", orgId: "org-1", createdAt: new Date() })
+    mockPrisma.teamMember.findFirst.mockResolvedValue(null)
+
+    const { GET } = await import("../analytics/user/[userId]/route")
+    const req = new NextRequest("http://localhost/api/analytics/user/success-agent")
+    const res = await GET(req, { params: { userId: "success-agent" } })
+
+    expect(res.status).toBe(403)
+    expect(mockPrisma.teamMember.findFirst).toHaveBeenCalledWith({
+      where: {
+        userId: "success-agent",
+        team: { members: { some: { userId: "user-1" } } },
+      },
+    })
   })
 })
 

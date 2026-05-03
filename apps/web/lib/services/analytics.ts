@@ -1,5 +1,7 @@
 import { forgetting_curve, default_request_retention } from "ts-fsrs"
 import { prisma } from "@/lib/db"
+import { deckReadWhereForRole } from "@/lib/auth/deck-scope"
+import type { Role } from "@/lib/auth/roles"
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -596,10 +598,23 @@ export type DocumentPerformanceItem = {
 }
 
 export async function getDocumentPerformance(
-  orgId: string
+  orgId: string,
+  role: Role = "ADMIN",
+  userId?: string
 ): Promise<DocumentPerformanceItem[]> {
   const docs = await prisma.sourceDocument.findMany({
-    where: { orgId, status: "READY" },
+    where: {
+      orgId,
+      status: "READY",
+      ...(role === "MANAGER" && userId
+        ? {
+            OR: [
+              { uploadedById: userId, deckId: null },
+              { deck: deckReadWhereForRole(role, userId) },
+            ],
+          }
+        : {}),
+    },
     select: {
       id: true,
       filename: true,

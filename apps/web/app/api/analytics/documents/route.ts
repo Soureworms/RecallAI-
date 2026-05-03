@@ -7,6 +7,10 @@ export const GET = withHandlerSimple(async () => {
   const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
 
-  const items = await getDocumentPerformance(auth.session.user.orgId)
+  const items = await getDocumentPerformance(
+    auth.session.user.orgId,
+    auth.session.user.role,
+    auth.session.user.id
+  )
   return NextResponse.json(items)
 })

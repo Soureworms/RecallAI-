@@ -164,7 +164,7 @@
 
 ## Phase 5: Team-Scoped SOP Assignment Hardening
 
-**Status:** In progress. Slices 1, 2, and 3 done and pushed.
+**Status:** In progress. Slices 1, 2, and 3 done and pushed. Slice 4 implemented locally; pending full verification, commit, and push.
 
 **Slice 1 Commit:** `70790ac` - `Enforce manager deck team scope`
 
@@ -197,8 +197,7 @@
   - Result: exit 0 after refreshing dependencies with `corepack pnpm install --force`. Known Next dynamic-route warnings still appear during static collection, but routes are emitted as dynamic.
 
 **Remaining Scope:**
-- Restrict document upload-by-deck to accessible decks only.
-- Add regression tests for support-team users attempting to read success-team cards, documents, and analytics.
+- No known Phase 5 access-control gaps remain after Slice 4 verification.
 
 **Built In Slice 2:**
 - Added shared helpers for deck access checks and manager-scoped direct user targeting.
@@ -252,6 +251,35 @@
   - Result: 18 files passed, 123 tests passed.
 - `corepack pnpm --filter web build`
   - Result: exit 0 after refreshing dependencies with `corepack pnpm install --force`. Known Next dynamic-route warnings still appear during static collection, but routes are emitted as dynamic.
+
+**Built In Slice 4:**
+- Restricted document upload-by-deck to decks accessible by the uploader's role and team scope.
+- Scoped manager document analytics to documents they uploaded without a deck or documents attached to decks they can reach.
+- Added regression coverage for manager attempts to upload into inaccessible decks and view user analytics outside shared teams.
+
+**Files In Slice 4:**
+- `apps/web/app/api/__tests__/team-sop-access.test.ts`
+- `apps/web/app/api/__tests__/permissions.test.ts`
+- `apps/web/app/api/documents/upload/route.ts`
+- `apps/web/app/api/analytics/documents/route.ts`
+- `apps/web/lib/services/analytics.ts`
+- `apps/web/lib/services/__tests__/analytics.test.ts`
+
+**Verification Recorded Before Slice 4 Commit:**
+- `corepack pnpm --dir apps/web exec vitest run app/api/__tests__/team-sop-access.test.ts --testNamePattern "upload a document"`
+  - Red result before implementation: 1 file failed; upload returned 201 for an inaccessible deck.
+  - Green result after implementation: 1 file passed, 1 matching test passed.
+- `corepack pnpm --dir apps/web exec vitest run lib/services/__tests__/analytics.test.ts --testNamePattern "DocumentPerformance"`
+  - Red result before implementation: 1 file failed; manager document analytics query was org-wide.
+  - Green result after implementation: 1 file passed, 1 matching test passed.
+- `corepack pnpm --dir apps/web exec vitest run app/api/__tests__/team-sop-access.test.ts lib/services/__tests__/analytics.test.ts app/api/__tests__/permissions.test.ts`
+  - Result: 3 files passed, 60 tests passed.
+- `corepack pnpm --dir apps/web exec vitest run`
+  - Result: 18 files passed, 126 tests passed.
+- `corepack pnpm --filter web build`
+  - Initial result: failed because the local Next build worker file was missing.
+  - Recovery: refreshed dependencies with `corepack pnpm install --force`.
+  - Final result: exit 0. Known Next dynamic-route warnings still appear during static collection, but routes are emitted as dynamic.
 
 ## Phase 6: Compliance Audit Trail And Policy Controls
 

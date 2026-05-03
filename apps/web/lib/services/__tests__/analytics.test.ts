@@ -8,6 +8,7 @@ const mockPrisma = vi.hoisted(() => ({
   reviewLog: { findMany: vi.fn(), count: vi.fn(), groupBy: vi.fn() },
   user: { findUnique: vi.fn() },
   card: { findMany: vi.fn() },
+  sourceDocument: { findMany: vi.fn() },
 }))
 
 vi.mock("@/lib/db", () => ({ prisma: mockPrisma }))
@@ -23,6 +24,7 @@ import {
   getNewHireRampProgress,
   getWeakestCards,
   getRecentReviews,
+  getDocumentPerformance,
 } from "../analytics"
 
 beforeEach(() => {
@@ -262,5 +264,34 @@ describe("getRecentReviews", () => {
       answerPassed: true,
       typedAnswer: "Manager approval before refunds above 500 rand.",
     })
+  })
+})
+
+describe("getDocumentPerformance", () => {
+  it("limits manager document analytics to documents they uploaded or decks they can reach", async () => {
+    mockPrisma.sourceDocument.findMany.mockResolvedValue([])
+
+    await getDocumentPerformance("org-1", "MANAGER", "manager-1")
+
+    expect(mockPrisma.sourceDocument.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          orgId: "org-1",
+          status: "READY",
+          OR: [
+            { uploadedById: "manager-1", deckId: null },
+            {
+              deck: {
+                OR: [
+                  { createdById: "manager-1" },
+                  { assignments: { some: { userId: "manager-1" } } },
+                  { assignments: { some: { team: { members: { some: { userId: "manager-1" } } } } } },
+                ],
+              },
+            },
+          ],
+        },
+      })
+    )
   })
 })

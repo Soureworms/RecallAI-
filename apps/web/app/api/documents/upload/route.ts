@@ -5,6 +5,7 @@ import { checkRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/db"
 import { verifyMagicBytes, sanitizeFilename } from "@/lib/security/file-validation"
 import { withHandlerSimple } from "@/lib/api/handler"
+import { deckAccessWhereForRole } from "@/lib/auth/deck-scope"
 
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
 
@@ -103,8 +104,11 @@ export const POST = withHandlerSimple(async (req) => {
 
   // ── Verify deck ownership if deckId supplied ──────────────────────────────
   if (deckId) {
-    const deck = await prisma.deck.findUnique({ where: { id: deckId } })
-    if (!deck || deck.orgId !== session.user.orgId) {
+    const deck = await prisma.deck.findFirst({
+      where: deckAccessWhereForRole(session.user.role, session.user.id, session.user.orgId, deckId),
+      select: { id: true },
+    })
+    if (!deck) {
       return NextResponse.json({ error: "Deck not found" }, { status: 404 })
     }
   }

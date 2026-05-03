@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db"
 import { withHandler } from "@/lib/api/handler"
 import { updateDeckSchema } from "@/lib/schemas/api"
 import { assignCardsToUsers } from "@/lib/services/user-card"
+import { deckAccessWhereForRole } from "@/lib/auth/deck-scope"
 
 function notFound() {
   return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -20,17 +21,10 @@ export const GET = withHandler<{ deckId: string }>(async (_req, { params }) => {
   if (!auth.ok) return auth.response
   const { session } = auth
 
-  const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
-
-  if (!deck || deck.orgId !== session.user.orgId) return notFound()
-
-  if (session.user.role === "AGENT") {
-    const assignment = await prisma.deckAssignment.findUnique({
-      where: { userId_deckId: { userId: session.user.id, deckId: params.deckId } },
-      select: { deckId: true },
-    })
-    if (!assignment) return notFound()
-  }
+  const deck = await prisma.deck.findFirst({
+    where: deckAccessWhereForRole(session.user.role, session.user.id, session.user.orgId, params.deckId),
+  })
+  if (!deck) return notFound()
 
   const cards = await activeCardCount(params.deckId)
   return NextResponse.json({ ...deck, _count: { cards } })

@@ -3,23 +3,10 @@ import { requireDeckContentManager, requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { withHandler } from "@/lib/api/handler"
 import { createCardSchema } from "@/lib/schemas/api"
+import { deckAccessWhereForRole } from "@/lib/auth/deck-scope"
 
 function notFound() {
   return NextResponse.json({ error: "Not found" }, { status: 404 })
-}
-
-async function ownedDeck(deckId: string, orgId: string) {
-  const deck = await prisma.deck.findUnique({ where: { id: deckId } })
-  if (!deck || deck.orgId !== orgId || deck.isArchived) return null
-  return deck
-}
-
-async function agentCanReadDeck(userId: string, deckId: string) {
-  const assignment = await prisma.deckAssignment.findUnique({
-    where: { userId_deckId: { userId, deckId } },
-    select: { deckId: true },
-  })
-  return Boolean(assignment)
 }
 
 export const GET = withHandler<{ deckId: string }>(async (req, { params }) => {
@@ -27,11 +14,12 @@ export const GET = withHandler<{ deckId: string }>(async (req, { params }) => {
   if (!auth.ok) return auth.response
   const { session } = auth
 
-  const deck = await ownedDeck(params.deckId, session.user.orgId)
+  const deck = await prisma.deck.findFirst({
+    where: deckAccessWhereForRole(session.user.role, session.user.id, session.user.orgId, params.deckId),
+  })
   if (!deck) return notFound()
 
   const isAgent = session.user.role === "AGENT"
-  if (isAgent && !(await agentCanReadDeck(session.user.id, params.deckId))) return notFound()
 
   const statusParam = req.nextUrl.searchParams.get("status")
 
@@ -63,7 +51,9 @@ export const POST = withHandler<{ deckId: string }>(async (req, { params }) => {
   const contentAccess = requireDeckContentManager(session)
   if (!contentAccess.ok) return contentAccess.response
 
-  const deck = await ownedDeck(params.deckId, session.user.orgId)
+  const deck = await prisma.deck.findFirst({
+    where: deckAccessWhereForRole(session.user.role, session.user.id, session.user.orgId, params.deckId),
+  })
   if (!deck) return notFound()
 
   const parsed = createCardSchema.safeParse(await req.json())

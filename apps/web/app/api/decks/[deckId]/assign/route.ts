@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db"
 import { withHandler } from "@/lib/api/handler"
 import { assignSchema } from "@/lib/schemas/api"
 import { assignCardsToUsers } from "@/lib/services/user-card"
+import { userTeamScopeWhereForRole } from "@/lib/auth/deck-scope"
 
 function notFound() {
   return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -61,10 +62,17 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
     teamId = team.id
   } else {
     const users = await prisma.user.findMany({
-      where: { id: { in: parsed.data.userIds }, orgId: session.user.orgId },
+      where: {
+        id: { in: parsed.data.userIds },
+        orgId: session.user.orgId,
+        ...userTeamScopeWhereForRole(session.user.role, session.user.id),
+      },
       select: { id: true },
     })
     userIds = users.map((u) => u.id)
+    if (session.user.role === "MANAGER" && userIds.length !== parsed.data.userIds.length) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
   }
 
   if (userIds.length === 0) return NextResponse.json({ created: 0 })
@@ -106,10 +114,17 @@ export const DELETE = withHandler<{ deckId: string }>(async (req: NextRequest, {
   }
 
   const users = await prisma.user.findMany({
-    where: { id: { in: parsed.data.userIds }, orgId: session.user.orgId },
+    where: {
+      id: { in: parsed.data.userIds },
+      orgId: session.user.orgId,
+      ...userTeamScopeWhereForRole(session.user.role, session.user.id),
+    },
     select: { id: true },
   })
   const userIds = users.map((u) => u.id)
+  if (session.user.role === "MANAGER" && userIds.length !== parsed.data.userIds.length) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  }
 
   if (userIds.length === 0) return NextResponse.json({ removed: 0 })
 

@@ -17,3 +17,26 @@ export function deckReadWhereForRole(role: Role, userId: string) {
 
   return {}
 }
+
+export function deckAccessWhereForRole(role: Role, userId: string, orgId: string, deckId: string) {
+  return {
+    id: deckId,
+    orgId,
+    isArchived: false,
+    ...deckReadWhereForRole(role, userId),
+  }
+}
+
+export function userTeamScopeWhereForRole(role: Role, userId: string) {
+  if (role === "MANAGER") {
+    return {
+      teams: {
+        some: {
+          team: { members: { some: { userId } } },
+        },
+      },
+    }
+  }
+
+  return {}
+}

@@ -21,7 +21,7 @@ vi.mock("@/lib/env", () => ({
 }))
 
 const mockPrisma = {
-  deck: { findUnique: vi.fn() },
+  deck: { findFirst: vi.fn(), findUnique: vi.fn() },
   sourceDocument: { findUnique: vi.fn(), findUniqueOrThrow: vi.fn(), update: vi.fn() },
   card: { create: vi.fn() },
   $transaction: vi.fn(),
@@ -70,12 +70,14 @@ beforeEach(() => {
       email: "manager@example.com",
     },
   })
+  mockPrisma.deck.findFirst.mockResolvedValue({ id: "deck-1", orgId: "org-1" })
   mockPrisma.deck.findUnique.mockResolvedValue({ id: "deck-1", orgId: "org-1" })
   mockPrisma.sourceDocument.findUnique.mockResolvedValue({
     id: "doc-1",
     orgId: "org-1",
     status: "READY",
     textContent: "Refund SOP",
+    deckId: "deck-1",
   })
   mockPrisma.sourceDocument.findUniqueOrThrow.mockResolvedValue({ textContent: "Refund SOP" })
   mockPrisma.sourceDocument.update.mockResolvedValue({})

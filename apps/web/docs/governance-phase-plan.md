@@ -164,7 +164,7 @@
 
 ## Phase 5: Team-Scoped SOP Assignment Hardening
 
-**Status:** In progress. Slice 1 done and pushed.
+**Status:** In progress. Slices 1 and 2 done; Slice 2 pending commit and push.
 
 **Slice 1 Commit:** `70790ac` - `Enforce manager deck team scope`
 
@@ -193,10 +193,37 @@
   - Result: exit 0 after refreshing dependencies with `corepack pnpm install --force`. Known Next dynamic-route warnings still appear during static collection, but routes are emitted as dynamic.
 
 **Remaining Scope:**
-- Restrict deck detail, card, document, regenerate, and generation endpoints with the same team-scope model.
-- Restrict source document listing and upload-by-deck to accessible decks only.
-- Review direct `userIds` assignment/removal paths so managers cannot target users outside their team.
+- Restrict regenerate and card-level mutation endpoints with the same team-scope model.
 - Add regression tests for support-team users attempting to read success-team cards, documents, and analytics.
+
+**Built In Slice 2:**
+- Added shared helpers for deck access checks and manager-scoped direct user targeting.
+- Applied team-scope deck access to deck detail reads.
+- Applied team-scope deck access to deck card reads and manual card creation.
+- Applied deck access to document listing by deck, document reads, and AI generation.
+- Blocked generation when a source document belongs to a different deck.
+- Blocked manager direct assignment and assignment removal for users outside the manager's teams.
+
+**Files In Slice 2:**
+- `apps/web/lib/auth/deck-scope.ts`
+- `apps/web/lib/auth/__tests__/deck-scope.test.ts`
+- `apps/web/app/api/__tests__/team-sop-access.test.ts`
+- `apps/web/app/api/__tests__/generate-route-fallback.test.ts`
+- `apps/web/app/api/decks/[deckId]/route.ts`
+- `apps/web/app/api/decks/[deckId]/cards/route.ts`
+- `apps/web/app/api/decks/[deckId]/assign/route.ts`
+- `apps/web/app/api/decks/[deckId]/generate/route.ts`
+- `apps/web/app/api/documents/route.ts`
+- `apps/web/app/api/documents/[documentId]/route.ts`
+
+**Verification Recorded Before Slice 2 Commit:**
+- `corepack pnpm --dir apps/web exec vitest run lib/auth/__tests__/deck-scope.test.ts app/api/__tests__/team-sop-access.test.ts`
+  - Red result before implementation: 2 files failed, 9 expected failures.
+  - Green result after implementation: 2 files passed, 19 tests passed.
+- `corepack pnpm --dir apps/web exec vitest run`
+  - Result: 18 files passed, 117 tests passed.
+- `corepack pnpm --filter web build`
+  - Result: exit 0 after refreshing dependencies with `corepack pnpm install --force`. Known Next dynamic-route warnings still appear during static collection, but routes are emitted as dynamic.
 
 ## Phase 6: Compliance Audit Trail And Policy Controls
 

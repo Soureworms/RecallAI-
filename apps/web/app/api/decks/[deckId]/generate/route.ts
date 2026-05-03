@@ -7,6 +7,7 @@ import { withHandler } from "@/lib/api/handler"
 import { generateCardsSchema } from "@/lib/schemas/api"
 import { env } from "@/lib/env"
 import { runGenerateJob } from "@/lib/services/generate-job"
+import { deckAccessWhereForRole } from "@/lib/auth/deck-scope"
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : "Generation failed"
@@ -34,8 +35,10 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
   const contentAccess = requireDeckContentManager(session)
   if (!contentAccess.ok) return contentAccess.response
 
-  const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
-  if (!deck || deck.orgId !== session.user.orgId) {
+  const deck = await prisma.deck.findFirst({
+    where: deckAccessWhereForRole(session.user.role, session.user.id, session.user.orgId, params.deckId),
+  })
+  if (!deck) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
 
@@ -47,7 +50,12 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
   const doc = await prisma.sourceDocument.findUnique({
     where: { id: parsed.data.sourceDocumentId },
   })
-  if (!doc || doc.orgId !== session.user.orgId || doc.status !== "READY") {
+  if (
+    !doc ||
+    doc.orgId !== session.user.orgId ||
+    doc.status !== "READY" ||
+    (doc.deckId !== null && doc.deckId !== params.deckId)
+  ) {
     return NextResponse.json(
       { error: "Document not found or not ready for generation" },
       { status: 404 }

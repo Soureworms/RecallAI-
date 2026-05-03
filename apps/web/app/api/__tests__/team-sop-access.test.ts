@@ -13,9 +13,10 @@ vi.mock("@prisma/client", () => ({
 }))
 
 const mockPrisma = {
-  deck: { findMany: vi.fn(), findUnique: vi.fn() },
+  deck: { findFirst: vi.fn(), findMany: vi.fn(), findUnique: vi.fn() },
   deckAssignment: { findMany: vi.fn(), findUnique: vi.fn(), createMany: vi.fn(), deleteMany: vi.fn() },
-  card: { findMany: vi.fn() },
+  card: { count: vi.fn(), create: vi.fn(), findMany: vi.fn() },
+  sourceDocument: { findMany: vi.fn(), findUnique: vi.fn() },
   team: { findUnique: vi.fn() },
   user: { findMany: vi.fn() },
   userCard: { count: vi.fn(), findFirst: vi.fn() },
@@ -40,13 +41,23 @@ function makeSession(role: "AGENT" | "MANAGER" | "ADMIN" = "AGENT") {
 beforeEach(() => {
   vi.clearAllMocks()
   mockAuth.mockResolvedValue(makeSession())
+  mockPrisma.deck.findFirst.mockResolvedValue({ id: "deck-1", orgId: "org-1", isArchived: false })
   mockPrisma.deck.findMany.mockResolvedValue([])
   mockPrisma.deck.findUnique.mockResolvedValue({ id: "deck-1", orgId: "org-1", isArchived: false })
   mockPrisma.deckAssignment.findMany.mockResolvedValue([])
   mockPrisma.deckAssignment.findUnique.mockResolvedValue({ userId: "user-1", deckId: "deck-1" })
   mockPrisma.deckAssignment.createMany.mockResolvedValue({ count: 2 })
   mockPrisma.deckAssignment.deleteMany.mockResolvedValue({ count: 1 })
+  mockPrisma.card.count.mockResolvedValue(0)
+  mockPrisma.card.create.mockResolvedValue({ id: "card-1" })
   mockPrisma.card.findMany.mockResolvedValue([])
+  mockPrisma.sourceDocument.findMany.mockResolvedValue([])
+  mockPrisma.sourceDocument.findUnique.mockResolvedValue({
+    id: "doc-1",
+    orgId: "org-1",
+    deckId: "deck-1",
+    status: "READY",
+  })
   mockPrisma.team.findUnique.mockResolvedValue({
     id: "team-support",
     orgId: "org-1",
@@ -79,6 +90,7 @@ describe("team-scoped SOP access", () => {
 
   it("does not allow an agent to read cards from an unassigned deck", async () => {
     mockPrisma.deckAssignment.findUnique.mockResolvedValue(null)
+    mockPrisma.deck.findFirst.mockResolvedValue(null)
 
     const { GET } = await import("../decks/[deckId]/cards/route")
     const res = await GET(new NextRequest("http://localhost/api/decks/deck-1/cards"), {
@@ -179,5 +191,137 @@ describe("team-scoped SOP access", () => {
 
     expect(res.status).toBe(403)
     expect(mockPrisma.deckAssignment.createMany).not.toHaveBeenCalled()
+  })
+
+  it("does not let a manager read a deck outside their team scope", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.deck.findFirst.mockResolvedValue(null)
+
+    const { GET } = await import("../decks/[deckId]/route")
+    const res = await GET(new NextRequest("http://localhost/api/decks/deck-1"), {
+      params: { deckId: "deck-1" },
+    })
+
+    expect(res.status).toBe(404)
+    expect(mockPrisma.card.count).not.toHaveBeenCalled()
+  })
+
+  it("does not let a manager read cards from a deck outside their team scope", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.deck.findFirst.mockResolvedValue(null)
+
+    const { GET } = await import("../decks/[deckId]/cards/route")
+    const res = await GET(new NextRequest("http://localhost/api/decks/deck-1/cards"), {
+      params: { deckId: "deck-1" },
+    })
+
+    expect(res.status).toBe(404)
+    expect(mockPrisma.card.findMany).not.toHaveBeenCalled()
+  })
+
+  it("does not let a manager add cards to a deck outside their team scope", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.deck.findFirst.mockResolvedValue(null)
+
+    const { POST } = await import("../decks/[deckId]/cards/route")
+    const res = await POST(
+      new NextRequest("http://localhost/api/decks/deck-1/cards", {
+        method: "POST",
+        body: JSON.stringify({ question: "Q?", answer: "A" }),
+        headers: { "Content-Type": "application/json" },
+      }),
+      { params: { deckId: "deck-1" } }
+    )
+
+    expect(res.status).toBe(404)
+    expect(mockPrisma.card.create).not.toHaveBeenCalled()
+  })
+
+  it("does not let a manager list documents for a deck outside their team scope", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.deck.findFirst.mockResolvedValue(null)
+
+    const { GET } = await import("../documents/route")
+    const res = await GET(new NextRequest("http://localhost/api/documents?deckId=deck-1"))
+
+    expect(res.status).toBe(404)
+    expect(mockPrisma.sourceDocument.findMany).not.toHaveBeenCalled()
+  })
+
+  it("does not let a manager read a document attached to a deck outside their team scope", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.deck.findFirst.mockResolvedValue(null)
+
+    const { GET } = await import("../documents/[documentId]/route")
+    const res = await GET(new NextRequest("http://localhost/api/documents/doc-1"), {
+      params: { documentId: "doc-1" },
+    })
+
+    expect(res.status).toBe(404)
+  })
+
+  it("does not let a manager generate cards from a deck outside their team scope", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.deck.findFirst.mockResolvedValue(null)
+
+    const { POST } = await import("../decks/[deckId]/generate/route")
+    const res = await POST(
+      new NextRequest("http://localhost/api/decks/deck-1/generate", {
+        method: "POST",
+        body: JSON.stringify({ sourceDocumentId: "doc-1" }),
+        headers: { "Content-Type": "application/json" },
+      }),
+      { params: { deckId: "deck-1" } }
+    )
+
+    expect(res.status).toBe(404)
+  })
+
+  it("does not let a manager directly assign a deck to users outside their teams", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.user.findMany.mockResolvedValue([])
+
+    const { POST } = await import("../decks/[deckId]/assign/route")
+    const res = await POST(
+      new NextRequest("http://localhost/api/decks/deck-1/assign", {
+        method: "POST",
+        body: JSON.stringify({ userIds: ["user-2"] }),
+        headers: { "Content-Type": "application/json" },
+      }),
+      { params: { deckId: "deck-1" } }
+    )
+
+    expect(res.status).toBe(403)
+    expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: ["user-2"] },
+        orgId: "org-1",
+        teams: {
+          some: {
+            team: { members: { some: { userId: "user-1" } } },
+          },
+        },
+      },
+      select: { id: true },
+    })
+    expect(mockPrisma.deckAssignment.createMany).not.toHaveBeenCalled()
+  })
+
+  it("does not let a manager remove deck assignments for users outside their teams", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.user.findMany.mockResolvedValue([])
+
+    const { DELETE } = await import("../decks/[deckId]/assign/route")
+    const res = await DELETE(
+      new NextRequest("http://localhost/api/decks/deck-1/assign", {
+        method: "DELETE",
+        body: JSON.stringify({ userIds: ["user-2"] }),
+        headers: { "Content-Type": "application/json" },
+      }),
+      { params: { deckId: "deck-1" } }
+    )
+
+    expect(res.status).toBe(403)
+    expect(mockPrisma.deckAssignment.deleteMany).not.toHaveBeenCalled()
   })
 })

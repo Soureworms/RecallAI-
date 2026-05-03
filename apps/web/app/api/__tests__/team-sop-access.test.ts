@@ -13,9 +13,17 @@ vi.mock("@prisma/client", () => ({
 }))
 
 const mockPrisma = {
-  deck: { findFirst: vi.fn(), findMany: vi.fn(), findUnique: vi.fn() },
+  deck: { findFirst: vi.fn(), findMany: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
   deckAssignment: { findMany: vi.fn(), findUnique: vi.fn(), createMany: vi.fn(), deleteMany: vi.fn() },
-  card: { count: vi.fn(), create: vi.fn(), findMany: vi.fn() },
+  card: {
+    count: vi.fn(),
+    create: vi.fn(),
+    delete: vi.fn(),
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    update: vi.fn(),
+    updateMany: vi.fn(),
+  },
   sourceDocument: { findMany: vi.fn(), findUnique: vi.fn() },
   team: { findUnique: vi.fn() },
   user: { findMany: vi.fn() },
@@ -44,13 +52,27 @@ beforeEach(() => {
   mockPrisma.deck.findFirst.mockResolvedValue({ id: "deck-1", orgId: "org-1", isArchived: false })
   mockPrisma.deck.findMany.mockResolvedValue([])
   mockPrisma.deck.findUnique.mockResolvedValue({ id: "deck-1", orgId: "org-1", isArchived: false })
+  mockPrisma.deck.update.mockResolvedValue({ id: "deck-1", isArchived: true })
   mockPrisma.deckAssignment.findMany.mockResolvedValue([])
   mockPrisma.deckAssignment.findUnique.mockResolvedValue({ userId: "user-1", deckId: "deck-1" })
   mockPrisma.deckAssignment.createMany.mockResolvedValue({ count: 2 })
   mockPrisma.deckAssignment.deleteMany.mockResolvedValue({ count: 1 })
   mockPrisma.card.count.mockResolvedValue(0)
   mockPrisma.card.create.mockResolvedValue({ id: "card-1" })
+  mockPrisma.card.delete.mockResolvedValue({ id: "card-1" })
   mockPrisma.card.findMany.mockResolvedValue([])
+  mockPrisma.card.findUnique.mockResolvedValue({
+    id: "card-1",
+    deckId: "deck-1",
+    question: "Q?",
+    answer: "A",
+    format: "QA",
+    tags: [],
+    status: "DRAFT",
+    deck: { id: "deck-1", orgId: "org-1", isArchived: false },
+  })
+  mockPrisma.card.update.mockResolvedValue({ id: "card-1" })
+  mockPrisma.card.updateMany.mockResolvedValue({ count: 1 })
   mockPrisma.sourceDocument.findMany.mockResolvedValue([])
   mockPrisma.sourceDocument.findUnique.mockResolvedValue({
     id: "doc-1",
@@ -323,5 +345,99 @@ describe("team-scoped SOP access", () => {
 
     expect(res.status).toBe(403)
     expect(mockPrisma.deckAssignment.deleteMany).not.toHaveBeenCalled()
+  })
+
+  it("does not let a manager list assignments for a deck outside their team scope", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.deck.findFirst.mockResolvedValue(null)
+
+    const { GET } = await import("../decks/[deckId]/assign/route")
+    const res = await GET(new NextRequest("http://localhost/api/decks/deck-1/assign"), {
+      params: { deckId: "deck-1" },
+    })
+
+    expect(res.status).toBe(404)
+    expect(mockPrisma.deckAssignment.findMany).not.toHaveBeenCalled()
+  })
+
+  it("does not let a manager archive a deck outside their team scope", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.deck.findFirst.mockResolvedValue(null)
+
+    const { DELETE } = await import("../decks/[deckId]/route")
+    const res = await DELETE(new NextRequest("http://localhost/api/decks/deck-1"), {
+      params: { deckId: "deck-1" },
+    })
+
+    expect(res.status).toBe(404)
+    expect(mockPrisma.deck.update).not.toHaveBeenCalled()
+  })
+
+  it("does not let a manager update a card in a deck outside their team scope", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.deck.findFirst.mockResolvedValue(null)
+
+    const { PUT } = await import("../decks/[deckId]/cards/[cardId]/route")
+    const res = await PUT(
+      new NextRequest("http://localhost/api/decks/deck-1/cards/card-1", {
+        method: "PUT",
+        body: JSON.stringify({ question: "Updated?" }),
+        headers: { "Content-Type": "application/json" },
+      }),
+      { params: { deckId: "deck-1", cardId: "card-1" } }
+    )
+
+    expect(res.status).toBe(404)
+    expect(mockPrisma.card.update).not.toHaveBeenCalled()
+  })
+
+  it("does not let a manager approve a card in a deck outside their team scope", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.deck.findFirst.mockResolvedValue(null)
+
+    const { PATCH } = await import("../decks/[deckId]/cards/[cardId]/route")
+    const res = await PATCH(
+      new NextRequest("http://localhost/api/decks/deck-1/cards/card-1", {
+        method: "PATCH",
+        body: JSON.stringify({ question: "Approved?" }),
+        headers: { "Content-Type": "application/json" },
+      }),
+      { params: { deckId: "deck-1", cardId: "card-1" } }
+    )
+
+    expect(res.status).toBe(404)
+    expect(mockPrisma.card.update).not.toHaveBeenCalled()
+  })
+
+  it("does not let a manager archive a card in a deck outside their team scope", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.deck.findFirst.mockResolvedValue(null)
+
+    const { DELETE } = await import("../decks/[deckId]/cards/[cardId]/route")
+    const res = await DELETE(new NextRequest("http://localhost/api/decks/deck-1/cards/card-1"), {
+      params: { deckId: "deck-1", cardId: "card-1" },
+    })
+
+    expect(res.status).toBe(404)
+    expect(mockPrisma.card.delete).not.toHaveBeenCalled()
+    expect(mockPrisma.card.update).not.toHaveBeenCalled()
+  })
+
+  it("does not let a manager bulk approve cards in a deck outside their team scope", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.deck.findFirst.mockResolvedValue(null)
+
+    const { POST } = await import("../decks/[deckId]/cards/bulk-approve/route")
+    const res = await POST(
+      new NextRequest("http://localhost/api/decks/deck-1/cards/bulk-approve", {
+        method: "POST",
+        body: JSON.stringify({ approveAll: true }),
+        headers: { "Content-Type": "application/json" },
+      }),
+      { params: { deckId: "deck-1" } }
+    )
+
+    expect(res.status).toBe(404)
+    expect(mockPrisma.card.updateMany).not.toHaveBeenCalled()
   })
 })

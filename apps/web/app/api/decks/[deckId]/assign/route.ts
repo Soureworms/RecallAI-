@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db"
 import { withHandler } from "@/lib/api/handler"
 import { assignSchema } from "@/lib/schemas/api"
 import { assignCardsToUsers } from "@/lib/services/user-card"
-import { userTeamScopeWhereForRole } from "@/lib/auth/deck-scope"
+import { deckAccessWhereForRole, userTeamScopeWhereForRole } from "@/lib/auth/deck-scope"
 
 function notFound() {
   return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -18,8 +18,10 @@ export const GET = withHandler<{ deckId: string }>(async (_req, { params }) => {
   const contentAccess = requireDeckContentManager(session)
   if (!contentAccess.ok) return contentAccess.response
 
-  const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
-  if (!deck || deck.orgId !== session.user.orgId) return notFound()
+  const deck = await prisma.deck.findFirst({
+    where: deckAccessWhereForRole(session.user.role, session.user.id, session.user.orgId, params.deckId),
+  })
+  if (!deck) return notFound()
 
   const rows = await prisma.deckAssignment.findMany({
     where: { deckId: params.deckId },
@@ -36,8 +38,10 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
   const contentAccess = requireDeckContentManager(session)
   if (!contentAccess.ok) return contentAccess.response
 
-  const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
-  if (!deck || deck.orgId !== session.user.orgId) return notFound()
+  const deck = await prisma.deck.findFirst({
+    where: deckAccessWhereForRole(session.user.role, session.user.id, session.user.orgId, params.deckId),
+  })
+  if (!deck) return notFound()
 
   const parsed = assignSchema.safeParse(await req.json())
   if (!parsed.success) {
@@ -105,8 +109,10 @@ export const DELETE = withHandler<{ deckId: string }>(async (req: NextRequest, {
   const contentAccess = requireDeckContentManager(session)
   if (!contentAccess.ok) return contentAccess.response
 
-  const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
-  if (!deck || deck.orgId !== session.user.orgId) return notFound()
+  const deck = await prisma.deck.findFirst({
+    where: deckAccessWhereForRole(session.user.role, session.user.id, session.user.orgId, params.deckId),
+  })
+  if (!deck) return notFound()
 
   const parsed = assignSchema.safeParse(await req.json())
   if (!parsed.success || !("userIds" in parsed.data)) {

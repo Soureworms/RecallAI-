@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db"
 import { withHandler } from "@/lib/api/handler"
 import { updateCardSchema } from "@/lib/schemas/api"
 import { assignCardsToUsers } from "@/lib/services/user-card"
+import { deckAccessWhereForRole } from "@/lib/auth/deck-scope"
+import type { Role } from "@/lib/auth/roles"
 
 function notFound() {
   return NextResponse.json({ error: "Not found" }, { status: 404 })
@@ -16,6 +18,14 @@ async function ownedCard(cardId: string, deckId: string, orgId: string) {
   })
   if (!card || card.deckId !== deckId || card.deck.orgId !== orgId) return null
   return card
+}
+
+async function canAccessDeck(role: Role, userId: string, orgId: string, deckId: string) {
+  const deck = await prisma.deck.findFirst({
+    where: deckAccessWhereForRole(role, userId, orgId, deckId),
+    select: { id: true },
+  })
+  return Boolean(deck)
 }
 
 async function autoAssignCard(cardId: string, deckId: string) {
@@ -36,6 +46,10 @@ export const PUT = withHandler<{ deckId: string; cardId: string }>(async (req, {
   const { session } = auth
   const contentAccess = requireDeckContentManager(session)
   if (!contentAccess.ok) return contentAccess.response
+
+  if (!(await canAccessDeck(session.user.role, session.user.id, session.user.orgId, params.deckId))) {
+    return notFound()
+  }
 
   const card = await ownedCard(params.cardId, params.deckId, session.user.orgId)
   if (!card) return notFound()
@@ -66,6 +80,10 @@ export const PATCH = withHandler<{ deckId: string; cardId: string }>(async (req,
   const { session } = auth
   const contentAccess = requireDeckContentManager(session)
   if (!contentAccess.ok) return contentAccess.response
+
+  if (!(await canAccessDeck(session.user.role, session.user.id, session.user.orgId, params.deckId))) {
+    return notFound()
+  }
 
   const card = await ownedCard(params.cardId, params.deckId, session.user.orgId)
   if (!card) return notFound()
@@ -101,6 +119,10 @@ export const DELETE = withHandler<{ deckId: string; cardId: string }>(async (_re
   const { session } = auth
   const contentAccess = requireDeckContentManager(session)
   if (!contentAccess.ok) return contentAccess.response
+
+  if (!(await canAccessDeck(session.user.role, session.user.id, session.user.orgId, params.deckId))) {
+    return notFound()
+  }
 
   const card = await ownedCard(params.cardId, params.deckId, session.user.orgId)
   if (!card) return notFound()

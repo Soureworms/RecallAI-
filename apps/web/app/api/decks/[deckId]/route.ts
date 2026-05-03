@@ -39,8 +39,10 @@ export const PUT = withHandler<{ deckId: string }>(async (req: NextRequest, { pa
   const contentAccess = requireDeckContentManager(session)
   if (!contentAccess.ok) return contentAccess.response
 
-  const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
-  if (!deck || deck.orgId !== session.user.orgId) return notFound()
+  const deck = await prisma.deck.findFirst({
+    where: deckAccessWhereForRole(session.user.role, session.user.id, session.user.orgId, params.deckId),
+  })
+  if (!deck) return notFound()
 
   const parsed = updateDeckSchema.safeParse(await req.json())
   if (!parsed.success) {
@@ -92,8 +94,10 @@ export const DELETE = withHandler<{ deckId: string }>(async (_req, { params }) =
   const contentAccess = requireDeckContentManager(session)
   if (!contentAccess.ok) return contentAccess.response
 
-  const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
-  if (!deck || deck.orgId !== session.user.orgId) return notFound()
+  const deck = await prisma.deck.findFirst({
+    where: deckAccessWhereForRole(session.user.role, session.user.id, session.user.orgId, params.deckId),
+  })
+  if (!deck) return notFound()
 
   await prisma.deck.update({
     where: { id: params.deckId },

@@ -51,6 +51,12 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
       include: { members: { select: { userId: true } } },
     })
     if (!team || team.orgId !== session.user.orgId) return notFound()
+    if (
+      session.user.role === "MANAGER" &&
+      !team.members.some((member) => member.userId === session.user.id)
+    ) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
     userIds = team.members.map((m) => m.userId)
     teamId = team.id
   } else {

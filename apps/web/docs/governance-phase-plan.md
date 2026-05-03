@@ -164,15 +164,37 @@
 
 ## Phase 5: Team-Scoped SOP Assignment Hardening
 
-**Status:** Planned.
+**Status:** In progress. Slice 1 implemented locally; pending commit and push.
 
 **Goal:** Ensure uploaded SOPs, generated cards, decks, assignments, and analytics are team-scoped from database query to UI.
 
-**Planned Scope:**
-- Managers assign decks/documents to specific teams.
-- Support team cannot see success team SOPs/cards unless assigned.
-- Add regression tests for cross-team read/write attempts.
-- Review all `deckId`, `documentId`, and `teamId` API paths for org and team scope.
+**Built In Slice 1:**
+- Added `deckReadWhereForRole` to express role-specific deck read filters.
+- Agents still list only directly assigned decks.
+- Managers now list only decks they created, decks directly assigned to them, or decks assigned to one of their teams.
+- Managers can no longer assign a deck to a team they do not belong to.
+
+**Files In Slice 1:**
+- Create: `apps/web/lib/auth/deck-scope.ts`
+- Create: `apps/web/lib/auth/__tests__/deck-scope.test.ts`
+- `apps/web/app/api/decks/route.ts`
+- `apps/web/app/api/decks/[deckId]/assign/route.ts`
+- `apps/web/app/api/__tests__/team-sop-access.test.ts`
+
+**Verification Recorded Before Slice 1 Commit:**
+- `corepack pnpm --dir apps/web exec vitest run lib/auth/__tests__/deck-scope.test.ts app/api/__tests__/team-sop-access.test.ts`
+  - Red result before implementation: missing helper plus 2 expected API failures.
+  - Green result after implementation: 2 files passed, 9 tests passed.
+- `corepack pnpm --dir apps/web exec vitest run`
+  - Result: 18 files passed, 107 tests passed.
+- `corepack pnpm --filter web build`
+  - Result: exit 0 after refreshing dependencies with `corepack pnpm install --force`. Known Next dynamic-route warnings still appear during static collection, but routes are emitted as dynamic.
+
+**Remaining Scope:**
+- Restrict deck detail, card, document, regenerate, and generation endpoints with the same team-scope model.
+- Restrict source document listing and upload-by-deck to accessible decks only.
+- Review direct `userIds` assignment/removal paths so managers cannot target users outside their team.
+- Add regression tests for support-team users attempting to read success-team cards, documents, and analytics.
 
 ## Phase 6: Compliance Audit Trail And Policy Controls
 
@@ -193,3 +215,4 @@
 - 2026-05-03: Restricted Phase 1 content management to managers while leaving deeper customer-admin governance for later phases.
 - 2026-05-03: Phase 3 keeps detailed team/member stats in the Team workspace and makes Stats a role-specific analytics entry point, so managers can drill into team compliance without exposing agent-only routes.
 - 2026-05-03: Phase 4 allows managers to invite agents into teams they belong to, but reserves manager-role assignment for customer admins.
+- 2026-05-03: Phase 5 is being split into production-safe hardening slices because deck, document, card, assignment, and analytics scope touch many shared routes.

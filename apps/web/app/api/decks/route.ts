@@ -3,6 +3,7 @@ import { requireDeckContentManager, requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { withHandlerSimple } from "@/lib/api/handler"
 import { createDeckSchema } from "@/lib/schemas/api"
+import { deckReadWhereForRole } from "@/lib/auth/deck-scope"
 
 async function withCardCounts<T extends { id: string }>(decks: T[]) {
   const counts = await Promise.all(
@@ -16,13 +17,12 @@ export const GET = withHandlerSimple(async () => {
   if (!auth.ok) return auth.response
   const { session } = auth
 
-  const agentAccess =
-    session.user.role === "AGENT"
-      ? { assignments: { some: { userId: session.user.id } } }
-      : {}
-
   const decks = await prisma.deck.findMany({
-    where: { orgId: session.user.orgId, isArchived: false, ...agentAccess },
+    where: {
+      orgId: session.user.orgId,
+      isArchived: false,
+      ...deckReadWhereForRole(session.user.role, session.user.id),
+    },
     orderBy: { createdAt: "desc" },
   })
 

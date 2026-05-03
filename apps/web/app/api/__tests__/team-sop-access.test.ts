@@ -136,4 +136,48 @@ describe("team-scoped SOP access", () => {
       skipDuplicates: true,
     })
   })
+
+  it("lists only decks a manager created or can reach through team assignments", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+
+    const { GET } = await import("../decks/route")
+    const res = await GET(new NextRequest("http://localhost/api/decks"))
+
+    expect(res.status).toBe(200)
+    expect(mockPrisma.deck.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          orgId: "org-1",
+          isArchived: false,
+          OR: [
+            { createdById: "user-1" },
+            { assignments: { some: { userId: "user-1" } } },
+            { assignments: { some: { team: { members: { some: { userId: "user-1" } } } } } },
+          ],
+        }),
+      })
+    )
+  })
+
+  it("does not let a manager assign a deck to a team they do not belong to", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.team.findUnique.mockResolvedValue({
+      id: "team-success",
+      orgId: "org-1",
+      members: [{ userId: "user-2" }],
+    })
+
+    const { POST } = await import("../decks/[deckId]/assign/route")
+    const res = await POST(
+      new NextRequest("http://localhost/api/decks/deck-1/assign", {
+        method: "POST",
+        body: JSON.stringify({ teamId: "team-success" }),
+        headers: { "Content-Type": "application/json" },
+      }),
+      { params: { deckId: "deck-1" } }
+    )
+
+    expect(res.status).toBe(403)
+    expect(mockPrisma.deckAssignment.createMany).not.toHaveBeenCalled()
+  })
 })

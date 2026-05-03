@@ -42,11 +42,13 @@
 
 ## Phase 2: Typed Answer Compliance And Review Evidence
 
-**Status:** Implemented locally; ready to commit and push after final git checks.
+**Status:** Done and pushed.
+
+**Commit:** `f36e88c` - `Require typed answer review evidence`
 
 **Goal:** Prevent spacebar-only completion by requiring a typed answer before reveal, store answer evidence on each review, and surface a basic answer-match score.
 
-**Current Scope:**
+**Built:**
 - Add a deterministic, non-LLM answer scorer for fast compliance benchmarking.
 - Require `typedAnswer` in `POST /api/review`.
 - Store `typedAnswer`, `answerScore`, and `answerPassed` on `ReviewLog`.
@@ -67,16 +69,16 @@
 - Modify: `apps/web/prisma/schema.prisma`
 - Create: `apps/web/prisma/migrations/20260503121000_add_review_answer_evidence/migration.sql`
 
-**Verification To Run Before Commit:**
-- Done: `corepack pnpm --dir apps/web exec vitest run lib/study/__tests__/answer-scorer.test.ts app/api/__tests__/review-submit-route.test.ts lib/services/__tests__/scheduler-submit-review.test.ts`
+**Verification:**
+- `corepack pnpm --dir apps/web exec vitest run lib/study/__tests__/answer-scorer.test.ts app/api/__tests__/review-submit-route.test.ts lib/services/__tests__/scheduler-submit-review.test.ts`
   - Result: 3 files passed, 7 tests passed.
-- Done: `corepack pnpm --dir apps/web exec vitest run --testNamePattern "Review session"`
+- `corepack pnpm --dir apps/web exec vitest run --testNamePattern "Review session"`
   - Result: 1 file passed, 4 review-session tests passed.
-- Done: `corepack pnpm --dir apps/web exec vitest run lib/study/__tests__/answer-scorer.test.ts app/api/__tests__/review-submit-route.test.ts lib/services/__tests__/scheduler-submit-review.test.ts lib/auth/__tests__/capabilities.test.ts app/api/__tests__/permissions.test.ts app/api/__tests__/team-sop-access.test.ts app/api/__tests__/production-e2e-regressions.test.ts app/api/__tests__/generate-route-fallback.test.ts app/api/__tests__/review-due-route.test.ts app/api/__tests__/review-due-assignments.test.ts`
+- `corepack pnpm --dir apps/web exec vitest run lib/study/__tests__/answer-scorer.test.ts app/api/__tests__/review-submit-route.test.ts lib/services/__tests__/scheduler-submit-review.test.ts lib/auth/__tests__/capabilities.test.ts app/api/__tests__/permissions.test.ts app/api/__tests__/team-sop-access.test.ts app/api/__tests__/production-e2e-regressions.test.ts app/api/__tests__/generate-route-fallback.test.ts app/api/__tests__/review-due-route.test.ts app/api/__tests__/review-due-assignments.test.ts`
   - Result: 10 files passed, 46 tests passed.
-- Done: `corepack pnpm --filter web build`
+- `corepack pnpm --filter web build`
   - Result: exit 0. Known Next dynamic-route warnings still appear during static collection, but routes are emitted as dynamic.
-- Attempted: `corepack pnpm --dir apps/web exec vitest run`
+- `corepack pnpm --dir apps/web exec vitest run`
   - Result: local Node heap OOM after 15/16 files and 81/91 tests. Treat as inconclusive, not a product test failure.
 
 **Known Risks To Watch:**
@@ -86,23 +88,42 @@
 
 ## Phase 3: Manager And Customer Admin Analytics Split
 
-**Status:** Planned.
+**Status:** Done and pushed.
+
+**Commit:** `f6605c9` - `Surface role-specific analytics`
 
 **Goal:** Give managers team/member analytics and customer admins organization-level governance analytics without exposing agent-only or manager-only surfaces.
 
-**Planned Scope:**
-- Managers see team stats, per-user stats, deck weakness, answer-match score, FSRS retention, and completion.
-- Customer admins see org-level rollups, teams, role assignment, and compliance summaries.
-- Agents do not see Stats or Decks routes.
-- Tighten API authorization for analytics endpoints to match the route model.
+**Built:**
+- Added a role-aware stats section helper so the Stats page can present manager and customer-admin views separately.
+- Changed customer admins to see organization and document analytics without a personal study panel.
+- Changed managers to see a Team Stats landing surface with document analytics, personal learning stats, and a direct link to team/member analytics.
+- Added answer-match average and pass-rate fields to user retention scores.
+- Added typed-answer evidence fields to recent review analytics.
+- Fixed team analytics UI mappings so retention, knowledge-gap, and member tables align with the analytics service response shapes.
+- Added answer-match evidence to manager team/member tables and recent review analytics.
+- Kept agents out of Stats and Decks through Phase 1 capability enforcement.
 
-**Likely Files:**
+**Files:**
+- Create: `apps/web/lib/analytics/stats-sections.ts`
+- Create: `apps/web/lib/analytics/__tests__/stats-sections.test.ts`
 - `apps/web/app/(dashboard)/stats/page.tsx`
-- `apps/web/app/api/analytics/org/route.ts`
-- `apps/web/app/api/analytics/team/[teamId]/route.ts`
-- `apps/web/app/api/analytics/user/[userId]/route.ts`
+- `apps/web/app/(dashboard)/team/page.tsx`
+- `apps/web/components/analytics/user-analytics.tsx`
 - `apps/web/lib/services/analytics.ts`
-- `apps/web/lib/auth/capabilities.ts`
+- `apps/web/lib/services/__tests__/analytics.test.ts`
+
+**Verification Recorded Before Commit:**
+- `corepack pnpm --dir apps/web exec vitest run lib/analytics/__tests__/stats-sections.test.ts lib/services/__tests__/analytics.test.ts`
+  - Result: 2 files passed, 15 tests passed.
+- `corepack pnpm --dir apps/web exec vitest run`
+  - Result: 17 files passed, 96 tests passed.
+- `corepack pnpm --filter web build`
+  - Result: exit 0 after refreshing dependencies with `corepack pnpm install --force`. Known Next dynamic-route warnings still appear during static collection, but routes are emitted as dynamic.
+
+**Known Gaps:**
+- This phase surfaces manager/customer-admin analytics differences but does not yet create the dedicated customer-admin role-assignment workspace.
+- Analytics API authorization still deserves a deeper endpoint-by-endpoint hardening pass in Phase 5.
 
 ## Phase 4: Role Assignment And Team Governance UX
 
@@ -145,3 +166,4 @@
 - 2026-05-03: Chose deterministic word/numeric matching for Phase 2 to avoid per-review LLM cost and latency.
 - 2026-05-03: Kept FSRS self-rating because it remains useful for scheduling, but paired it with typed-answer evidence for compliance benchmarking.
 - 2026-05-03: Restricted Phase 1 content management to managers while leaving deeper customer-admin governance for later phases.
+- 2026-05-03: Phase 3 keeps detailed team/member stats in the Team workspace and makes Stats a role-specific analytics entry point, so managers can drill into team compliance without exposing agent-only routes.

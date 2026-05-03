@@ -164,11 +164,13 @@
 
 ## Phase 5: Team-Scoped SOP Assignment Hardening
 
-**Status:** In progress. Slices 1 and 2 done and pushed. Slice 3 implemented locally; pending commit and push.
+**Status:** In progress. Slices 1, 2, and 3 done and pushed.
 
 **Slice 1 Commit:** `70790ac` - `Enforce manager deck team scope`
 
 **Slice 2 Commit:** `1fedb1e` - `Enforce deck document team scope`
+
+**Slice 3 Commit:** `8f301a4` - `Enforce card mutation team scope`
 
 **Goal:** Ensure uploaded SOPs, generated cards, decks, assignments, and analytics are team-scoped from database query to UI.
 

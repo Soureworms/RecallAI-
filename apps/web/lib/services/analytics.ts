@@ -81,6 +81,8 @@ export type UserScoreItem = {
   reviewsThisWeek: number
   lastActiveDate: string | null
   streak: number
+  answerScoreAvg: number | null
+  answerPassRate: number | null
 }
 
 export async function getUserRetentionScores(
@@ -110,7 +112,7 @@ export async function getUserRetentionScores(
     }),
     prisma.reviewLog.findMany({
       where: { userId: { in: userIds }, reviewedAt: { gte: yearAgo } },
-      select: { userId: true, reviewedAt: true },
+      select: { userId: true, reviewedAt: true, answerScore: true, answerPassed: true },
       orderBy: { reviewedAt: "desc" },
     }),
   ])
@@ -153,6 +155,7 @@ export async function getUserRetentionScores(
     const userCards = cardsByUser.get(user.id) ?? []
     const reviewsThisWeek = weekCountByUser.get(user.id) ?? 0
     const logs = logsByUser.get(user.id) ?? []
+    const answerLogs = allLogs.filter((log) => log.userId === user.id && log.answerScore !== null)
 
     const scores = userCards.map(retrievability).filter((r): r is number => r !== null)
     const avgRetention = scores.length > 0
@@ -166,6 +169,12 @@ export async function getUserRetentionScores(
     const completionRate = dueThisWeek > 0
       ? pct(reviewsThisWeek / dueThisWeek)
       : reviewsThisWeek > 0 ? 100 : 0
+    const answerScoreAvg = answerLogs.length > 0
+      ? Math.round(answerLogs.reduce((sum, log) => sum + (log.answerScore ?? 0), 0) / answerLogs.length)
+      : null
+    const answerPassRate = answerLogs.length > 0
+      ? pct(answerLogs.filter((log) => log.answerPassed).length / answerLogs.length)
+      : null
 
     return {
       userId: user.id,
@@ -176,6 +185,8 @@ export async function getUserRetentionScores(
       reviewsThisWeek,
       lastActiveDate: logs.length > 0 ? logs[0].toISOString() : null,
       streak: computeStreakFromLogs(logs),
+      answerScoreAvg,
+      answerPassRate,
     }
   })
 
@@ -544,6 +555,9 @@ export type RecentReview = {
   deckName: string
   rating: string
   reviewedAt: string
+  typedAnswer: string | null
+  answerScore: number | null
+  answerPassed: boolean | null
 }
 
 export async function getRecentReviews(
@@ -563,6 +577,9 @@ export async function getRecentReviews(
     deckName: log.card.deck.name,
     rating: log.rating,
     reviewedAt: log.reviewedAt.toISOString(),
+    typedAnswer: log.typedAnswer,
+    answerScore: log.answerScore,
+    answerPassed: log.answerPassed,
   }))
 }
 

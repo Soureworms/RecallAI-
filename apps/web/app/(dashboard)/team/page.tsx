@@ -27,10 +27,9 @@ import {
 
 type DeckRetention = {
   deckId: string
-  deckName: string
+  name: string
   avgRetention: number
-  totalCards: number
-  membersAssigned: number
+  cardCount: number
 }
 
 type UserScore = {
@@ -40,15 +39,16 @@ type UserScore = {
   avgRetention: number
   completionRate: number
   reviewsThisWeek: number
-  lastReviewAt: string | null
+  lastActiveDate: string | null
+  answerScoreAvg: number | null
+  answerPassRate: number | null
 }
 
 type KnowledgeGap = {
-  cardId: string
-  question: string
-  deckName: string
+  tag: string
   avgRetention: number
-  reviewCount: number
+  affectedCards: number
+  strugglingUsers: number
 }
 
 type NewHireProgress = {
@@ -258,7 +258,7 @@ export default function TeamPage() {
     }
     const overdueDeck = data.deckRetention.find((d) => d.avgRetention < 50)
     if (overdueDeck) {
-      list.push(`"${overdueDeck.deckName}" deck retention is critically low (${overdueDeck.avgRetention}%)`)
+      list.push(`"${overdueDeck.name}" deck retention is critically low (${overdueDeck.avgRetention}%)`)
     }
     const behindHires = data.newHireProgress.filter((h) => !h.onTrack)
     if (behindHires.length > 0) {
@@ -373,7 +373,7 @@ export default function TeamPage() {
               <XAxis type="number" domain={[0, 100]} tickFormatter={(v: number) => `${v}%`} tick={{ fontSize: 12 }} />
               <YAxis
                 type="category"
-                dataKey="deckName"
+                dataKey="name"
                 width={140}
                 tick={{ fontSize: 12 }}
               />
@@ -412,9 +412,10 @@ export default function TeamPage() {
                     [
                       ["name", "Name"],
                       ["avgRetention", "Retention"],
+                      ["answerScoreAvg", "Answer Match"],
                       ["completionRate", "Completion"],
                       ["reviewsThisWeek", "Reviews This Week"],
-                      ["lastReviewAt", "Last Review"],
+                      ["lastActiveDate", "Last Active"],
                     ] as [keyof UserScore, string][]
                   ).map(([col, label]) => (
                     <th
@@ -439,14 +440,26 @@ export default function TeamPage() {
                       <RetentionBadge value={u.avgRetention} />
                     </td>
                     <td className="px-4 py-3">
+                      {u.answerScoreAvg === null ? (
+                        <span className="text-xs text-ink-4">No typed answers</span>
+                      ) : (
+                        <div className="flex flex-col gap-1">
+                          <RetentionBadge value={u.answerScoreAvg} />
+                          <span className="text-xs text-ink-4">
+                            {u.answerPassRate ?? 0}% pass rate
+                          </span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
                       <RetentionBadge value={u.completionRate} />
                     </td>
                     <td className="px-4 py-3 text-ink-3">
                       {u.reviewsThisWeek}
                     </td>
                     <td className="px-4 py-3 text-ink-4">
-                      {u.lastReviewAt
-                        ? new Date(u.lastReviewAt).toLocaleDateString()
+                      {u.lastActiveDate
+                        ? new Date(u.lastActiveDate).toLocaleDateString()
                         : "Never"}
                     </td>
                     <td className="px-4 py-3">
@@ -492,9 +505,10 @@ export default function TeamPage() {
                   {(
                     [
                       ["question", "Question"],
-                      ["deckName", "Deck"],
+                      ["tag", "Topic"],
                       ["avgRetention", "Retention"],
-                      ["reviewCount", "Reviews"],
+                      ["affectedCards", "Cards"],
+                      ["strugglingUsers", "Users"],
                     ] as [keyof KnowledgeGap, string][]
                   ).map(([col, label]) => (
                     <th
@@ -509,15 +523,15 @@ export default function TeamPage() {
               </thead>
               <tbody className="divide-y divide-ink-6">
                 {gapsTable.sorted.map((g) => (
-                  <tr key={g.cardId} className="hover:bg-paper-sunken">
+                  <tr key={g.tag} className="hover:bg-paper-sunken">
                     <td className="max-w-xs truncate px-4 py-3 text-ink-1">
-                      {g.question}
+                      {g.tag}
                     </td>
-                    <td className="px-4 py-3 text-ink-3">{g.deckName}</td>
                     <td className="px-4 py-3">
                       <RetentionBadge value={g.avgRetention} />
                     </td>
-                    <td className="px-4 py-3 text-ink-3">{g.reviewCount}</td>
+                    <td className="px-4 py-3 text-ink-3">{g.affectedCards}</td>
+                    <td className="px-4 py-3 text-ink-3">{g.strugglingUsers}</td>
                   </tr>
                 ))}
               </tbody>

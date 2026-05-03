@@ -5,7 +5,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 const mockPrisma = vi.hoisted(() => ({
   teamMember: { findMany: vi.fn() },
   userCard: { findMany: vi.fn(), count: vi.fn() },
-  reviewLog: { findMany: vi.fn(), count: vi.fn() },
+  reviewLog: { findMany: vi.fn(), count: vi.fn(), groupBy: vi.fn() },
   user: { findUnique: vi.fn() },
   card: { findMany: vi.fn() },
 }))
@@ -22,6 +22,7 @@ import {
   getKnowledgeGaps,
   getNewHireRampProgress,
   getWeakestCards,
+  getRecentReviews,
 } from "../analytics"
 
 beforeEach(() => {
@@ -88,27 +89,68 @@ describe("getUserRetentionScores", () => {
     const result = await getUserRetentionScores("team-1")
     expect(result).toEqual([])
   })
+
+  it("adds typed-answer compliance scores per team member", async () => {
+    mockPrisma.teamMember.findMany.mockResolvedValue([
+      { user: { id: "u-1", name: "Ava", email: "ava@example.com" } },
+      { user: { id: "u-2", name: "Ben", email: "ben@example.com" } },
+    ])
+    mockPrisma.userCard.findMany.mockResolvedValue([
+      {
+        userId: "u-1",
+        stability: 10,
+        lastReviewDate: new Date(),
+        dueDate: new Date(),
+      },
+      {
+        userId: "u-2",
+        stability: 0,
+        lastReviewDate: null,
+        dueDate: new Date(),
+      },
+    ])
+    mockPrisma.reviewLog.groupBy.mockResolvedValue([{ userId: "u-1", _count: 2 }])
+    mockPrisma.reviewLog.findMany.mockResolvedValue([
+      { userId: "u-1", reviewedAt: new Date(), answerScore: 80, answerPassed: true },
+      { userId: "u-1", reviewedAt: new Date(), answerScore: 60, answerPassed: false },
+      { userId: "u-2", reviewedAt: new Date(), answerScore: null, answerPassed: null },
+    ])
+
+    const result = await getUserRetentionScores("team-1")
+
+    const ava = result.find((row) => row.userId === "u-1")
+    expect(ava?.answerScoreAvg).toBe(70)
+    expect(ava?.answerPassRate).toBe(50)
+
+    const ben = result.find((row) => row.userId === "u-2")
+    expect(ben?.answerScoreAvg).toBeNull()
+    expect(ben?.answerPassRate).toBeNull()
+  })
 })
 
 describe("getKnowledgeGaps", () => {
   it("returns tags sorted by lowest avgRetention", async () => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86_400_000)
-    mockPrisma.userCard.findMany.mockResolvedValue([
-      {
-        userId: "u-1",
-        cardId: "c-1",
-        stability: 1,
-        lastReviewDate: thirtyDaysAgo,
-        card: { tags: ["returns"] },
-      },
-      {
-        userId: "u-1",
-        cardId: "c-2",
-        stability: 5,
-        lastReviewDate: thirtyDaysAgo,
-        card: { tags: ["billing"] },
-      },
-    ])
+    mockPrisma.userCard.findMany
+      .mockResolvedValueOnce([
+        {
+          id: "uc-1",
+          userId: "u-1",
+          cardId: "c-1",
+          stability: 1,
+          lastReviewDate: thirtyDaysAgo,
+          card: { tags: ["returns"] },
+        },
+        {
+          id: "uc-2",
+          userId: "u-1",
+          cardId: "c-2",
+          stability: 5,
+          lastReviewDate: thirtyDaysAgo,
+          card: { tags: ["billing"] },
+        },
+      ])
+      .mockResolvedValueOnce([])
     const result = await getKnowledgeGaps("org-1")
     expect(Array.isArray(result)).toBe(true)
     result.forEach((item) => {
@@ -118,7 +160,7 @@ describe("getKnowledgeGaps", () => {
   })
 
   it("returns empty array when no user cards exist", async () => {
-    mockPrisma.userCard.findMany.mockResolvedValue([])
+    mockPrisma.userCard.findMany.mockResolvedValueOnce([])
     const result = await getKnowledgeGaps("org-1")
     expect(result).toEqual([])
   })
@@ -191,5 +233,34 @@ describe("getWeakestCards", () => {
     ])
     const result = await getWeakestCards("u-1")
     expect(result).toEqual([])
+  })
+})
+
+describe("getRecentReviews", () => {
+  it("returns typed-answer evidence with recent reviews", async () => {
+    mockPrisma.reviewLog.findMany.mockResolvedValue([
+      {
+        id: "log-1",
+        rating: "GOOD",
+        reviewedAt: new Date("2026-05-03T08:00:00.000Z"),
+        typedAnswer: "Manager approval before refunds above 500 rand.",
+        answerScore: 82,
+        answerPassed: true,
+        card: {
+          question: "What is required before confirming a refund request over 500 rand?",
+          deck: { name: "Refund SOP" },
+        },
+      },
+    ])
+
+    const result = await getRecentReviews("u-1")
+
+    expect(result[0]).toMatchObject({
+      id: "log-1",
+      rating: "GOOD",
+      answerScore: 82,
+      answerPassed: true,
+      typedAnswer: "Manager approval before refunds above 500 rand.",
+    })
   })
 })

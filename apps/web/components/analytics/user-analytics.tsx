@@ -41,8 +41,11 @@ type RecentReview = {
   cardId: string
   question: string
   deckName: string
-  rating: number
+  rating: number | string
   reviewedAt: string
+  typedAnswer?: string | null
+  answerScore?: number | null
+  answerPassed?: boolean | null
 }
 
 type NewHireProgress = {
@@ -79,11 +82,15 @@ function ChartSkeleton() {
 
 // ─── rating label ─────────────────────────────────────────────────────────────
 
-const RATING_LABELS: Record<number, { label: string; color: string }> = {
+const RATING_LABELS: Record<string, { label: string; color: string }> = {
   1: { label: "Again", color: "bg-ds-red-100 text-ds-red-ink" },
   2: { label: "Hard", color: "bg-ds-amber-100 text-ds-amber-ink" },
   3: { label: "Good", color: "bg-ds-blue-100 text-ds-blue-ink" },
   4: { label: "Easy", color: "bg-ds-green-100 text-ds-green-ink" },
+  AGAIN: { label: "Again", color: "bg-ds-red-100 text-ds-red-ink" },
+  HARD: { label: "Hard", color: "bg-ds-amber-100 text-ds-amber-ink" },
+  GOOD: { label: "Good", color: "bg-ds-blue-100 text-ds-blue-ink" },
+  EASY: { label: "Easy", color: "bg-ds-green-100 text-ds-green-ink" },
 }
 
 // ─── main component ───────────────────────────────────────────────────────────
@@ -349,6 +356,7 @@ export function UserAnalytics({
                 <tr className="border-b border-ink-6 bg-paper-sunken text-left text-xs font-semibold uppercase tracking-wide text-ink-3">
                   <th className="px-4 py-3">Question</th>
                   <th className="px-4 py-3">Deck</th>
+                  <th className="px-4 py-3">Answer Match</th>
                   <th className="px-4 py-3">Rating</th>
                   <th className="px-4 py-3">When</th>
                 </tr>
@@ -365,6 +373,21 @@ export function UserAnalytics({
                         {r.question}
                       </td>
                       <td className="px-4 py-3 text-ink-3">{r.deckName}</td>
+                      <td className="px-4 py-3">
+                        {r.answerScore === null || r.answerScore === undefined ? (
+                          <span className="text-xs text-ink-4">No typed answer</span>
+                        ) : (
+                          <span
+                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
+                              r.answerPassed
+                                ? "bg-ds-green-100 text-ds-green-ink"
+                                : "bg-ds-amber-100 text-ds-amber-ink"
+                            }`}
+                          >
+                            {r.answerScore}%
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${ratingInfo.color}`}

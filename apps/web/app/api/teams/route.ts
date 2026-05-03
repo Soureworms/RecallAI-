@@ -9,14 +9,14 @@ export const GET = withHandlerSimple(async () => {
   if (!auth.ok) return auth.response
   const { session } = auth
 
-  // Shared workspace: MANAGER+ sees all org teams.
-  // AGENT sees only teams they belong to — prevents org-structure enumeration.
+  // Customer admins govern the whole org; managers and agents only see teams
+  // where they are members.
   const teams = await prisma.team.findMany({
     where: {
       orgId: session.user.orgId,
-      ...(session.user.role === "AGENT"
-        ? { members: { some: { userId: session.user.id } } }
-        : {}),
+      ...(session.user.role === "ADMIN"
+        ? {}
+        : { members: { some: { userId: session.user.id } } }),
     },
     include: {
       members: {

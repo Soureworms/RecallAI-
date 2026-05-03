@@ -127,15 +127,38 @@
 
 ## Phase 4: Role Assignment And Team Governance UX
 
-**Status:** Planned.
+**Status:** Implemented locally; pending commit and push.
 
 **Goal:** Make customer admins responsible for team creation and role assignment while managers operate inside their assigned teams.
 
-**Planned Scope:**
-- Add or clarify a role/team assignment menu item for customer admins.
-- Ensure customer admins can create teams and assign managers/agents.
-- Ensure managers only manage teams they belong to or are assigned to manage.
-- Audit invite flows so managers cannot invite customer admins or super admins.
+**Built:**
+- Added a shared `canInviteTeamRole` capability helper for team invite role assignment.
+- Customer admins can invite agents or managers to teams.
+- Managers can invite agents only, and cannot invite managers or elevated roles.
+- Managers and agents only receive teams where they are members from `GET /api/teams`; customer admins still see all org teams.
+- Team invite listing now uses the same team-access check as team analytics, so managers cannot inspect invites for teams they do not belong to.
+- Team Settings hides the Manager invite option unless the current user is a customer admin.
+
+**Files:**
+- `apps/web/lib/auth/capabilities.ts`
+- `apps/web/lib/auth/__tests__/capabilities.test.ts`
+- `apps/web/app/api/teams/route.ts`
+- `apps/web/app/api/teams/[teamId]/invite/route.ts`
+- `apps/web/app/api/__tests__/permissions.test.ts`
+- `apps/web/app/(dashboard)/team/settings/page.tsx`
+
+**Verification Recorded Before Commit:**
+- `corepack pnpm --dir apps/web exec vitest run lib/auth/__tests__/capabilities.test.ts app/api/__tests__/permissions.test.ts`
+  - Red result before implementation: 2 files failed, 4 expected failures.
+  - Green result after implementation: 2 files passed, 32 tests passed.
+- `corepack pnpm --dir apps/web exec vitest run`
+  - Result: 17 files passed, 102 tests passed.
+- `corepack pnpm --filter web build`
+  - Result: exit 0 after refreshing dependencies with `corepack pnpm install --force`. Known Next dynamic-route warnings still appear during static collection, but routes are emitted as dynamic.
+
+**Known Gaps:**
+- This phase tightens role assignment permissions but does not redesign the customer-admin governance UX into a dedicated Teams/Roles page.
+- Team rename/member-removal policy remains permissive for managers inside their own teams and should be revisited with the team-scoped SOP hardening pass.
 
 ## Phase 5: Team-Scoped SOP Assignment Hardening
 
@@ -167,3 +190,4 @@
 - 2026-05-03: Kept FSRS self-rating because it remains useful for scheduling, but paired it with typed-answer evidence for compliance benchmarking.
 - 2026-05-03: Restricted Phase 1 content management to managers while leaving deeper customer-admin governance for later phases.
 - 2026-05-03: Phase 3 keeps detailed team/member stats in the Team workspace and makes Stats a role-specific analytics entry point, so managers can drill into team compliance without exposing agent-only routes.
+- 2026-05-03: Phase 4 allows managers to invite agents into teams they belong to, but reserves manager-role assignment for customer admins.

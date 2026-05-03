@@ -110,6 +110,12 @@ export default function TeamSettingsPage() {
     }
   }, [isManager, router])
 
+  useEffect(() => {
+    if (!isAdmin && inviteForm.role !== "AGENT") {
+      setInviteForm((form) => ({ ...form, role: "AGENT" }))
+    }
+  }, [inviteForm.role, isAdmin])
+
   const fetchTeams = useCallback(async () => {
     const res = await fetch("/api/teams")
     if (res.ok) {
@@ -462,7 +468,7 @@ export default function TeamSettingsPage() {
                 className="mt-1 block w-full rounded-lg border border-ink-6 px-3 py-2 text-sm focus:border-ds-blue-500 focus:outline-none focus:ring-1 focus:ring-ds-blue-500"
               >
                 <option value="AGENT">Agent</option>
-                <option value="MANAGER">Manager</option>
+                {isAdmin && <option value="MANAGER">Manager</option>}
               </select>
             </div>
             <p className="text-xs text-ink-4">

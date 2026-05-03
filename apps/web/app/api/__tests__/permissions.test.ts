@@ -11,13 +11,13 @@ vi.mock("@/auth", () => ({ auth: mockAuth }))
 
 const mockPrisma = {
   deck: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn() },
-  team: { findUnique: vi.fn() },
+  team: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn() },
   teamMember: { findUnique: vi.fn(), findMany: vi.fn() },
   user: { findUnique: vi.fn(), findMany: vi.fn() },
   userCard: { findMany: vi.fn() },
   reviewLog: { findMany: vi.fn() },
   card: { count: vi.fn(), findMany: vi.fn() },
-  invite: { findUnique: vi.fn() },
+  invite: { findMany: vi.fn(), findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn() },
 }
 vi.mock("@/lib/db", () => ({ prisma: mockPrisma }))
 
@@ -42,6 +42,19 @@ beforeEach(() => {
   mockPrisma.deck.findMany.mockResolvedValue([])
   mockPrisma.deck.findUnique.mockResolvedValue({ id: "d-1", orgId: "org-1" })
   mockPrisma.deck.create.mockResolvedValue({ id: "d-1" })
+  mockPrisma.team.findMany.mockResolvedValue([])
+  mockPrisma.team.findUnique.mockResolvedValue({ id: "team-1", orgId: "org-1" })
+  mockPrisma.team.create.mockResolvedValue({ id: "team-1", name: "New Team", members: [] })
+  mockPrisma.teamMember.findUnique.mockResolvedValue({ userId: "user-1", teamId: "team-1" })
+  mockPrisma.invite.findMany.mockResolvedValue([])
+  mockPrisma.invite.findFirst.mockResolvedValue(null)
+  mockPrisma.invite.create.mockResolvedValue({
+    id: "invite-1",
+    token: "token-1",
+    email: "agent@example.com",
+    role: "AGENT",
+    expiresAt: new Date(),
+  })
   mockPrisma.card.findMany.mockResolvedValue([])
 })
 
@@ -191,6 +204,71 @@ describe("POST /api/teams — create team (admin only)", () => {
     const req = makeRequest({ name: "New Team" })
     const res = await POST(req)
     expect(res.status).toBe(401)
+  })
+})
+
+describe("GET /api/teams — list teams by role", () => {
+  it("limits managers to teams they belong to", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    const { GET } = await import("../teams/route")
+    const res = await GET()
+    expect(res.status).toBe(200)
+    expect(mockPrisma.team.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          orgId: "org-1",
+          members: { some: { userId: "user-1" } },
+        },
+      })
+    )
+  })
+
+  it("lets customer admins see all teams in their org", async () => {
+    mockAuth.mockResolvedValue(makeSession("ADMIN"))
+    const { GET } = await import("../teams/route")
+    const res = await GET()
+    expect(res.status).toBe(200)
+    expect(mockPrisma.team.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { orgId: "org-1" },
+      })
+    )
+  })
+})
+
+describe("GET /api/teams/[teamId]/invite — list team invites", () => {
+  it("returns 403 when manager is not a member of the team", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    mockPrisma.teamMember.findUnique.mockResolvedValue(null)
+    const { GET } = await import("../teams/[teamId]/invite/route")
+    const req = new NextRequest("http://localhost/api/teams/team-1/invite")
+    const res = await GET(req, { params: { teamId: "team-1" } })
+    expect(res.status).toBe(403)
+  })
+})
+
+describe("POST /api/teams/[teamId]/invite — create team invite", () => {
+  it("returns 403 when manager tries to invite another manager", async () => {
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
+    const { POST } = await import("../teams/[teamId]/invite/route")
+    const req = makeRequest({ email: "lead@example.com", role: "MANAGER" })
+    const res = await POST(req, { params: { teamId: "team-1" } })
+    expect(res.status).toBe(403)
+  })
+
+  it("lets customer admins invite managers to a team", async () => {
+    mockAuth.mockResolvedValue(makeSession("ADMIN"))
+    mockPrisma.invite.create.mockResolvedValue({
+      id: "invite-1",
+      token: "token-1",
+      email: "lead@example.com",
+      role: "MANAGER",
+      expiresAt: new Date(),
+    })
+    const { POST } = await import("../teams/[teamId]/invite/route")
+    const req = makeRequest({ email: "lead@example.com", role: "MANAGER" })
+    const res = await POST(req, { params: { teamId: "team-1" } })
+    expect(res.status).toBe(201)
   })
 })
 

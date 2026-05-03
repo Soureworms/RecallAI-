@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   canAccessDashboardPath,
+  canInviteTeamRole,
   canManageDeckContent,
   getNavItemsForRole,
 } from "../capabilities"
@@ -68,5 +69,14 @@ describe("role capabilities", () => {
     expect(canManageDeckContent("MANAGER")).toBe(true)
     expect(canManageDeckContent("ADMIN")).toBe(false)
     expect(canManageDeckContent("SUPER_ADMIN")).toBe(false)
+  })
+
+  it("limits team invite role assignment to the right governance owner", () => {
+    expect(canInviteTeamRole("ADMIN", "AGENT")).toBe(true)
+    expect(canInviteTeamRole("ADMIN", "MANAGER")).toBe(true)
+    expect(canInviteTeamRole("MANAGER", "AGENT")).toBe(true)
+    expect(canInviteTeamRole("MANAGER", "MANAGER")).toBe(false)
+    expect(canInviteTeamRole("AGENT", "AGENT")).toBe(false)
+    expect(canInviteTeamRole("SUPER_ADMIN", "AGENT")).toBe(false)
   })
 })

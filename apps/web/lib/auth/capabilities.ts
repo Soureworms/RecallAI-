@@ -58,6 +58,16 @@ export function canManageOrgUsers(role: Role): boolean {
   return role === "ADMIN"
 }
 
+export function canInviteTeamRole(actorRole: Role, invitedRole: Role): boolean {
+  if (actorRole === "ADMIN") {
+    return invitedRole === "AGENT" || invitedRole === "MANAGER"
+  }
+  if (actorRole === "MANAGER") {
+    return invitedRole === "AGENT"
+  }
+  return false
+}
+
 function matchesPath(pathname: string, basePath: string): boolean {
   return pathname === basePath || pathname.startsWith(`${basePath}/`)
 }

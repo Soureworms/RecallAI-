@@ -42,7 +42,7 @@ export const GET = withHandlerSimple(async () => {
       ? { orgId, isArchived: false, assignments: { some: { userId } } }
       : { orgId, isArchived: false }
 
-  const [dueCount, todayCount, streakLogs, nextDue] = await Promise.all([
+  const [dueCount, todayCount, streakLogs, scoredLogs, nextDue] = await Promise.all([
     prisma.userCard.count({
       where: {
         userId,
@@ -59,6 +59,12 @@ export const GET = withHandlerSimple(async () => {
       orderBy: { reviewedAt: "desc" },
       take: 1000,
     }),
+    prisma.reviewLog.findMany({
+      where: { userId, answerScore: { not: null } },
+      select: { answerScore: true, answerPassed: true },
+      orderBy: { reviewedAt: "desc" },
+      take: 100,
+    }),
     prisma.userCard.findFirst({
       where: {
         userId,
@@ -71,11 +77,19 @@ export const GET = withHandlerSimple(async () => {
   ])
 
   const streak = calculateStreak(streakLogs.map((l) => l.reviewedAt))
+  const answerScoreAvg = scoredLogs.length > 0
+    ? Math.round(scoredLogs.reduce((sum, log) => sum + (log.answerScore ?? 0), 0) / scoredLogs.length)
+    : null
+  const answerPassRate = scoredLogs.length > 0
+    ? Math.round((scoredLogs.filter((log) => log.answerPassed).length / scoredLogs.length) * 100)
+    : null
 
   return NextResponse.json({
     dueCount,
     todayCount,
     streak,
     nextDueDate: nextDue?.dueDate.toISOString() ?? null,
+    answerScoreAvg,
+    answerPassRate,
   })
 })

@@ -75,8 +75,9 @@ export const assignSchema = z
 // ── Review schema ─────────────────────────────────────────────────────────────
 
 export const submitReviewSchema = z.object({
-  userCardId: z.string().min(1),
-  rating:     ratingSchema,
+  userCardId:   z.string().min(1),
+  rating:       ratingSchema,
+  typedAnswer:  trimmedString().max(2000),
 })
 
 // ── Team schemas ──────────────────────────────────────────────────────────────

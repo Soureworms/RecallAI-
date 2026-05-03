@@ -17,6 +17,12 @@ export type SchedulerConfig = {
   relearningStepsSecs?: number[]
 }
 
+export type ReviewAnswerEvidence = {
+  typedAnswer: string
+  answerScore: number
+  answerPassed: boolean
+}
+
 const DEFAULT_PARAMS = {
   request_retention: 0.9,
   maximum_interval: 365,
@@ -102,7 +108,8 @@ export async function submitReview(
   userId: string,
   cardId: string,
   rating: DbRating,
-  config?: SchedulerConfig
+  config?: SchedulerConfig,
+  answerEvidence?: ReviewAnswerEvidence
 ): Promise<UserCard> {
   const userCard = await prisma.userCard.findUniqueOrThrow({
     where: { userId_cardId: { userId, cardId } },
@@ -143,6 +150,9 @@ export async function submitReview(
         stability: next.stability,
         difficulty: next.difficulty,
         state: fsrsStateToDb(next.state),
+        typedAnswer: answerEvidence?.typedAnswer,
+        answerScore: answerEvidence?.answerScore,
+        answerPassed: answerEvidence?.answerPassed,
       },
     }),
   ])

@@ -232,11 +232,15 @@ model ReviewLog {
   stability         Float
   difficulty        Float
   state             CardState
+  typedAnswer       String?
+  answerScore       Float?
+  answerPassed      Boolean?
 
   @@index([userId, reviewedAt])
   @@index([cardId, reviewedAt])
   @@index([reviewedAt])
   @@index([rating])
+  @@index([answerPassed])
 }
 
 model UserDailyRetentionRollup {

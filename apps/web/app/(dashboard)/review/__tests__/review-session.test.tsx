@@ -100,7 +100,7 @@ describe("Review session", () => {
     })
   })
 
-  it("reveals answer and rating buttons after Space keypress", async () => {
+  it("requires a typed answer before reveal and rating", async () => {
     await renderReviewPage()
 
     await waitFor(() => screen.getByRole("button", { name: /start review/i }))
@@ -111,11 +111,16 @@ describe("Review session", () => {
       expect(screen.getAllByText(/what is the refund window/i).length).toBeGreaterThan(0)
     )
 
-    // Flip via Space key
+    // Space should not reveal while the typed answer is empty.
     fireEvent.keyDown(window, { code: "Space", key: " " })
+    expect(screen.queryByText("30 days")).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText(/your answer/i), { target: { value: "30 days" } })
+    fireEvent.click(screen.getByRole("button", { name: /reveal answer/i }))
 
     await waitFor(() => {
-      expect(screen.getByText("30 days")).toBeInTheDocument()
+      expect(screen.getAllByText("30 days").length).toBeGreaterThanOrEqual(2)
+      expect(screen.getByText(/answer match/i)).toBeInTheDocument()
       // Rating buttons are always rendered; after flip they become active
       expect(screen.getByRole("button", { name: /again/i })).toBeInTheDocument()
       expect(screen.getByRole("button", { name: /good/i })).toBeInTheDocument()

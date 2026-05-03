@@ -6,6 +6,7 @@ import { getUserFSRSConfig } from "@/lib/services/fsrs-optimizer"
 import { Rating } from "@prisma/client"
 import { withHandlerSimple } from "@/lib/api/handler"
 import { submitReviewSchema } from "@/lib/schemas/api"
+import { scoreTypedAnswer } from "@/lib/study/answer-scorer"
 
 export const POST = withHandlerSimple(async (req: NextRequest) => {
   const authResult = await requireRole("AGENT", { limiterKey: "api:agent", routeClass: "read" })
@@ -16,9 +17,12 @@ export const POST = withHandlerSimple(async (req: NextRequest) => {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
-  const { userCardId, rating } = parsed.data
+  const { userCardId, rating, typedAnswer } = parsed.data
 
-  const userCard = await prisma.userCard.findUnique({ where: { id: userCardId } })
+  const userCard = await prisma.userCard.findUnique({
+    where: { id: userCardId },
+    include: { card: { select: { answer: true } } },
+  })
   if (!userCard || userCard.userId !== session.user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
@@ -28,6 +32,12 @@ export const POST = withHandlerSimple(async (req: NextRequest) => {
     ? { w: fsrsConfig.w, learningStepsSecs: fsrsConfig.learningStepsSecs, relearningStepsSecs: fsrsConfig.relearningStepsSecs }
     : undefined
 
-  const updated = await submitReview(userCard.userId, userCard.cardId, rating as Rating, schedulerConfig)
-  return NextResponse.json(updated)
+  const answerAssessment = scoreTypedAnswer(typedAnswer, userCard.card.answer)
+  const updated = await submitReview(userCard.userId, userCard.cardId, rating as Rating, schedulerConfig, {
+    typedAnswer,
+    answerScore: answerAssessment.score,
+    answerPassed: answerAssessment.passed,
+  })
+
+  return NextResponse.json({ ...updated, answerAssessment })
 })

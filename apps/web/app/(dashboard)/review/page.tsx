@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useCallback, useRef } from "react"
 import { X, Play } from "lucide-react"
+import { scoreTypedAnswer, type AnswerAssessment } from "@/lib/study/answer-scorer"
 
 type Rating = "AGAIN" | "HARD" | "GOOD" | "EASY"
 type SessionState = "pre" | "reviewing" | "done"
+type ReviewResult = { rating: Rating; answerScore: number; answerPassed: boolean }
 
 type RatingPreview = { nextDue: string; scheduledDays: number }
 
@@ -30,6 +32,8 @@ type ReviewStats = {
   todayCount: number
   streak: number
   nextDueDate: string | null
+  answerScoreAvg: number | null
+  answerPassRate: number | null
 }
 
 const RATINGS: { rating: Rating; label: string; key: string; bg: string; fg: string; bar: string }[] = [
@@ -92,7 +96,9 @@ export default function ReviewPage() {
   const [flipped, setFlipped] = useState(false)
   const [exiting, setExiting] = useState<Rating | null>(null)
   const [entering, setEntering] = useState(false)
-  const [results, setResults] = useState<Rating[]>([])
+  const [typedAnswer, setTypedAnswer] = useState("")
+  const [answerAssessment, setAnswerAssessment] = useState<AnswerAssessment | null>(null)
+  const [results, setResults] = useState<ReviewResult[]>([])
   const startTime = useRef(0)
   const [elapsedSecs, setElapsedSecs] = useState(0)
 
@@ -110,18 +116,30 @@ export default function ReviewPage() {
     return () => clearInterval(id)
   }, [sessionState])
 
+  const revealAnswer = useCallback(() => {
+    if (flipped || exiting) return
+    const card = queue[idx]
+    if (!card || !typedAnswer.trim()) return
+
+    setAnswerAssessment(scoreTypedAnswer(typedAnswer, card.answer))
+    setFlipped(true)
+  }, [flipped, exiting, queue, idx, typedAnswer])
+
   const rate = useCallback(async (rating: Rating) => {
     if (exiting) return
     const card = queue[idx]
-    if (!card) return
+    if (!card || !answerAssessment) return
 
     setExiting(rating)
     await fetch("/api/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userCardId: card.userCardId, rating }),
+      body: JSON.stringify({ userCardId: card.userCardId, rating, typedAnswer }),
     })
-    const newResults = [...results, rating]
+    const newResults = [
+      ...results,
+      { rating, answerScore: answerAssessment.score, answerPassed: answerAssessment.passed },
+    ]
     setResults(newResults)
 
     setTimeout(() => {
@@ -132,19 +150,23 @@ export default function ReviewPage() {
       } else {
         setIdx(idx + 1)
         setFlipped(false)
+        setTypedAnswer("")
+        setAnswerAssessment(null)
         setExiting(null)
         setEntering(true)
         requestAnimationFrame(() => setTimeout(() => setEntering(false), 20))
       }
     }, 340)
-  }, [exiting, queue, idx, results, fetchStats])
+  }, [exiting, queue, idx, answerAssessment, typedAnswer, results, fetchStats])
 
   // Keyboard
   useEffect(() => {
     if (sessionState !== "reviewing") return
     function onKey(e: KeyboardEvent) {
       if (e.repeat || exiting) return
-      if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); setFlipped((f) => !f); return }
+      const target = e.target as HTMLElement | null
+      if (target?.tagName === "TEXTAREA" || target?.tagName === "INPUT") return
+      if (!flipped && (e.code === "Space" || e.code === "Enter")) { e.preventDefault(); revealAnswer(); return }
       if (!flipped) return
       if (e.key === "1") void rate("AGAIN")
       if (e.key === "2") void rate("HARD")
@@ -153,7 +175,7 @@ export default function ReviewPage() {
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [sessionState, flipped, exiting, rate])
+  }, [sessionState, flipped, exiting, rate, revealAnswer])
 
   async function startSession() {
     const res = await fetch("/api/review/due")
@@ -164,6 +186,8 @@ export default function ReviewPage() {
     setIdx(0)
     setFlipped(false)
     setExiting(null)
+    setTypedAnswer("")
+    setAnswerAssessment(null)
     setResults([])
     startTime.current = Date.now()
     setElapsedSecs(0)
@@ -249,9 +273,12 @@ export default function ReviewPage() {
   if (sessionState === "done") {
     const total = results.length
     const counts: Record<string, number> = { AGAIN: 0, HARD: 0, GOOD: 0, EASY: 0 }
-    results.forEach((r) => { counts[r] = (counts[r] ?? 0) + 1 })
+    results.forEach((r) => { counts[r.rating] = (counts[r.rating] ?? 0) + 1 })
     const retained = (counts.GOOD ?? 0) + (counts.EASY ?? 0)
     const retention = total > 0 ? Math.round((retained / total) * 100) : 0
+    const avgAnswerScore = total > 0
+      ? Math.round(results.reduce((sum, result) => sum + result.answerScore, 0) / total)
+      : 0
     const mins = Math.floor(elapsedSecs / 60)
     const secs = elapsedSecs % 60
     const duration = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`
@@ -321,7 +348,7 @@ export default function ReviewPage() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {[
                 { label: "Time",     value: duration,    hint: elapsedSecs < 300 ? "Within 5-min ceiling" : "Over 5 minutes" },
-                { label: "Next due", value: stats?.nextDueDate ? `in ${formatTimeUntil(stats.nextDueDate)}` : "–", hint: "FSRS has rescheduled" },
+                { label: "Answer match", value: `${avgAnswerScore}%`, hint: "Typed response benchmark" },
               ].map(({ label, value, hint }) => (
                 <div key={label} style={{
                   background: "var(--paper-raised)", borderRadius: 14, padding: 14,
@@ -425,6 +452,29 @@ export default function ReviewPage() {
               <div style={{ fontSize: 22, lineHeight: 1.3, letterSpacing: "-0.01em", fontWeight: 500, color: "var(--ink-1)", flex: 1 }}>
                 {card.question}
               </div>
+              <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-2)" }}>Your answer</span>
+                <textarea
+                  aria-label="Your answer"
+                  value={typedAnswer}
+                  onChange={(e) => setTypedAnswer(e.target.value)}
+                  rows={4}
+                  disabled={flipped || !!exiting}
+                  style={{
+                    width: "100%",
+                    resize: "vertical",
+                    borderRadius: 12,
+                    border: "1px solid var(--ink-6)",
+                    background: "var(--paper)",
+                    color: "var(--ink-1)",
+                    padding: "12px 14px",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: 15,
+                    lineHeight: 1.45,
+                    outline: "none",
+                  }}
+                />
+              </label>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 8 }}>
                 <div style={{ display: "flex", gap: 6 }}>
                   {(card.tags ?? []).map((t) => (
@@ -435,9 +485,27 @@ export default function ReviewPage() {
                     }}>{t}</span>
                   ))}
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--ink-3)" }}>
-                  <Kbd>Space</Kbd> reveal
-                </div>
+                <button
+                  type="button"
+                  onClick={revealAnswer}
+                  disabled={!typedAnswer.trim() || flipped || !!exiting}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "8px 12px",
+                    borderRadius: 10,
+                    border: "1px solid var(--ink-6)",
+                    background: typedAnswer.trim() && !flipped ? "var(--ink-1)" : "var(--paper-raised)",
+                    color: typedAnswer.trim() && !flipped ? "var(--paper)" : "var(--ink-3)",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: typedAnswer.trim() && !flipped ? "pointer" : "default",
+                  }}
+                >
+                  Reveal answer
+                </button>
               </div>
             </div>
 
@@ -457,8 +525,31 @@ export default function ReviewPage() {
             }}>
               <Eyebrow>Answer</Eyebrow>
               <div style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.5 }}>{card.question}</div>
-              <div style={{ borderTop: "1px solid var(--ink-6)", paddingTop: 12 }}>
-                <div style={{ fontSize: 20, lineHeight: 1.45, color: "var(--ink-1)", fontWeight: 500 }}>{card.answer}</div>
+              <div style={{ borderTop: "1px solid var(--ink-6)", paddingTop: 12, display: "grid", gap: 14 }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-3)", marginBottom: 4 }}>Your answer</div>
+                  <div style={{ fontSize: 15, lineHeight: 1.45, color: "var(--ink-2)" }}>{flipped ? typedAnswer : null}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-3)", marginBottom: 4 }}>Expected answer</div>
+                  <div style={{ fontSize: 20, lineHeight: 1.45, color: "var(--ink-1)", fontWeight: 500 }}>{flipped ? card.answer : null}</div>
+                </div>
+                {answerAssessment && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-3)" }}>Answer match</span>
+                    <span style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      padding: "4px 8px",
+                      borderRadius: 999,
+                      background: answerAssessment.passed ? "var(--green-50)" : "var(--amber-50)",
+                      color: answerAssessment.passed ? "var(--green-ink)" : "var(--amber-ink)",
+                    }}>
+                      {answerAssessment.score}%
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -127,7 +127,9 @@
 
 ## Phase 4: Role Assignment And Team Governance UX
 
-**Status:** Implemented locally; pending commit and push.
+**Status:** Done and pushed.
+
+**Commit:** `6e82f67` - `Tighten team role governance`
 
 **Goal:** Make customer admins responsible for team creation and role assignment while managers operate inside their assigned teams.
 

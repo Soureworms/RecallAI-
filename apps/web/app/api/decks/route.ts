@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireRole } from "@/lib/auth/permissions"
+import { requireDeckContentManager, requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { withHandlerSimple } from "@/lib/api/handler"
 import { createDeckSchema } from "@/lib/schemas/api"
@@ -33,6 +33,8 @@ export const POST = withHandlerSimple(async (req: NextRequest) => {
   const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
+  const contentAccess = requireDeckContentManager(session)
+  if (!contentAccess.ok) return contentAccess.response
 
   const parsed = createDeckSchema.safeParse(await req.json())
   if (!parsed.success) {

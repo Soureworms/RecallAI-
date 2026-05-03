@@ -8,6 +8,7 @@ import {
 } from "@/lib/rate-limit"
 
 import { ROLE_RANK, assertRole, type Role } from "@/lib/auth/roles"
+import { canManageDeckContent } from "@/lib/auth/capabilities"
 
 export async function requireSuperAdmin(): Promise<PermResult> {
   const session = await auth()
@@ -84,6 +85,13 @@ export async function requireOrgAccess(session: AuthSession, targetUserId: strin
   const target = await prisma.user.findUnique({ where: { id: targetUserId } })
   if (!target || target.orgId !== session.user.orgId) {
     return { ok: false, response: NextResponse.json({ error: "Not found" }, { status: 404 }) }
+  }
+  return { ok: true, session }
+}
+
+export function requireDeckContentManager(session: AuthSession): PermResult {
+  if (!canManageDeckContent(session.user.role)) {
+    return { ok: false, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) }
   }
   return { ok: true, session }
 }

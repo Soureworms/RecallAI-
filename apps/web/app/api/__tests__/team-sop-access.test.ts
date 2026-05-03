@@ -110,7 +110,7 @@ describe("team-scoped SOP access", () => {
   })
 
   it("reports deck assignment rows created for a team assignment", async () => {
-    mockAuth.mockResolvedValue(makeSession("ADMIN"))
+    mockAuth.mockResolvedValue(makeSession("MANAGER"))
     mockPrisma.card.findMany.mockResolvedValue([{ id: "card-1" }])
     mockAssignCardsToUsers.mockResolvedValue(2)
 

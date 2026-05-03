@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createHash } from "crypto"
-import { requireRole } from "@/lib/auth/permissions"
+import { requireDeckContentManager, requireRole } from "@/lib/auth/permissions"
 import { checkRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/db"
 import { verifyMagicBytes, sanitizeFilename } from "@/lib/security/file-validation"
@@ -39,6 +39,8 @@ export const POST = withHandlerSimple(async (req) => {
   const authResult = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!authResult.ok) return authResult.response
   const { session } = authResult
+  const contentAccess = requireDeckContentManager(session)
+  if (!contentAccess.ok) return contentAccess.response
 
   // ── Upload-specific rate limit: 10 per hour per user ─────────────────────
   const { allowed: uploadAllowed } = await checkRateLimit(

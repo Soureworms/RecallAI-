@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireRole } from "@/lib/auth/permissions"
+import { requireDeckContentManager, requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { withHandler } from "@/lib/api/handler"
 import { assignSchema } from "@/lib/schemas/api"
@@ -14,6 +14,8 @@ export const GET = withHandler<{ deckId: string }>(async (_req, { params }) => {
   const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
+  const contentAccess = requireDeckContentManager(session)
+  if (!contentAccess.ok) return contentAccess.response
 
   const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
   if (!deck || deck.orgId !== session.user.orgId) return notFound()
@@ -30,6 +32,8 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
   const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
+  const contentAccess = requireDeckContentManager(session)
+  if (!contentAccess.ok) return contentAccess.response
 
   const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
   if (!deck || deck.orgId !== session.user.orgId) return notFound()
@@ -84,6 +88,8 @@ export const DELETE = withHandler<{ deckId: string }>(async (req: NextRequest, {
   const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
+  const contentAccess = requireDeckContentManager(session)
+  if (!contentAccess.ok) return contentAccess.response
 
   const deck = await prisma.deck.findUnique({ where: { id: params.deckId } })
   if (!deck || deck.orgId !== session.user.orgId) return notFound()

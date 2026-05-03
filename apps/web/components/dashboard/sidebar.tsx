@@ -14,23 +14,19 @@ import {
   LogOut,
   LayoutDashboard,
 } from "lucide-react"
+import { getNavItemsForRole, type NavItemKey } from "@/lib/auth/capabilities"
+import { assertRole } from "@/lib/auth/roles"
 
-const ROLE_RANK: Record<string, number> = { AGENT: 0, MANAGER: 1, ADMIN: 2, SUPER_ADMIN: 3 }
-
-const ADMIN_NAV = [
-  { href: "/admin",    label: "Platform Admin", icon: ShieldCheck },
-  { href: "/settings", label: "Settings",       icon: Settings },
-]
-
-const USER_NAV = [
-  { href: "/dashboard", label: "Dashboard",    icon: LayoutDashboard },
-  { href: "/review",    label: "Study",        icon: Play },
-  { href: "/decks",     label: "Decks",        icon: Folder },
-  { href: "/stats",     label: "Stats",        icon: BarChart2 },
-  { href: "/team",      label: "Team",         icon: Users,     minRole: "MANAGER" },
-  { href: "/org",       label: "Organisation", icon: Building2, minRole: "ADMIN" },
-  { href: "/settings",  label: "Settings",     icon: Settings },
-]
+const NAV_ICONS: Record<NavItemKey, React.ElementType> = {
+  dashboard: LayoutDashboard,
+  study: Play,
+  decks: Folder,
+  team: Users,
+  organisation: Building2,
+  stats: BarChart2,
+  settings: Settings,
+  "platform-admin": ShieldCheck,
+}
 
 function LogoMark({ size = 20 }: { size?: number }) {
   return (
@@ -72,13 +68,13 @@ function NavLink({ href, label, icon: Icon, pathname }: { href: string; label: s
 export function Sidebar() {
   const pathname = usePathname()
   const { data: session } = useSession()
-  const role = session?.user?.role ?? "AGENT"
-  const userRank = ROLE_RANK[role] ?? 0
+  const role = assertRole(session?.user?.role ?? "AGENT", "session user role")
   const isSuperAdmin = role === "SUPER_ADMIN"
 
-  const navItems = isSuperAdmin
-    ? ADMIN_NAV
-    : USER_NAV.filter((item) => !item.minRole || userRank >= (ROLE_RANK[item.minRole] ?? 0))
+  const navItems = getNavItemsForRole(role).map((item) => ({
+    ...item,
+    icon: NAV_ICONS[item.key],
+  }))
 
   // Mobile: always show Settings as the 5th tab; fill first 4 from non-settings items
   const settingsItem = navItems.find((i) => i.href === "/settings")

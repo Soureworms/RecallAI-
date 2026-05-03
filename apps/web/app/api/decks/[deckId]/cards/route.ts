@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireRole } from "@/lib/auth/permissions"
+import { requireDeckContentManager, requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { withHandler } from "@/lib/api/handler"
 import { createCardSchema } from "@/lib/schemas/api"
@@ -60,6 +60,8 @@ export const POST = withHandler<{ deckId: string }>(async (req, { params }) => {
   const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
+  const contentAccess = requireDeckContentManager(session)
+  if (!contentAccess.ok) return contentAccess.response
 
   const deck = await ownedDeck(params.deckId, session.user.orgId)
   if (!deck) return notFound()

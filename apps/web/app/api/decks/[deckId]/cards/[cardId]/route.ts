@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireRole } from "@/lib/auth/permissions"
+import { requireDeckContentManager, requireRole } from "@/lib/auth/permissions"
 import { prisma } from "@/lib/db"
 import { withHandler } from "@/lib/api/handler"
 import { updateCardSchema } from "@/lib/schemas/api"
@@ -34,6 +34,8 @@ export const PUT = withHandler<{ deckId: string; cardId: string }>(async (req, {
   const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
+  const contentAccess = requireDeckContentManager(session)
+  if (!contentAccess.ok) return contentAccess.response
 
   const card = await ownedCard(params.cardId, params.deckId, session.user.orgId)
   if (!card) return notFound()
@@ -62,6 +64,8 @@ export const PATCH = withHandler<{ deckId: string; cardId: string }>(async (req,
   const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
+  const contentAccess = requireDeckContentManager(session)
+  if (!contentAccess.ok) return contentAccess.response
 
   const card = await ownedCard(params.cardId, params.deckId, session.user.orgId)
   if (!card) return notFound()
@@ -95,6 +99,8 @@ export const DELETE = withHandler<{ deckId: string; cardId: string }>(async (_re
   const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
+  const contentAccess = requireDeckContentManager(session)
+  if (!contentAccess.ok) return contentAccess.response
 
   const card = await ownedCard(params.cardId, params.deckId, session.user.orgId)
   if (!card) return notFound()

@@ -1,5 +1,6 @@
 import type { NextAuthConfig } from "next-auth"
-import { ROLE_RANK, assertRole } from "@/lib/auth/roles"
+import { assertRole } from "@/lib/auth/roles"
+import { canAccessDashboardPath, defaultPathForRole } from "@/lib/auth/capabilities"
 
 export const authConfig = {
   trustHost: true,
@@ -21,7 +22,6 @@ export const authConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user
       const role = assertRole(auth?.user?.role ?? "AGENT", "authorized user role")
-      const rank = ROLE_RANK[role]
       const isOnboarded = !!auth?.user?.onboardedAt
       const isSuperAdmin = role === "SUPER_ADMIN"
 
@@ -45,7 +45,9 @@ export const authConfig = {
       // ── /admin — SUPER_ADMIN only ────────────────────────────────────────────
       if (path === "/admin" || path.startsWith("/admin/")) {
         if (!isLoggedIn) return false
-        if (!isSuperAdmin) return Response.redirect(new URL("/dashboard", nextUrl))
+        if (!canAccessDashboardPath(role, path)) {
+          return Response.redirect(new URL(defaultPathForRole(role), nextUrl))
+        }
         return true
       }
 
@@ -57,25 +59,13 @@ export const authConfig = {
       if (isDashboard) {
         if (!isLoggedIn) return false
 
-        // Super admins belong in /admin — redirect them away from all workspace
-        // routes. /settings is the sole exception (profile/password management).
-        if (isSuperAdmin && path !== "/settings" && !path.startsWith("/settings/")) {
-          return Response.redirect(new URL("/admin", nextUrl))
-        }
-
         // Unonboarded users → onboarding (super admin exempt)
         if (!isOnboarded && !isSuperAdmin) {
           return Response.redirect(new URL("/onboarding", nextUrl))
         }
 
-        // /org requires ADMIN+
-        if ((path === "/org" || path.startsWith("/org/")) && rank < ROLE_RANK.ADMIN) {
-          return Response.redirect(new URL("/dashboard", nextUrl))
-        }
-
-        // /team requires MANAGER+
-        if ((path === "/team" || path.startsWith("/team/")) && rank < ROLE_RANK.MANAGER) {
-          return Response.redirect(new URL("/dashboard", nextUrl))
+        if (!canAccessDashboardPath(role, path)) {
+          return Response.redirect(new URL(defaultPathForRole(role), nextUrl))
         }
 
         return true

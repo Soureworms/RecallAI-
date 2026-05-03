@@ -69,6 +69,14 @@ describe("POST /api/decks — create deck", () => {
     expect(res.status).toBe(201)
   })
 
+  it("returns 403 when customer admin tries to create a deck", async () => {
+    mockAuth.mockResolvedValue(makeSession("ADMIN"))
+    const { POST } = await import("../decks/route")
+    const req = makeRequest({ name: "Admin Deck" })
+    const res = await POST(req)
+    expect(res.status).toBe(403)
+  })
+
   it("returns 401 when unauthenticated", async () => {
     mockAuth.mockResolvedValue(null)
     const { POST } = await import("../decks/route")
@@ -149,6 +157,16 @@ describe("GET /api/analytics/team/[teamId]", () => {
 describe("POST /api/documents/upload", () => {
   it("returns 403 when agent tries to upload a document", async () => {
     mockAuth.mockResolvedValue(makeSession("AGENT"))
+    const { POST } = await import("../documents/upload/route")
+    const req = new NextRequest("http://localhost/api/documents/upload", {
+      method: "POST",
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(403)
+  })
+
+  it("returns 403 when customer admin tries to upload a document", async () => {
+    mockAuth.mockResolvedValue(makeSession("ADMIN"))
     const { POST } = await import("../documents/upload/route")
     const req = new NextRequest("http://localhost/api/documents/upload", {
       method: "POST",

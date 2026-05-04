@@ -98,8 +98,10 @@ export const createInviteSchema = z.object({
 // ── Org schemas ───────────────────────────────────────────────────────────────
 
 export const orgSettingsSchema = z.object({
-  name:      trimmedString().max(200).optional(),
-  studyMode: z.enum(["AUTO_ROTATE", "MANUAL"]).optional(),
+  name:                          trimmedString().max(200).optional(),
+  studyMode:                     z.enum(["AUTO_ROTATE", "MANUAL"]).optional(),
+  complianceAnswerThreshold:     z.number().int().min(0).max(100).optional(),
+  complianceCompletionThreshold: z.number().int().min(0).max(100).optional(),
 })
 
 export const createOrgUserSchema = z.object({

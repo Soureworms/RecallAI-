@@ -6,6 +6,7 @@ vi.mock("@/auth", () => ({ auth: mockAuth }))
 
 const mockPrisma = {
   deck: { findFirst: vi.fn() },
+  organization: { findUnique: vi.fn() },
   reviewLog: { findMany: vi.fn() },
   team: { findUnique: vi.fn() },
   teamMember: { findFirst: vi.fn(), findUnique: vi.fn() },
@@ -28,6 +29,10 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockAuth.mockResolvedValue(makeSession())
   mockPrisma.deck.findFirst.mockResolvedValue({ id: "deck-1" })
+  mockPrisma.organization.findUnique.mockResolvedValue({
+    complianceAnswerThreshold: 90,
+    complianceCompletionThreshold: 95,
+  })
   mockPrisma.reviewLog.findMany.mockResolvedValue([
     {
       id: "log-1",
@@ -63,12 +68,18 @@ describe("GET /api/compliance/reviews", () => {
       passed: 1,
       failed: 0,
       averageAnswerScore: 86,
+      belowAnswerThreshold: 1,
+    })
+    expect(body.thresholds).toEqual({
+      answerScore: 90,
+      completionRate: 95,
     })
     expect(body.items[0]).toMatchObject({
       id: "log-1",
       typedAnswer: "Manager approval is required before refunds above 500 rand.",
       answerScore: 86,
       answerPassed: true,
+      meetsAnswerThreshold: false,
       user: { id: "agent-1", email: "agent@example.com" },
       deck: { id: "deck-1", name: "Refund SOP" },
     })
@@ -123,8 +134,11 @@ describe("GET /api/compliance/reviews", () => {
     expect(res.status).toBe(200)
     expect(res.headers.get("Content-Type")).toContain("text/csv")
     expect(res.headers.get("Content-Disposition")).toContain("compliance-review-evidence.csv")
-    expect(body).toContain("reviewedAt,userEmail,deckName,question,typedAnswer,answer,answerScore,answerPassed,rating")
+    expect(body).toContain(
+      "reviewedAt,userEmail,deckName,question,typedAnswer,answer,answerScore,answerPassed,meetsAnswerThreshold,rating"
+    )
     expect(body).toContain("agent@example.com")
+    expect(body).toContain("\"false\"")
     expect(body).toContain("\"Manager approval is required before refunds above 500 rand.\"")
   })
 })

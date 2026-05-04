@@ -285,7 +285,7 @@
 
 ## Phase 6: Compliance Audit Trail And Policy Controls
 
-**Status:** In progress. Slices 1 and 2 done and pushed.
+**Status:** In progress. Slices 1 and 2 done and pushed. Slice 3 implemented locally; full verification, commit, and push pending.
 
 **Goal:** Build compliance-grade auditability on top of the typed-answer and FSRS events.
 
@@ -340,6 +340,32 @@
   - Initial result: failed because the local Next build worker file was missing.
   - Recovery: refreshed dependencies with `corepack pnpm install --force`.
   - Final result: exit 0. Existing dynamic-route warnings still appear for older API routes, but the compliance route is now explicitly dynamic.
+
+**Built In Slice 3 Locally:**
+- Added org-level compliance thresholds for answer-match score and completion rate.
+- Added database migration defaults: answer threshold `70`, completion threshold `100`.
+- Included thresholds in org settings GET/PATCH.
+- Applied the answer threshold to compliance review summaries, items, and CSV export.
+
+**Files In Slice 3 Locally:**
+- `apps/web/prisma/schema.prisma`
+- Create: `apps/web/prisma/migrations/20260504073000_add_compliance_thresholds/migration.sql`
+- `apps/web/lib/schemas/api.ts`
+- `apps/web/app/api/org/settings/route.ts`
+- `apps/web/app/api/compliance/reviews/route.ts`
+- `apps/web/app/api/__tests__/compliance-reviews.test.ts`
+- Create: `apps/web/app/api/__tests__/org-settings-compliance.test.ts`
+
+**Verification Recorded For Local Slice 3:**
+- `corepack pnpm --dir apps/web exec vitest run app/api/__tests__/compliance-reviews.test.ts app/api/__tests__/org-settings-compliance.test.ts`
+  - Red result before implementation: 2 files failed, 3 expected threshold failures.
+  - Green result after implementation: 2 files passed, 6 tests passed.
+- `corepack pnpm --dir apps/web exec vitest run`
+  - Result: 20 files passed, 132 tests passed.
+- `corepack pnpm --filter web build`
+  - Initial result: failed because the local Next build worker file was missing.
+  - Recovery: refreshed dependencies with `corepack pnpm install --force`.
+  - Final result: exit 0. Existing dynamic-route warnings still appear for older API routes.
 
 ## Decision Log
 

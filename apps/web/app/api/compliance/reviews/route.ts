@@ -27,6 +27,10 @@ function csvLine(values: unknown[]) {
   return values.map(csvCell).join(",")
 }
 
+function meetsAnswerThreshold(score: number | null, threshold: number) {
+  return score !== null && score >= threshold
+}
+
 export const GET = withHandlerSimple(async (req: NextRequest) => {
   const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "read" })
   if (!auth.ok) return auth.response
@@ -72,6 +76,16 @@ export const GET = withHandlerSimple(async (req: NextRequest) => {
     }
   }
 
+  const org = await prisma.organization.findUnique({
+    where: { id: session.user.orgId },
+    select: {
+      complianceAnswerThreshold: true,
+      complianceCompletionThreshold: true,
+    },
+  })
+  const answerThreshold = org?.complianceAnswerThreshold ?? 70
+  const completionThreshold = org?.complianceCompletionThreshold ?? 100
+
   const logs = await prisma.reviewLog.findMany({
     where: {
       answerScore: { not: null },
@@ -113,6 +127,9 @@ export const GET = withHandlerSimple(async (req: NextRequest) => {
 
   const scored = logs.filter((log) => log.answerScore !== null)
   const passedCount = scored.filter((log) => log.answerPassed).length
+  const belowAnswerThreshold = scored.filter(
+    (log) => !meetsAnswerThreshold(log.answerScore, answerThreshold)
+  ).length
   const averageAnswerScore =
     scored.length > 0
       ? Math.round(scored.reduce((sum, log) => sum + (log.answerScore ?? 0), 0) / scored.length)
@@ -128,6 +145,7 @@ export const GET = withHandlerSimple(async (req: NextRequest) => {
       "answer",
       "answerScore",
       "answerPassed",
+      "meetsAnswerThreshold",
       "rating",
     ].join(",")
     const rows = logs.map((log) =>
@@ -140,6 +158,7 @@ export const GET = withHandlerSimple(async (req: NextRequest) => {
         log.card.answer,
         log.answerScore,
         log.answerPassed,
+        meetsAnswerThreshold(log.answerScore, answerThreshold),
         log.rating,
       ])
     )
@@ -158,6 +177,11 @@ export const GET = withHandlerSimple(async (req: NextRequest) => {
       passed: passedCount,
       failed: scored.length - passedCount,
       averageAnswerScore,
+      belowAnswerThreshold,
+    },
+    thresholds: {
+      answerScore: answerThreshold,
+      completionRate: completionThreshold,
     },
     items: logs.map((log) => ({
       id: log.id,
@@ -166,6 +190,7 @@ export const GET = withHandlerSimple(async (req: NextRequest) => {
       typedAnswer: log.typedAnswer,
       answerScore: log.answerScore,
       answerPassed: log.answerPassed,
+      meetsAnswerThreshold: meetsAnswerThreshold(log.answerScore, answerThreshold),
       user: log.user,
       card: {
         id: log.card.id,

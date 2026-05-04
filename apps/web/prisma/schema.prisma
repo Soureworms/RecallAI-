@@ -23,14 +23,16 @@ enum StudyMode {
 }
 
 model Organization {
-  id              String           @id @default(uuid())
-  name            String
-  studyMode       StudyMode        @default(AUTO_ROTATE)
-  createdAt       DateTime         @default(now())
-  teams           Team[]
-  users           User[]
-  decks           Deck[]
-  sourceDocuments SourceDocument[]
+  id                            String           @id @default(uuid())
+  name                          String
+  studyMode                     StudyMode        @default(AUTO_ROTATE)
+  complianceAnswerThreshold     Int              @default(70)
+  complianceCompletionThreshold Int              @default(100)
+  createdAt                     DateTime         @default(now())
+  teams                         Team[]
+  users                         User[]
+  decks                         Deck[]
+  sourceDocuments               SourceDocument[]
 }
 
 model Team {

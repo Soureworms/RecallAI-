@@ -15,6 +15,7 @@ AI-powered spaced repetition for CX teams. Upload your knowledge base, let OpenA
 ## Product Logic Docs
 
 - [Customer organization, team, and SOP access flow](docs/customer-org-team-sop-flow.md)
+- [E2E role testing flow](docs/e2e-role-testing-flow.md)
 
 ---
 

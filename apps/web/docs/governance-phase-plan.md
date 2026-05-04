@@ -371,7 +371,9 @@
 
 ## Phase 7: MVP Operational Error Logging
 
-**Status:** Done locally; pending commit and push.
+**Status:** Done and pushed.
+
+**Commit:** `0c8dbf4` - `Add MVP API error tracing`
 
 **Goal:** Add enough request tracing and user-facing error context for an MVP production app without introducing a full observability platform yet.
 
@@ -413,6 +415,47 @@
 - Expected 4xx validation/auth responses are not fully standardized yet.
 - We do not yet persist operational error events in the database.
 
+## Phase 8: Role-Based Playwright E2E Harness
+
+**Status:** Done and pushed.
+
+**Commit:** `491b08f` - `Add role-based Playwright E2E harness`
+
+**Goal:** Create a repeatable browser-level E2E flow for each user class so role governance regressions can be tested locally, in staging, or against production with dedicated disposable test users.
+
+**Built:**
+- Added Playwright as a web app dev dependency.
+- Added `test:e2e` and `test:e2e:headed` scripts.
+- Added `apps/web/playwright.config.ts` with local web-server support and `E2E_BASE_URL` / `E2E_SKIP_WEB_SERVER` controls.
+- Added a role-flow Playwright spec covering super admin, customer admin, manager, and agent.
+- Each role test signs in, verifies allowed sidebar navigation, verifies hidden forbidden navigation, checks direct-route redirects, and performs one role-specific smoke workflow.
+- Added `apps/web/docs/e2e-role-testing-flow.md` with the role matrix, default seeded credentials, env overrides, and local/production run commands.
+
+**Files:**
+- Create: `apps/web/playwright.config.ts`
+- Create: `apps/web/e2e/role-flows.spec.ts`
+- Create: `apps/web/docs/e2e-role-testing-flow.md`
+- `apps/web/package.json`
+- `pnpm-lock.yaml`
+- `apps/web/README.md`
+- `apps/web/docs/governance-phase-plan.md`
+
+**Verification Recorded Before Commit:**
+- `corepack pnpm --dir apps/web exec playwright test --list`
+  - Result: 8 role-flow tests discovered in 1 file.
+- `$env:E2E_SKIP_WEB_SERVER='1'; corepack pnpm --dir apps/web test:e2e --list`
+  - Result: package script discovered 8 role-flow tests in 1 file.
+- `corepack pnpm --dir apps/web exec vitest run`
+  - Result: 22 files passed, 135 tests passed.
+- `corepack pnpm --filter web build`
+  - Initial result: failed because the local Next build worker file was missing.
+  - Recovery: refreshed dependencies with `corepack pnpm install --force`.
+  - Final result: exit 0.
+
+**Known Gaps:**
+- A live production E2E run was not executed in this session because browser automation against production with real credentials was blocked for safety. Run it against staging or disposable production E2E users with `E2E_BASE_URL` and `E2E_SKIP_WEB_SERVER=1`.
+- The current browser suite is a governance smoke harness. It does not yet upload SOP files or run AI generation in the browser because that would mutate shared data and can consume OpenAI credits.
+
 ## Decision Log
 
 - 2026-05-03: Chose deterministic word/numeric matching for Phase 2 to avoid per-review LLM cost and latency.
@@ -422,3 +465,4 @@
 - 2026-05-03: Phase 4 allows managers to invite agents into teams they belong to, but reserves manager-role assignment for customer admins.
 - 2026-05-03: Phase 5 is being split into production-safe hardening slices because deck, document, card, assignment, and analytics scope touch many shared routes.
 - 2026-05-04: Added MVP operational error tracing before deeper compliance reporting so production failures can be tied to a request ID from user screenshots or support reports.
+- 2026-05-04: Added Playwright role-flow smoke coverage before heavier SOP upload/generation E2E tests so route/nav governance can be checked quickly and safely.

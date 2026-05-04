@@ -285,9 +285,11 @@
 
 ## Phase 6: Compliance Audit Trail And Policy Controls
 
-**Status:** In progress. Slice 1 implemented locally; focused tests, full tests, and production build passed. Commit and push pending.
+**Status:** In progress. Slice 1 verified and committed; push pending.
 
 **Goal:** Build compliance-grade auditability on top of the typed-answer and FSRS events.
+
+**Slice 1 Commit:** `3ac8c4d` - `Add compliance review evidence API`
 
 **Planned Scope:**
 - Add audit reports for review evidence, answer score, self-rating, due/completion status, and manager interventions.

@@ -419,7 +419,7 @@
 
 **Status:** Done and pushed.
 
-**Commit:** `491b08f` - `Add role-based Playwright E2E harness`
+**Commit:** `29f7b4e` - `Add role-based Playwright E2E harness`
 
 **Goal:** Create a repeatable browser-level E2E flow for each user class so role governance regressions can be tested locally, in staging, or against production with dedicated disposable test users.
 

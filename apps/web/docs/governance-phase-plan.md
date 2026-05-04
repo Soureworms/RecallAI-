@@ -285,7 +285,7 @@
 
 ## Phase 6: Compliance Audit Trail And Policy Controls
 
-**Status:** In progress. Slices 1 and 2 verified and committed; Slice 2 push pending.
+**Status:** In progress. Slices 1 and 2 done and pushed.
 
 **Goal:** Build compliance-grade auditability on top of the typed-answer and FSRS events.
 

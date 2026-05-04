@@ -285,7 +285,7 @@
 
 ## Phase 6: Compliance Audit Trail And Policy Controls
 
-**Status:** Planned.
+**Status:** In progress. Slice 1 implemented locally; focused tests, full tests, and production build passed. Commit and push pending.
 
 **Goal:** Build compliance-grade auditability on top of the typed-answer and FSRS events.
 
@@ -294,6 +294,27 @@
 - Add configurable thresholds for answer-match score and deck completion.
 - Consider LLM grading as an optional high-cost/high-confidence mode for regulated decks.
 - Add exportable compliance evidence for managers/customer admins.
+
+**Built In Slice 1 Locally:**
+- Added `GET /api/compliance/reviews` as the first typed-answer evidence audit report.
+- Returns review evidence with typed answer, answer score, answer pass/fail, rating, user, card, and deck context.
+- Supports basic filters for deck, team, user, pass/fail status, and result limit.
+- Enforces manager/admin access, manager team access, manager shared-user access, and manager deck reachability.
+
+**Files In Slice 1 Locally:**
+- Create: `apps/web/app/api/compliance/reviews/route.ts`
+- Create: `apps/web/app/api/__tests__/compliance-reviews.test.ts`
+
+**Verification Recorded For Local Slice 1:**
+- `corepack pnpm --dir apps/web exec vitest run app/api/__tests__/compliance-reviews.test.ts`
+  - Red result before implementation: 1 file failed; route module did not exist.
+  - Green result after implementation: 1 file passed, 3 tests passed.
+- `corepack pnpm --dir apps/web exec vitest run`
+  - Result: 19 files passed, 129 tests passed.
+- `corepack pnpm --filter web build`
+  - Initial result: failed because the local Next build worker file was missing.
+  - Recovery: refreshed dependencies with `corepack pnpm install --force`.
+  - Final result: exit 0. Known Next dynamic-route warnings still appear during static collection, but routes are emitted as dynamic.
 
 ## Decision Log
 

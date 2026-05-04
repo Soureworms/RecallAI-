@@ -114,4 +114,17 @@ describe("GET /api/compliance/reviews", () => {
     expect(res.status).toBe(403)
     expect(mockPrisma.reviewLog.findMany).not.toHaveBeenCalled()
   })
+
+  it("exports typed-answer evidence as CSV", async () => {
+    const { GET } = await import("../compliance/reviews/route")
+    const res = await GET(new NextRequest("http://localhost/api/compliance/reviews?format=csv"))
+    const body = await res.text()
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get("Content-Type")).toContain("text/csv")
+    expect(res.headers.get("Content-Disposition")).toContain("compliance-review-evidence.csv")
+    expect(body).toContain("reviewedAt,userEmail,deckName,question,typedAnswer,answer,answerScore,answerPassed,rating")
+    expect(body).toContain("agent@example.com")
+    expect(body).toContain("\"Manager approval is required before refunds above 500 rand.\"")
+  })
 })

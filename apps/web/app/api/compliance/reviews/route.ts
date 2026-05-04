@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db"
 import { withHandlerSimple } from "@/lib/api/handler"
 import { deckAccessWhereForRole, deckReadWhereForRole } from "@/lib/auth/deck-scope"
 
+export const dynamic = "force-dynamic"
+
 function parseLimit(value: string | null) {
   const parsed = Number(value)
   if (!Number.isFinite(parsed)) return 100
@@ -14,6 +16,15 @@ function parsePassed(value: string | null) {
   if (value === "true" || value === "passed") return true
   if (value === "false" || value === "failed") return false
   return undefined
+}
+
+function csvCell(value: unknown) {
+  const text = value === null || value === undefined ? "" : String(value)
+  return `"${text.replace(/"/g, '""')}"`
+}
+
+function csvLine(values: unknown[]) {
+  return values.map(csvCell).join(",")
 }
 
 export const GET = withHandlerSimple(async (req: NextRequest) => {
@@ -27,6 +38,7 @@ export const GET = withHandlerSimple(async (req: NextRequest) => {
   const userId = searchParams.get("userId")
   const passed = parsePassed(searchParams.get("passed"))
   const take = parseLimit(searchParams.get("limit"))
+  const format = searchParams.get("format")
 
   if (teamId) {
     const teamAccess = await requireTeamAccess(session, teamId)
@@ -105,6 +117,40 @@ export const GET = withHandlerSimple(async (req: NextRequest) => {
     scored.length > 0
       ? Math.round(scored.reduce((sum, log) => sum + (log.answerScore ?? 0), 0) / scored.length)
       : null
+
+  if (format === "csv") {
+    const header = [
+      "reviewedAt",
+      "userEmail",
+      "deckName",
+      "question",
+      "typedAnswer",
+      "answer",
+      "answerScore",
+      "answerPassed",
+      "rating",
+    ].join(",")
+    const rows = logs.map((log) =>
+      csvLine([
+        log.reviewedAt.toISOString(),
+        log.user.email,
+        log.card.deck.name,
+        log.card.question,
+        log.typedAnswer,
+        log.card.answer,
+        log.answerScore,
+        log.answerPassed,
+        log.rating,
+      ])
+    )
+
+    return new NextResponse([header, ...rows].join("\n"), {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": 'attachment; filename="compliance-review-evidence.csv"',
+      },
+    })
+  }
 
   return NextResponse.json({
     summary: {

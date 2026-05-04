@@ -285,7 +285,7 @@
 
 ## Phase 6: Compliance Audit Trail And Policy Controls
 
-**Status:** In progress. Slice 1 verified and committed; push pending.
+**Status:** In progress. Slice 1 done and pushed. Slice 2 implemented locally; verification, commit, and push pending.
 
 **Goal:** Build compliance-grade auditability on top of the typed-answer and FSRS events.
 
@@ -317,6 +317,27 @@
   - Initial result: failed because the local Next build worker file was missing.
   - Recovery: refreshed dependencies with `corepack pnpm install --force`.
   - Final result: exit 0. Known Next dynamic-route warnings still appear during static collection, but routes are emitted as dynamic.
+
+**Built In Slice 2 Locally:**
+- Added CSV export support to `GET /api/compliance/reviews?format=csv`.
+- CSV output includes review date, user email, deck, question, typed answer, correct answer, answer score, pass/fail, and FSRS self-rating.
+
+**Files In Slice 2 Locally:**
+- `apps/web/app/api/compliance/reviews/route.ts`
+- `apps/web/app/api/__tests__/compliance-reviews.test.ts`
+
+**Verification Recorded For Local Slice 2:**
+- `corepack pnpm --dir apps/web exec vitest run app/api/__tests__/compliance-reviews.test.ts --testNamePattern "CSV"`
+  - Red result before implementation: 1 file failed; route still returned JSON.
+  - Green result after implementation: 1 file passed, 1 matching test passed.
+- `corepack pnpm --dir apps/web exec vitest run`
+  - Result: 19 files passed, 130 tests passed.
+- `corepack pnpm --dir apps/web exec vitest run app/api/__tests__/compliance-reviews.test.ts`
+  - Result after marking the route dynamic: 1 file passed, 4 tests passed.
+- `corepack pnpm --filter web build`
+  - Initial result: failed because the local Next build worker file was missing.
+  - Recovery: refreshed dependencies with `corepack pnpm install --force`.
+  - Final result: exit 0. Existing dynamic-route warnings still appear for older API routes, but the compliance route is now explicitly dynamic.
 
 ## Decision Log
 

@@ -5,6 +5,7 @@ import { checkRateLimit } from "@/lib/rate-limit"
 import { prisma } from "@/lib/db"
 import { verifyMagicBytes, sanitizeFilename } from "@/lib/security/file-validation"
 import { withHandlerSimple } from "@/lib/api/handler"
+import { apiErrorResponse } from "@/lib/api/observability"
 import { deckAccessWhereForRole } from "@/lib/auth/deck-scope"
 
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
@@ -137,8 +138,17 @@ export const POST = withHandlerSimple(async (req) => {
       where: { id: doc.id },
       data:  { status: "ERROR" },
     })
-    const msg = err instanceof Error ? err.message : "Text extraction failed"
-    return NextResponse.json({ error: msg }, { status: 422 })
+    return apiErrorResponse(req, {
+      code: "DOCUMENT_TEXT_EXTRACTION_FAILED",
+      status: 422,
+      message: "We uploaded the file, but could not extract readable text. Try a text-based PDF, DOCX, TXT, or MD file.",
+      cause: err,
+      context: {
+        documentId: doc.id,
+        filename: safeFilename,
+        extension: ext,
+      },
+    })
   }
 
   const contentHash = createHash("sha256").update(textContent).digest("hex")

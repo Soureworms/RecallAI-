@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db"
 import { getRedis } from "@/lib/redis"
 import { publishGenerateJob, type JobState } from "@/lib/queue/qstash"
 import { withHandler } from "@/lib/api/handler"
+import { apiErrorResponse, getRequestId, logApiError } from "@/lib/api/observability"
 import { generateCardsSchema } from "@/lib/schemas/api"
 import { env } from "@/lib/env"
 import { runGenerateJob } from "@/lib/services/generate-job"
@@ -29,6 +30,7 @@ async function setJobStatus(
 }
 
 export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { params }) => {
+  const requestId = getRequestId(req)
   const auth = await requireRole("MANAGER", { limiterKey: "api:manager", routeClass: "write" })
   if (!auth.ok) return auth.response
   const { session } = auth
@@ -63,17 +65,21 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
   }
 
   if (!env.OPENAI_API_KEY) {
-    return NextResponse.json(
-      { error: "AI generation is not configured. Set OPENAI_API_KEY." },
-      { status: 503 }
-    )
+    return apiErrorResponse(req, {
+      code: "AI_NOT_CONFIGURED",
+      status: 503,
+      message: "AI generation is not configured. Please check the OpenAI settings.",
+      requestId,
+    })
   }
 
   if (!env.QSTASH_TOKEN) {
-    return NextResponse.json(
-      { error: "Job queue is not configured. Set QSTASH_TOKEN." },
-      { status: 503 }
-    )
+    return apiErrorResponse(req, {
+      code: "QUEUE_NOT_CONFIGURED",
+      status: 503,
+      message: "Card generation queue is not configured. Please check the queue settings.",
+      requestId,
+    })
   }
 
   const jobId = crypto.randomUUID()
@@ -83,6 +89,7 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
     state: "queued",
     progress: 0,
     orgId: session.user.orgId,
+    requestId,
   } satisfies JobState)
 
   try {
@@ -93,13 +100,27 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
       orgId: session.user.orgId,
     })
   } catch (err) {
-    console.error("[generate] QStash enqueue failed; running inline fallback", err)
+    logApiError(req, {
+      code: "GENERATION_QUEUE_FALLBACK",
+      status: 202,
+      requestId,
+      cause: err,
+      context: {
+        deckId: params.deckId,
+        sourceDocumentId: doc.id,
+        jobId,
+      },
+    })
 
     if (!redis) {
-      return NextResponse.json(
-        { error: "AI generation queue failed and job status storage is not configured." },
-        { status: 503 }
-      )
+      return apiErrorResponse(req, {
+        code: "QUEUE_STATUS_NOT_CONFIGURED",
+        status: 503,
+        message: "Card generation queue failed and job status storage is not configured.",
+        requestId,
+        cause: err,
+        context: { deckId: params.deckId, sourceDocumentId: doc.id, jobId },
+      })
     }
 
     try {
@@ -107,6 +128,7 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
         state: "active",
         progress: 5,
         orgId: session.user.orgId,
+        requestId,
       } satisfies JobState)
 
       const result = await runGenerateJob({
@@ -118,6 +140,7 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
             state: "active",
             progress: 10 + Math.round(pct * 0.8),
             orgId: session.user.orgId,
+            requestId,
           } satisfies JobState)
         },
       })
@@ -129,6 +152,7 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
         count: result.count,
         warning: result.warning,
         summary: result.summary,
+        requestId,
       } satisfies JobState)
 
       return NextResponse.json(
@@ -142,8 +166,16 @@ export const POST = withHandler<{ deckId: string }>(async (req: NextRequest, { p
         progress: 0,
         orgId: session.user.orgId,
         error: message,
+        requestId,
       } satisfies JobState)
-      return NextResponse.json({ error: message }, { status: 500 })
+      return apiErrorResponse(req, {
+        code: "CARD_GENERATION_FAILED",
+        status: 500,
+        message,
+        requestId,
+        cause: fallbackErr,
+        context: { deckId: params.deckId, sourceDocumentId: doc.id, jobId },
+      })
     }
   }
 

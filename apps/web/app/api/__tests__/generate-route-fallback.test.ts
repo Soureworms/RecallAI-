@@ -176,7 +176,7 @@ describe("POST /api/decks/[deckId]/generate", () => {
       new NextRequest("http://localhost/api/decks/deck-1/generate", {
         method: "POST",
         body: JSON.stringify({ sourceDocumentId: "doc-1" }),
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-request-id": "req_generate_123" },
       }),
       { params: { deckId: "deck-1" } }
     )
@@ -184,6 +184,8 @@ describe("POST /api/decks/[deckId]/generate", () => {
     expect(res.status).toBe(500)
     await expect(res.json()).resolves.toMatchObject({
       error: expect.stringContaining("none passed quality checks"),
+      code: "CARD_GENERATION_FAILED",
+      requestId: "req_generate_123",
     })
     expect(mockPrisma.card.create).not.toHaveBeenCalled()
     expect(mockPrisma.sourceDocument.update).toHaveBeenCalledWith({
@@ -197,7 +199,11 @@ describe("POST /api/decks/[deckId]/generate", () => {
     expect(mockRedis.setex).toHaveBeenLastCalledWith(
       expect.stringMatching(/^job:/),
       3600,
-      expect.objectContaining({ state: "failed", error: expect.stringContaining("none passed quality checks") })
+      expect.objectContaining({
+        state: "failed",
+        error: expect.stringContaining("none passed quality checks"),
+        requestId: "req_generate_123",
+      })
     )
   })
 })

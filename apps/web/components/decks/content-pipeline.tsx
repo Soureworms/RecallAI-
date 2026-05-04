@@ -19,6 +19,7 @@ type JobStatus = {
   progress: number
   count?: number
   error?: string
+  requestId?: string
   summary?: {
     validCards: number
     rejectedCards: number
@@ -36,6 +37,19 @@ const STEPS = [
   { n: 2 as PipelineStep, label: "Generate" },
   { n: 3 as PipelineStep, label: "Review" },
 ]
+
+function withReference(message: string, requestId?: string): string {
+  return requestId ? `${message} Reference: ${requestId}` : message
+}
+
+async function readApiError(res: Response, fallback: string): Promise<string> {
+  try {
+    const data = (await res.json()) as { error?: string; requestId?: string }
+    return withReference(data.error ?? fallback, data.requestId)
+  } catch {
+    return fallback
+  }
+}
 
 export function ContentPipeline({ deckId }: Props) {
   const router = useRouter()
@@ -97,7 +111,7 @@ export function ContentPipeline({ deckId }: Props) {
           setStep(3)
         } else if (data.state === "failed") {
           stopPolling()
-          setGenError(data.error ?? "Generation failed. Please try again.")
+          setGenError(withReference(data.error ?? "Generation failed. Please try again.", data.requestId))
         }
       } catch {
         // Network error — keep polling
@@ -116,8 +130,7 @@ export function ContentPipeline({ deckId }: Props) {
     setUploading(false)
 
     if (!res.ok) {
-      const d = (await res.json()) as { error?: string }
-      setUploadError(d.error ?? "Upload failed")
+      setUploadError(await readApiError(res, "Upload failed"))
       return
     }
 
@@ -138,8 +151,7 @@ export function ContentPipeline({ deckId }: Props) {
     })
 
     if (!res.ok) {
-      const d = (await res.json()) as { error?: string }
-      setGenError(d.error ?? "Generation failed")
+      setGenError(await readApiError(res, "Generation failed"))
       return
     }
 

@@ -14,8 +14,9 @@ export async function apiFetch<T>(
     if (!res.ok) {
       let message = errorMessage ?? "Request failed"
       try {
-        const body = (await res.json()) as { error?: string }
+        const body = (await res.json()) as { error?: string; requestId?: string }
         if (body.error) message = body.error
+        if (body.requestId) message = `${message} Reference: ${body.requestId}`
       } catch {
         // ignore JSON parse failures
       }

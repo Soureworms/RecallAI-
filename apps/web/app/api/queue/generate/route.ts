@@ -4,10 +4,12 @@ import { Redis } from "@upstash/redis"
 import type { GenerateJobData, JobState } from "@/lib/queue/qstash"
 import { env } from "@/lib/env"
 import { runGenerateJob } from "@/lib/services/generate-job"
+import { apiErrorResponse, getRequestId } from "@/lib/api/observability"
 
 // QStash calls this endpoint when a job is ready to process.
 // Signature verification ensures only QStash can trigger generation.
 export async function POST(req: NextRequest) {
+  const requestId = getRequestId(req)
   const currentKey = env.QSTASH_CURRENT_SIGNING_KEY
   const nextKey = env.QSTASH_NEXT_SIGNING_KEY
 
@@ -73,9 +75,17 @@ export async function POST(req: NextRequest) {
       progress: 0,
       orgId,
       error,
+      requestId,
     } satisfies JobState)
 
     // Return 500 so QStash retries the job automatically
-    return NextResponse.json({ error }, { status: 500 })
+    return apiErrorResponse(req, {
+      code: "CARD_GENERATION_JOB_FAILED",
+      status: 500,
+      message: error,
+      requestId,
+      cause: err,
+      context: { jobId, deckId, documentId },
+    })
   }
 }

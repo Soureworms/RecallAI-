@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { apiErrorResponse } from "@/lib/api/observability"
 
 type Handler<P = Record<string, never>> = (
   req: NextRequest,
@@ -15,8 +16,12 @@ export function withHandler<P = Record<string, never>>(fn: Handler<P>): Handler<
     try {
       return await fn(req, ctx)
     } catch (err) {
-      console.error(`[API] ${req.method} ${req.nextUrl.pathname}`, err)
-      return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+      return apiErrorResponse(req, {
+        code: "INTERNAL_SERVER_ERROR",
+        status: 500,
+        message: "Something went wrong. Please try again.",
+        cause: err,
+      })
     }
   }
 }
@@ -29,8 +34,12 @@ export function withHandlerSimple(
     try {
       return await fn(req)
     } catch (err) {
-      console.error(`[API] ${req.method} ${req.nextUrl.pathname}`, err)
-      return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+      return apiErrorResponse(req, {
+        code: "INTERNAL_SERVER_ERROR",
+        status: 500,
+        message: "Something went wrong. Please try again.",
+        cause: err,
+      })
     }
   }
 }

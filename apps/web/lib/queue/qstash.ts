@@ -13,6 +13,7 @@ export type JobState = {
   orgId: string   // stored so the jobs endpoint can verify the caller's org
   count?: number
   error?: string
+  requestId?: string
   warning?: string
   summary?: {
     validCards: number

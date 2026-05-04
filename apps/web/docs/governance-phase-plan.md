@@ -369,6 +369,50 @@
   - Recovery: refreshed dependencies with `corepack pnpm install --force`.
   - Final result: exit 0. Existing dynamic-route warnings still appear for older API routes.
 
+## Phase 7: MVP Operational Error Logging
+
+**Status:** Done locally; pending commit and push.
+
+**Goal:** Add enough request tracing and user-facing error context for an MVP production app without introducing a full observability platform yet.
+
+**Built:**
+- Added a shared API observability helper that creates or preserves request IDs.
+- Updated wrapped API route failures to return `{ error, code, requestId }` and an `x-request-id` header.
+- Updated server logs for unexpected API failures to use a structured `[api.error]` payload with method, path, status, code, request ID, context, and serialized error details.
+- Added traceable error responses for card generation queue/config failures and inline generation failures.
+- Added traceable error logging for document text extraction failures during upload.
+- Stored request IDs in generation job status so async failures can be shown back to the manager.
+- Updated Add Content upload/generation UI and shared `apiFetch` to show `Reference: <requestId>` when the API provides one.
+
+**Files:**
+- Create: `apps/web/lib/api/observability.ts`
+- Create: `apps/web/lib/api/__tests__/handler.test.ts`
+- Create: `apps/web/lib/__tests__/api-fetch.test.ts`
+- `apps/web/lib/api/handler.ts`
+- `apps/web/lib/api-fetch.ts`
+- `apps/web/lib/queue/qstash.ts`
+- `apps/web/app/api/decks/[deckId]/generate/route.ts`
+- `apps/web/app/api/documents/upload/route.ts`
+- `apps/web/app/api/queue/generate/route.ts`
+- `apps/web/app/api/__tests__/generate-route-fallback.test.ts`
+- `apps/web/components/decks/content-pipeline.tsx`
+
+**Verification Recorded Before Commit:**
+- `corepack pnpm --dir apps/web exec vitest run lib/api/__tests__/handler.test.ts lib/__tests__/api-fetch.test.ts app/api/__tests__/generate-route-fallback.test.ts`
+  - Red result before implementation: 3 files ran, 2 expected failures for missing request ID response and client reference display; generation failure path then failed until it returned `code` and `requestId`.
+  - Green result after implementation: 3 files passed, 6 tests passed.
+- `corepack pnpm --dir apps/web exec vitest run`
+  - Result: 22 files passed, 135 tests passed.
+- `corepack pnpm --filter web build`
+  - Initial result: failed because the local Next build worker file was missing.
+  - Recovery: refreshed dependencies with `corepack pnpm install --force`.
+  - Final result: exit 0.
+
+**Known Gaps:**
+- Logs still go to platform console output only; no Sentry/Datadog/OpenTelemetry integration yet.
+- Expected 4xx validation/auth responses are not fully standardized yet.
+- We do not yet persist operational error events in the database.
+
 ## Decision Log
 
 - 2026-05-03: Chose deterministic word/numeric matching for Phase 2 to avoid per-review LLM cost and latency.
@@ -377,3 +421,4 @@
 - 2026-05-03: Phase 3 keeps detailed team/member stats in the Team workspace and makes Stats a role-specific analytics entry point, so managers can drill into team compliance without exposing agent-only routes.
 - 2026-05-03: Phase 4 allows managers to invite agents into teams they belong to, but reserves manager-role assignment for customer admins.
 - 2026-05-03: Phase 5 is being split into production-safe hardening slices because deck, document, card, assignment, and analytics scope touch many shared routes.
+- 2026-05-04: Added MVP operational error tracing before deeper compliance reporting so production failures can be tied to a request ID from user screenshots or support reports.
